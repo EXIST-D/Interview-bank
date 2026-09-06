@@ -1,6 +1,11 @@
 ---
 name: interview-bank
 description: Build and maintain a local interview question bank from screenshots or selected text for campus hiring, internships and other interviews. Use for extracting questions with provenance, semantic role/company/technology classification, conservative deduplication, frequency analysis, study exports and evidence-backed reference answers. Uses host vision, reasoning and web tools with a provider-independent Python CLI.
+license: MIT
+metadata:
+  author: EXIST-D
+  version: "1.4.0"
+  repository: https://github.com/EXIST-D/Interview-bank
 ---
 
 # Interview Bank
