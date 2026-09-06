@@ -49,11 +49,13 @@ The workflow has been exercised with Windows and Codex. Other hosts need equival
 
 ## Installation
 
-Install for Codex in the current project using the [skills.sh](https://skills.sh/) CLI:
+View the [interview-bank page on skills.sh](https://skills.sh/exist-d/interview-bank/interview-bank). Install for Codex in the current project using the `skills` CLI:
 
 ```powershell
 npx skills add EXIST-D/Interview-bank --skill interview-bank --agent codex --yes --copy
 ```
+
+This command was verified in an isolated Windows project: discovery and installation succeeded, the license was retained, and the installed Python CLI passed initialization, health and data-validation checks.
 
 Without `--global`, the Codex project installation path is `.agents/skills/interview-bank`. To list discoverable skills first:
 

@@ -49,11 +49,13 @@ Interview-bank/
 
 ## 安装方式
 
-使用 [skills.sh](https://skills.sh/) 的 `skills` CLI 安装到当前项目的 Codex 技能目录：
+可在 [skills.sh 的 interview-bank 页面](https://skills.sh/exist-d/interview-bank/interview-bank) 查看本 Skill。使用 `skills` CLI 安装到当前项目的 Codex 技能目录：
 
 ```powershell
 npx skills add EXIST-D/Interview-bank --skill interview-bank --agent codex --yes --copy
 ```
+
+该命令已在 Windows 环境的隔离测试项目中验证：可发现并安装 `interview-bank`，许可证随安装保留，安装后的 Python CLI 初始化、健康检查和数据校验通过。
 
 不加 `--global` 时，Codex 的项目安装目录为 `.agents/skills/interview-bank`。也可以先列出仓库可发现的 Skill：
 
