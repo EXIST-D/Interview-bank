@@ -1,0 +1,3872 @@
+{
+  "schema_version": 1,
+  "catalog_version": "1.1.0",
+  "role_tracks": [
+    {
+      "id": "frontend",
+      "label": "前端",
+      "aliases": [
+        "前端开发"
+      ],
+      "parent": null
+    },
+    {
+      "id": "backend",
+      "label": "后端",
+      "aliases": [
+        "后端开发",
+        "服务端"
+      ],
+      "parent": null
+    },
+    {
+      "id": "fullstack",
+      "label": "全栈",
+      "aliases": [
+        "全栈开发"
+      ],
+      "parent": null
+    },
+    {
+      "id": "ai-agent",
+      "label": "AI Agent",
+      "aliases": [
+        "智能体开发",
+        "Agent工程师"
+      ],
+      "parent": null
+    },
+    {
+      "id": "machine-learning",
+      "label": "机器学习",
+      "aliases": [
+        "机器学习工程师"
+      ],
+      "parent": null
+    },
+    {
+      "id": "data",
+      "label": "数据",
+      "aliases": [
+        "数据岗位"
+      ],
+      "parent": null
+    },
+    {
+      "id": "mobile",
+      "label": "移动端",
+      "aliases": [
+        "移动开发"
+      ],
+      "parent": null
+    },
+    {
+      "id": "devops-sre",
+      "label": "运维与可靠性",
+      "aliases": [
+        "运维",
+        "SRE",
+        "DevOps"
+      ],
+      "parent": null
+    },
+    {
+      "id": "test",
+      "label": "测试",
+      "aliases": [
+        "测试工程师",
+        "QA"
+      ],
+      "parent": null
+    },
+    {
+      "id": "security",
+      "label": "安全",
+      "aliases": [
+        "安全工程师"
+      ],
+      "parent": null
+    },
+    {
+      "id": "algorithm",
+      "label": "算法",
+      "aliases": [
+        "算法工程师"
+      ],
+      "parent": null
+    },
+    {
+      "id": "general",
+      "label": "通用",
+      "aliases": [
+        "综合"
+      ],
+      "parent": null
+    },
+    {
+      "id": "frontend.web",
+      "label": "Web前端",
+      "aliases": [
+        "网页前端"
+      ],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.cross-platform",
+      "label": "跨端前端",
+      "aliases": [
+        "跨端开发"
+      ],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.engineering",
+      "label": "前端工程化",
+      "aliases": [
+        "前端基础设施"
+      ],
+      "parent": "frontend"
+    },
+    {
+      "id": "backend.java",
+      "label": "Java后端",
+      "aliases": [
+        "Java开发"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.go",
+      "label": "Go后端",
+      "aliases": [
+        "Golang后端"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.python",
+      "label": "Python后端",
+      "aliases": [
+        "Python开发"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.dotnet",
+      "label": ".NET后端",
+      "aliases": [
+        "DotNet后端"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.node",
+      "label": "Node.js后端",
+      "aliases": [
+        "Node后端"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.cpp",
+      "label": "C++后端",
+      "aliases": [
+        "C++服务端"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.platform",
+      "label": "平台后端",
+      "aliases": [
+        "中间件开发"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "mobile.android",
+      "label": "Android开发",
+      "aliases": [
+        "安卓开发"
+      ],
+      "parent": "mobile"
+    },
+    {
+      "id": "mobile.ios",
+      "label": "iOS开发",
+      "aliases": [
+        "苹果移动开发"
+      ],
+      "parent": "mobile"
+    },
+    {
+      "id": "mobile.cross-platform",
+      "label": "跨平台移动开发",
+      "aliases": [
+        "Flutter开发"
+      ],
+      "parent": "mobile"
+    },
+    {
+      "id": "machine-learning.llm",
+      "label": "大模型工程",
+      "aliases": [
+        "大模型算法"
+      ],
+      "parent": "machine-learning"
+    },
+    {
+      "id": "machine-learning.nlp",
+      "label": "自然语言处理",
+      "aliases": [
+        "NLP算法"
+      ],
+      "parent": "machine-learning"
+    },
+    {
+      "id": "machine-learning.vision",
+      "label": "计算机视觉",
+      "aliases": [
+        "CV算法"
+      ],
+      "parent": "machine-learning"
+    },
+    {
+      "id": "machine-learning.speech",
+      "label": "语音算法",
+      "aliases": [
+        "语音研发"
+      ],
+      "parent": "machine-learning"
+    },
+    {
+      "id": "machine-learning.recommendation",
+      "label": "推荐算法",
+      "aliases": [
+        "推荐系统算法"
+      ],
+      "parent": "machine-learning"
+    },
+    {
+      "id": "machine-learning.search",
+      "label": "搜索算法",
+      "aliases": [
+        "搜索排序算法"
+      ],
+      "parent": "machine-learning"
+    },
+    {
+      "id": "machine-learning.ads",
+      "label": "广告算法",
+      "aliases": [
+        "广告排序"
+      ],
+      "parent": "machine-learning"
+    },
+    {
+      "id": "machine-learning.multimodal",
+      "label": "多模态算法",
+      "aliases": [],
+      "parent": "machine-learning"
+    },
+    {
+      "id": "data.engineering",
+      "label": "数据工程",
+      "aliases": [
+        "数据开发",
+        "大数据开发"
+      ],
+      "parent": "data"
+    },
+    {
+      "id": "data.analytics",
+      "label": "数据分析",
+      "aliases": [
+        "数据分析师"
+      ],
+      "parent": "data"
+    },
+    {
+      "id": "data.science",
+      "label": "数据科学",
+      "aliases": [
+        "数据科学家"
+      ],
+      "parent": "data"
+    },
+    {
+      "id": "data.warehouse",
+      "label": "数仓开发",
+      "aliases": [
+        "数据仓库开发"
+      ],
+      "parent": "data"
+    },
+    {
+      "id": "data.governance",
+      "label": "数据治理",
+      "aliases": [
+        "数据质量工程"
+      ],
+      "parent": "data"
+    },
+    {
+      "id": "devops-sre.platform",
+      "label": "平台工程",
+      "aliases": [
+        "Platform Engineering"
+      ],
+      "parent": "devops-sre"
+    },
+    {
+      "id": "devops-sre.cloud",
+      "label": "云计算工程",
+      "aliases": [
+        "云平台工程师"
+      ],
+      "parent": "devops-sre"
+    },
+    {
+      "id": "devops-sre.mlops",
+      "label": "MLOps工程",
+      "aliases": [
+        "机器学习平台"
+      ],
+      "parent": "devops-sre"
+    },
+    {
+      "id": "test.automation",
+      "label": "测试开发",
+      "aliases": [
+        "自动化测试"
+      ],
+      "parent": "test"
+    },
+    {
+      "id": "test.performance",
+      "label": "性能测试",
+      "aliases": [
+        "压测工程师"
+      ],
+      "parent": "test"
+    },
+    {
+      "id": "security.application",
+      "label": "应用安全",
+      "aliases": [
+        "Web安全工程师"
+      ],
+      "parent": "security"
+    },
+    {
+      "id": "security.cloud",
+      "label": "云安全",
+      "aliases": [
+        "云安全工程师"
+      ],
+      "parent": "security"
+    },
+    {
+      "id": "security.research",
+      "label": "安全研究",
+      "aliases": [
+        "漏洞研究"
+      ],
+      "parent": "security"
+    },
+    {
+      "id": "database-engineering",
+      "label": "数据库研发",
+      "aliases": [
+        "数据库内核研发"
+      ],
+      "parent": null
+    },
+    {
+      "id": "dba",
+      "label": "数据库管理",
+      "aliases": [
+        "数据库管理员"
+      ],
+      "parent": null
+    },
+    {
+      "id": "embedded",
+      "label": "嵌入式",
+      "aliases": [
+        "嵌入式开发"
+      ],
+      "parent": null
+    },
+    {
+      "id": "iot",
+      "label": "物联网",
+      "aliases": [
+        "IoT开发"
+      ],
+      "parent": null
+    },
+    {
+      "id": "robotics",
+      "label": "机器人",
+      "aliases": [
+        "机器人软件"
+      ],
+      "parent": null
+    },
+    {
+      "id": "autonomous-driving",
+      "label": "自动驾驶",
+      "aliases": [
+        "自动驾驶研发"
+      ],
+      "parent": null
+    },
+    {
+      "id": "game",
+      "label": "游戏研发",
+      "aliases": [
+        "游戏开发"
+      ],
+      "parent": null
+    },
+    {
+      "id": "game.client",
+      "label": "游戏客户端",
+      "aliases": [
+        "游戏客户端开发"
+      ],
+      "parent": "game"
+    },
+    {
+      "id": "game.server",
+      "label": "游戏服务端",
+      "aliases": [
+        "游戏服务器开发"
+      ],
+      "parent": "game"
+    },
+    {
+      "id": "graphics",
+      "label": "图形渲染",
+      "aliases": [
+        "图形学工程师"
+      ],
+      "parent": null
+    },
+    {
+      "id": "desktop",
+      "label": "桌面客户端",
+      "aliases": [
+        "桌面开发"
+      ],
+      "parent": null
+    },
+    {
+      "id": "systems",
+      "label": "系统软件",
+      "aliases": [
+        "操作系统研发"
+      ],
+      "parent": null
+    },
+    {
+      "id": "compiler",
+      "label": "编译器研发",
+      "aliases": [
+        "编译器工程师"
+      ],
+      "parent": null
+    },
+    {
+      "id": "network-engineering",
+      "label": "网络工程",
+      "aliases": [
+        "网络工程师"
+      ],
+      "parent": null
+    },
+    {
+      "id": "hardware",
+      "label": "硬件研发",
+      "aliases": [
+        "硬件工程师"
+      ],
+      "parent": null
+    },
+    {
+      "id": "chip-design",
+      "label": "芯片设计",
+      "aliases": [
+        "IC设计"
+      ],
+      "parent": null
+    },
+    {
+      "id": "product",
+      "label": "产品",
+      "aliases": [
+        "产品经理"
+      ],
+      "parent": null
+    },
+    {
+      "id": "design",
+      "label": "设计",
+      "aliases": [
+        "UX设计",
+        "UI设计"
+      ],
+      "parent": null
+    },
+    {
+      "id": "technical-support",
+      "label": "技术支持",
+      "aliases": [
+        "技术支持工程师"
+      ],
+      "parent": null
+    },
+    {
+      "id": "solutions",
+      "label": "解决方案",
+      "aliases": [
+        "解决方案架构师"
+      ],
+      "parent": null
+    },
+    {
+      "id": "technical-program",
+      "label": "技术项目管理",
+      "aliases": [
+        "技术项目经理"
+      ],
+      "parent": null
+    }
+  ],
+  "domains": [
+    {
+      "id": "computer-science",
+      "label": "计算机基础",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "computer-science.algorithm",
+      "label": "算法与复杂度",
+      "aliases": [
+        "算法基础"
+      ],
+      "parent": "computer-science"
+    },
+    {
+      "id": "computer-science.data-structure",
+      "label": "数据结构",
+      "aliases": [],
+      "parent": "computer-science"
+    },
+    {
+      "id": "computer-science.operating-system",
+      "label": "操作系统",
+      "aliases": [
+        "OS"
+      ],
+      "parent": "computer-science"
+    },
+    {
+      "id": "computer-science.network",
+      "label": "计算机网络",
+      "aliases": [
+        "网络基础"
+      ],
+      "parent": "computer-science"
+    },
+    {
+      "id": "computer-science.architecture",
+      "label": "计算机体系结构",
+      "aliases": [],
+      "parent": "computer-science"
+    },
+    {
+      "id": "computer-science.concurrency",
+      "label": "并发编程",
+      "aliases": [
+        "并发"
+      ],
+      "parent": "computer-science"
+    },
+    {
+      "id": "computer-science.compiler",
+      "label": "编译原理",
+      "aliases": [
+        "编译器"
+      ],
+      "parent": "computer-science"
+    },
+    {
+      "id": "computer-science.programming-language",
+      "label": "编程语言原理",
+      "aliases": [],
+      "parent": "computer-science"
+    },
+    {
+      "id": "computer-science.math",
+      "label": "数学与概率统计",
+      "aliases": [],
+      "parent": "computer-science"
+    },
+    {
+      "id": "computer-science.oop",
+      "label": "面向对象",
+      "aliases": [
+        "OOP"
+      ],
+      "parent": "computer-science"
+    },
+    {
+      "id": "backend",
+      "label": "后端技术",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "backend.database",
+      "label": "数据库",
+      "aliases": [
+        "Database"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.database.relational",
+      "label": "关系型数据库",
+      "aliases": [],
+      "parent": "backend.database"
+    },
+    {
+      "id": "backend.database.index",
+      "label": "数据库索引",
+      "aliases": [
+        "索引"
+      ],
+      "parent": "backend.database"
+    },
+    {
+      "id": "backend.database.transaction",
+      "label": "数据库事务",
+      "aliases": [
+        "事务隔离"
+      ],
+      "parent": "backend.database"
+    },
+    {
+      "id": "backend.database.optimization",
+      "label": "SQL优化",
+      "aliases": [
+        "查询优化"
+      ],
+      "parent": "backend.database"
+    },
+    {
+      "id": "backend.database.replication",
+      "label": "数据库复制",
+      "aliases": [
+        "主从复制"
+      ],
+      "parent": "backend.database"
+    },
+    {
+      "id": "backend.database.sharding",
+      "label": "分库分表",
+      "aliases": [
+        "数据库分片"
+      ],
+      "parent": "backend.database"
+    },
+    {
+      "id": "backend.database.nosql",
+      "label": "NoSQL数据库",
+      "aliases": [
+        "非关系型数据库"
+      ],
+      "parent": "backend.database"
+    },
+    {
+      "id": "backend.database.vector",
+      "label": "向量数据库",
+      "aliases": [],
+      "parent": "backend.database"
+    },
+    {
+      "id": "backend.database.graph",
+      "label": "图数据库",
+      "aliases": [],
+      "parent": "backend.database"
+    },
+    {
+      "id": "backend.database.timeseries",
+      "label": "时序数据库",
+      "aliases": [],
+      "parent": "backend.database"
+    },
+    {
+      "id": "backend.database.storage-engine",
+      "label": "存储引擎",
+      "aliases": [
+        "数据库内核"
+      ],
+      "parent": "backend.database"
+    },
+    {
+      "id": "backend.cache",
+      "label": "缓存",
+      "aliases": [
+        "Caching"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.cache.consistency",
+      "label": "缓存一致性",
+      "aliases": [],
+      "parent": "backend.cache"
+    },
+    {
+      "id": "backend.cache.eviction",
+      "label": "缓存淘汰",
+      "aliases": [],
+      "parent": "backend.cache"
+    },
+    {
+      "id": "backend.message-queue",
+      "label": "消息队列",
+      "aliases": [
+        "MQ"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.distributed-system",
+      "label": "分布式系统",
+      "aliases": [
+        "分布式"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.distributed-system.consensus",
+      "label": "分布式共识",
+      "aliases": [
+        "共识算法"
+      ],
+      "parent": "backend.distributed-system"
+    },
+    {
+      "id": "backend.distributed-system.transaction",
+      "label": "分布式事务",
+      "aliases": [],
+      "parent": "backend.distributed-system"
+    },
+    {
+      "id": "backend.distributed-system.idempotency",
+      "label": "幂等与重试",
+      "aliases": [
+        "幂等"
+      ],
+      "parent": "backend.distributed-system"
+    },
+    {
+      "id": "backend.microservices",
+      "label": "微服务",
+      "aliases": [],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.system-design",
+      "label": "后端系统设计",
+      "aliases": [
+        "系统设计"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.api",
+      "label": "API设计",
+      "aliases": [
+        "接口设计"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.authentication",
+      "label": "认证与授权",
+      "aliases": [
+        "身份认证"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.rpc",
+      "label": "远程调用",
+      "aliases": [
+        "RPC"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.search",
+      "label": "搜索引擎",
+      "aliases": [
+        "全文检索"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.scheduling",
+      "label": "任务调度",
+      "aliases": [
+        "定时任务"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.performance",
+      "label": "后端性能优化",
+      "aliases": [],
+      "parent": "backend"
+    },
+    {
+      "id": "backend.jvm",
+      "label": "JVM",
+      "aliases": [
+        "Java虚拟机"
+      ],
+      "parent": "backend"
+    },
+    {
+      "id": "frontend",
+      "label": "前端技术",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "frontend.javascript",
+      "label": "JavaScript语言",
+      "aliases": [],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.typescript",
+      "label": "TypeScript语言",
+      "aliases": [],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.browser",
+      "label": "浏览器",
+      "aliases": [
+        "浏览器原理"
+      ],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.browser.rendering",
+      "label": "浏览器渲染",
+      "aliases": [
+        "页面渲染"
+      ],
+      "parent": "frontend.browser"
+    },
+    {
+      "id": "frontend.browser.event-loop",
+      "label": "事件循环",
+      "aliases": [
+        "Event Loop"
+      ],
+      "parent": "frontend.browser"
+    },
+    {
+      "id": "frontend.css",
+      "label": "CSS与布局",
+      "aliases": [
+        "CSS布局"
+      ],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.html",
+      "label": "HTML与语义化",
+      "aliases": [],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.react",
+      "label": "React开发",
+      "aliases": [],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.vue",
+      "label": "Vue开发",
+      "aliases": [],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.angular",
+      "label": "Angular开发",
+      "aliases": [],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.state-management",
+      "label": "前端状态管理",
+      "aliases": [],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.network",
+      "label": "前端网络请求",
+      "aliases": [
+        "跨域"
+      ],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.performance",
+      "label": "前端性能优化",
+      "aliases": [
+        "Web性能"
+      ],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.accessibility",
+      "label": "可访问性",
+      "aliases": [
+        "无障碍"
+      ],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.security",
+      "label": "前端安全",
+      "aliases": [],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.testing",
+      "label": "前端测试",
+      "aliases": [],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.build",
+      "label": "构建与工程化",
+      "aliases": [
+        "前端构建"
+      ],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.ssr",
+      "label": "服务端渲染与水合",
+      "aliases": [
+        "SSR",
+        "Hydration"
+      ],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.micro-frontends",
+      "label": "微前端",
+      "aliases": [],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.system-design",
+      "label": "前端系统设计",
+      "aliases": [],
+      "parent": "frontend"
+    },
+    {
+      "id": "frontend.visualization",
+      "label": "数据可视化",
+      "aliases": [],
+      "parent": "frontend"
+    },
+    {
+      "id": "ai",
+      "label": "人工智能",
+      "aliases": [
+        "AI"
+      ],
+      "parent": null
+    },
+    {
+      "id": "ai.llm",
+      "label": "大语言模型",
+      "aliases": [
+        "LLM",
+        "大模型"
+      ],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.transformer",
+      "label": "Transformer架构",
+      "aliases": [],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.embedding",
+      "label": "嵌入与表征",
+      "aliases": [
+        "Embedding"
+      ],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.rag",
+      "label": "检索增强生成",
+      "aliases": [
+        "RAG"
+      ],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.rag.chunking",
+      "label": "文档切分",
+      "aliases": [
+        "文本切块"
+      ],
+      "parent": "ai.rag"
+    },
+    {
+      "id": "ai.rag.retrieval",
+      "label": "检索策略",
+      "aliases": [
+        "混合检索"
+      ],
+      "parent": "ai.rag"
+    },
+    {
+      "id": "ai.rag.reranking",
+      "label": "重排序",
+      "aliases": [
+        "Reranking"
+      ],
+      "parent": "ai.rag"
+    },
+    {
+      "id": "ai.agent",
+      "label": "智能体",
+      "aliases": [
+        "Agent"
+      ],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.agent.tool-use",
+      "label": "工具调用",
+      "aliases": [
+        "Tool Calling",
+        "Function Calling"
+      ],
+      "parent": "ai.agent"
+    },
+    {
+      "id": "ai.agent.planning",
+      "label": "智能体规划",
+      "aliases": [],
+      "parent": "ai.agent"
+    },
+    {
+      "id": "ai.agent.memory",
+      "label": "智能体记忆",
+      "aliases": [],
+      "parent": "ai.agent"
+    },
+    {
+      "id": "ai.agent.workflow",
+      "label": "智能体工作流",
+      "aliases": [],
+      "parent": "ai.agent"
+    },
+    {
+      "id": "ai.agent.safety",
+      "label": "智能体安全",
+      "aliases": [
+        "提示注入防护"
+      ],
+      "parent": "ai.agent"
+    },
+    {
+      "id": "ai.agent.protocol",
+      "label": "智能体协议",
+      "aliases": [
+        "MCP协议",
+        "A2A协议"
+      ],
+      "parent": "ai.agent"
+    },
+    {
+      "id": "ai.multi-agent",
+      "label": "多智能体",
+      "aliases": [
+        "多Agent"
+      ],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.evaluation",
+      "label": "AI评估",
+      "aliases": [
+        "模型评估",
+        "Agent评估"
+      ],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.prompt-engineering",
+      "label": "提示工程",
+      "aliases": [
+        "Prompt Engineering"
+      ],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.fine-tuning",
+      "label": "模型微调",
+      "aliases": [
+        "Fine Tuning"
+      ],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.alignment",
+      "label": "模型对齐",
+      "aliases": [
+        "RLHF",
+        "DPO"
+      ],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.inference",
+      "label": "推理优化",
+      "aliases": [
+        "模型推理"
+      ],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.training",
+      "label": "模型训练",
+      "aliases": [
+        "分布式训练"
+      ],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.machine-learning",
+      "label": "机器学习基础",
+      "aliases": [
+        "机器学习"
+      ],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.deep-learning",
+      "label": "深度学习",
+      "aliases": [],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.nlp",
+      "label": "自然语言处理",
+      "aliases": [
+        "NLP"
+      ],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.vision",
+      "label": "计算机视觉",
+      "aliases": [
+        "CV"
+      ],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.speech",
+      "label": "语音处理",
+      "aliases": [],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.multimodal",
+      "label": "多模态",
+      "aliases": [],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.recommendation",
+      "label": "推荐系统",
+      "aliases": [],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.ranking",
+      "label": "排序与广告",
+      "aliases": [
+        "排序模型"
+      ],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.feature-engineering",
+      "label": "特征工程",
+      "aliases": [],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.reinforcement-learning",
+      "label": "强化学习",
+      "aliases": [
+        "RL"
+      ],
+      "parent": "ai"
+    },
+    {
+      "id": "data",
+      "label": "数据技术",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "data.etl",
+      "label": "ETL与数据集成",
+      "aliases": [
+        "ETL",
+        "ELT"
+      ],
+      "parent": "data"
+    },
+    {
+      "id": "data.batch",
+      "label": "批处理",
+      "aliases": [
+        "离线计算"
+      ],
+      "parent": "data"
+    },
+    {
+      "id": "data.streaming",
+      "label": "流处理",
+      "aliases": [
+        "实时计算"
+      ],
+      "parent": "data"
+    },
+    {
+      "id": "data.warehouse",
+      "label": "数据仓库",
+      "aliases": [
+        "数仓"
+      ],
+      "parent": "data"
+    },
+    {
+      "id": "data.lakehouse",
+      "label": "数据湖与湖仓",
+      "aliases": [
+        "湖仓一体"
+      ],
+      "parent": "data"
+    },
+    {
+      "id": "data.modeling",
+      "label": "数据建模",
+      "aliases": [
+        "维度建模"
+      ],
+      "parent": "data"
+    },
+    {
+      "id": "data.governance",
+      "label": "数据治理",
+      "aliases": [],
+      "parent": "data"
+    },
+    {
+      "id": "data.quality",
+      "label": "数据质量",
+      "aliases": [],
+      "parent": "data"
+    },
+    {
+      "id": "data.lineage",
+      "label": "数据血缘",
+      "aliases": [],
+      "parent": "data"
+    },
+    {
+      "id": "data.analytics",
+      "label": "数据分析",
+      "aliases": [
+        "统计分析"
+      ],
+      "parent": "data"
+    },
+    {
+      "id": "data.experimentation",
+      "label": "实验设计",
+      "aliases": [
+        "A/B测试"
+      ],
+      "parent": "data"
+    },
+    {
+      "id": "data.bi",
+      "label": "商业智能",
+      "aliases": [
+        "BI"
+      ],
+      "parent": "data"
+    },
+    {
+      "id": "cloud",
+      "label": "云与基础设施",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "cloud.containers",
+      "label": "容器",
+      "aliases": [
+        "容器技术"
+      ],
+      "parent": "cloud"
+    },
+    {
+      "id": "cloud.kubernetes",
+      "label": "Kubernetes编排",
+      "aliases": [
+        "K8s编排"
+      ],
+      "parent": "cloud"
+    },
+    {
+      "id": "cloud.networking",
+      "label": "云网络",
+      "aliases": [],
+      "parent": "cloud"
+    },
+    {
+      "id": "cloud.storage",
+      "label": "云存储",
+      "aliases": [],
+      "parent": "cloud"
+    },
+    {
+      "id": "cloud.serverless",
+      "label": "无服务器",
+      "aliases": [
+        "Serverless"
+      ],
+      "parent": "cloud"
+    },
+    {
+      "id": "cloud.iac",
+      "label": "基础设施即代码",
+      "aliases": [
+        "IaC"
+      ],
+      "parent": "cloud"
+    },
+    {
+      "id": "cloud.cicd",
+      "label": "持续集成与交付",
+      "aliases": [
+        "CI/CD"
+      ],
+      "parent": "cloud"
+    },
+    {
+      "id": "cloud.observability",
+      "label": "可观测性",
+      "aliases": [
+        "监控告警"
+      ],
+      "parent": "cloud"
+    },
+    {
+      "id": "cloud.reliability",
+      "label": "可靠性工程",
+      "aliases": [
+        "SRE"
+      ],
+      "parent": "cloud"
+    },
+    {
+      "id": "cloud.incident",
+      "label": "故障处理",
+      "aliases": [
+        "应急响应"
+      ],
+      "parent": "cloud"
+    },
+    {
+      "id": "cloud.capacity",
+      "label": "容量与成本",
+      "aliases": [
+        "容量规划"
+      ],
+      "parent": "cloud"
+    },
+    {
+      "id": "cloud.mlops",
+      "label": "MLOps",
+      "aliases": [],
+      "parent": "cloud"
+    },
+    {
+      "id": "security",
+      "label": "信息安全",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "security.web",
+      "label": "Web安全",
+      "aliases": [],
+      "parent": "security"
+    },
+    {
+      "id": "security.application",
+      "label": "应用安全",
+      "aliases": [],
+      "parent": "security"
+    },
+    {
+      "id": "security.network",
+      "label": "网络安全",
+      "aliases": [],
+      "parent": "security"
+    },
+    {
+      "id": "security.cryptography",
+      "label": "密码学",
+      "aliases": [
+        "加密"
+      ],
+      "parent": "security"
+    },
+    {
+      "id": "security.identity",
+      "label": "身份与访问控制",
+      "aliases": [
+        "IAM"
+      ],
+      "parent": "security"
+    },
+    {
+      "id": "security.cloud",
+      "label": "云安全",
+      "aliases": [],
+      "parent": "security"
+    },
+    {
+      "id": "security.data",
+      "label": "数据安全",
+      "aliases": [],
+      "parent": "security"
+    },
+    {
+      "id": "security.supply-chain",
+      "label": "供应链安全",
+      "aliases": [],
+      "parent": "security"
+    },
+    {
+      "id": "security.audit",
+      "label": "安全审计",
+      "aliases": [],
+      "parent": "security"
+    },
+    {
+      "id": "testing",
+      "label": "测试工程",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "testing.unit",
+      "label": "单元测试",
+      "aliases": [],
+      "parent": "testing"
+    },
+    {
+      "id": "testing.integration",
+      "label": "集成测试",
+      "aliases": [],
+      "parent": "testing"
+    },
+    {
+      "id": "testing.e2e",
+      "label": "端到端测试",
+      "aliases": [
+        "E2E"
+      ],
+      "parent": "testing"
+    },
+    {
+      "id": "testing.automation",
+      "label": "自动化测试",
+      "aliases": [],
+      "parent": "testing"
+    },
+    {
+      "id": "testing.performance",
+      "label": "性能测试",
+      "aliases": [
+        "压力测试"
+      ],
+      "parent": "testing"
+    },
+    {
+      "id": "testing.quality",
+      "label": "质量保障",
+      "aliases": [],
+      "parent": "testing"
+    },
+    {
+      "id": "mobile",
+      "label": "移动技术",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "mobile.android",
+      "label": "Android平台",
+      "aliases": [],
+      "parent": "mobile"
+    },
+    {
+      "id": "mobile.ios",
+      "label": "iOS平台",
+      "aliases": [],
+      "parent": "mobile"
+    },
+    {
+      "id": "mobile.cross-platform",
+      "label": "移动跨平台",
+      "aliases": [],
+      "parent": "mobile"
+    },
+    {
+      "id": "mobile.performance",
+      "label": "移动性能",
+      "aliases": [],
+      "parent": "mobile"
+    },
+    {
+      "id": "mobile.lifecycle",
+      "label": "移动生命周期",
+      "aliases": [],
+      "parent": "mobile"
+    },
+    {
+      "id": "systems",
+      "label": "系统工程",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "systems.linux",
+      "label": "Linux系统",
+      "aliases": [],
+      "parent": "systems"
+    },
+    {
+      "id": "systems.embedded",
+      "label": "嵌入式系统",
+      "aliases": [],
+      "parent": "systems"
+    },
+    {
+      "id": "systems.rtos",
+      "label": "实时操作系统",
+      "aliases": [
+        "RTOS"
+      ],
+      "parent": "systems"
+    },
+    {
+      "id": "systems.driver",
+      "label": "驱动开发",
+      "aliases": [],
+      "parent": "systems"
+    },
+    {
+      "id": "systems.storage",
+      "label": "存储系统",
+      "aliases": [
+        "文件系统"
+      ],
+      "parent": "systems"
+    },
+    {
+      "id": "systems.networking",
+      "label": "网络编程",
+      "aliases": [],
+      "parent": "systems"
+    },
+    {
+      "id": "systems.compiler",
+      "label": "编译器优化",
+      "aliases": [],
+      "parent": "systems"
+    },
+    {
+      "id": "hardware",
+      "label": "硬件技术",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "hardware.digital",
+      "label": "数字电路",
+      "aliases": [],
+      "parent": "hardware"
+    },
+    {
+      "id": "hardware.analog",
+      "label": "模拟电路",
+      "aliases": [],
+      "parent": "hardware"
+    },
+    {
+      "id": "hardware.chip",
+      "label": "芯片与验证",
+      "aliases": [
+        "IC验证"
+      ],
+      "parent": "hardware"
+    },
+    {
+      "id": "hardware.communication",
+      "label": "通信技术",
+      "aliases": [],
+      "parent": "hardware"
+    },
+    {
+      "id": "robotics",
+      "label": "机器人技术",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "robotics.control",
+      "label": "控制理论",
+      "aliases": [],
+      "parent": "robotics"
+    },
+    {
+      "id": "robotics.slam",
+      "label": "定位与建图",
+      "aliases": [
+        "SLAM"
+      ],
+      "parent": "robotics"
+    },
+    {
+      "id": "robotics.planning",
+      "label": "路径规划",
+      "aliases": [],
+      "parent": "robotics"
+    },
+    {
+      "id": "game",
+      "label": "游戏技术",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "game.engine",
+      "label": "游戏引擎",
+      "aliases": [],
+      "parent": "game"
+    },
+    {
+      "id": "game.network",
+      "label": "游戏网络同步",
+      "aliases": [
+        "帧同步"
+      ],
+      "parent": "game"
+    },
+    {
+      "id": "graphics",
+      "label": "图形学",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "graphics.rendering",
+      "label": "渲染",
+      "aliases": [
+        "实时渲染"
+      ],
+      "parent": "graphics"
+    },
+    {
+      "id": "graphics.geometry",
+      "label": "几何计算",
+      "aliases": [],
+      "parent": "graphics"
+    },
+    {
+      "id": "engineering",
+      "label": "软件工程",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "engineering.design-pattern",
+      "label": "设计模式",
+      "aliases": [],
+      "parent": "engineering"
+    },
+    {
+      "id": "engineering.architecture",
+      "label": "软件架构",
+      "aliases": [],
+      "parent": "engineering"
+    },
+    {
+      "id": "engineering.git",
+      "label": "版本控制",
+      "aliases": [
+        "Git工作流"
+      ],
+      "parent": "engineering"
+    },
+    {
+      "id": "engineering.clean-code",
+      "label": "代码质量",
+      "aliases": [
+        "重构"
+      ],
+      "parent": "engineering"
+    },
+    {
+      "id": "engineering.requirements",
+      "label": "需求分析",
+      "aliases": [],
+      "parent": "engineering"
+    },
+    {
+      "id": "engineering.collaboration",
+      "label": "工程协作",
+      "aliases": [],
+      "parent": "engineering"
+    },
+    {
+      "id": "product",
+      "label": "产品与业务",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "product.discovery",
+      "label": "产品需求与用户研究",
+      "aliases": [],
+      "parent": "product"
+    },
+    {
+      "id": "product.metrics",
+      "label": "产品指标",
+      "aliases": [],
+      "parent": "product"
+    },
+    {
+      "id": "product.growth",
+      "label": "增长",
+      "aliases": [],
+      "parent": "product"
+    },
+    {
+      "id": "product.business",
+      "label": "商业分析",
+      "aliases": [],
+      "parent": "product"
+    },
+    {
+      "id": "design",
+      "label": "用户体验设计",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "design.interaction",
+      "label": "交互设计",
+      "aliases": [],
+      "parent": "design"
+    },
+    {
+      "id": "design.visual",
+      "label": "视觉设计",
+      "aliases": [],
+      "parent": "design"
+    },
+    {
+      "id": "career",
+      "label": "通用面试",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "career.project",
+      "label": "项目经验",
+      "aliases": [],
+      "parent": "career"
+    },
+    {
+      "id": "career.behavioral",
+      "label": "行为与协作",
+      "aliases": [],
+      "parent": "career"
+    },
+    {
+      "id": "career.leadership",
+      "label": "领导力",
+      "aliases": [],
+      "parent": "career"
+    }
+  ],
+  "technologies": [
+    {
+      "id": "javascript",
+      "label": "JavaScript",
+      "aliases": [
+        "JS"
+      ]
+    },
+    {
+      "id": "typescript",
+      "label": "TypeScript",
+      "aliases": [
+        "TS"
+      ]
+    },
+    {
+      "id": "java",
+      "label": "Java",
+      "aliases": []
+    },
+    {
+      "id": "python",
+      "label": "Python",
+      "aliases": []
+    },
+    {
+      "id": "go",
+      "label": "Go",
+      "aliases": [
+        "Golang"
+      ]
+    },
+    {
+      "id": "rust",
+      "label": "Rust",
+      "aliases": []
+    },
+    {
+      "id": "c",
+      "label": "C",
+      "aliases": []
+    },
+    {
+      "id": "c++",
+      "label": "C++",
+      "aliases": [
+        "CPP"
+      ]
+    },
+    {
+      "id": "c#",
+      "label": "C#",
+      "aliases": [
+        "CSharp"
+      ]
+    },
+    {
+      "id": "kotlin",
+      "label": "Kotlin",
+      "aliases": []
+    },
+    {
+      "id": "swift",
+      "label": "Swift",
+      "aliases": []
+    },
+    {
+      "id": "objective-c",
+      "label": "Objective-C",
+      "aliases": [
+        "ObjC"
+      ]
+    },
+    {
+      "id": "dart",
+      "label": "Dart",
+      "aliases": []
+    },
+    {
+      "id": "php",
+      "label": "PHP",
+      "aliases": []
+    },
+    {
+      "id": "ruby",
+      "label": "Ruby",
+      "aliases": []
+    },
+    {
+      "id": "scala",
+      "label": "Scala",
+      "aliases": []
+    },
+    {
+      "id": "r",
+      "label": "R语言",
+      "aliases": [
+        "R"
+      ]
+    },
+    {
+      "id": "sql",
+      "label": "SQL",
+      "aliases": []
+    },
+    {
+      "id": "bash",
+      "label": "Bash",
+      "aliases": []
+    },
+    {
+      "id": "powershell",
+      "label": "PowerShell",
+      "aliases": [
+        "pwsh"
+      ]
+    },
+    {
+      "id": "html",
+      "label": "HTML",
+      "aliases": []
+    },
+    {
+      "id": "css",
+      "label": "CSS",
+      "aliases": []
+    },
+    {
+      "id": "react",
+      "label": "React",
+      "aliases": [
+        "React.js",
+        "ReactJS"
+      ]
+    },
+    {
+      "id": "vue",
+      "label": "Vue",
+      "aliases": [
+        "Vue.js",
+        "VueJS"
+      ]
+    },
+    {
+      "id": "angular",
+      "label": "Angular",
+      "aliases": []
+    },
+    {
+      "id": "svelte",
+      "label": "Svelte",
+      "aliases": []
+    },
+    {
+      "id": "next.js",
+      "label": "Next.js",
+      "aliases": [
+        "NextJS"
+      ]
+    },
+    {
+      "id": "nuxt",
+      "label": "Nuxt",
+      "aliases": [
+        "Nuxt.js",
+        "NuxtJS"
+      ]
+    },
+    {
+      "id": "node.js",
+      "label": "Node.js",
+      "aliases": [
+        "NodeJS",
+        "Node"
+      ]
+    },
+    {
+      "id": "deno",
+      "label": "Deno",
+      "aliases": []
+    },
+    {
+      "id": "bun",
+      "label": "Bun",
+      "aliases": []
+    },
+    {
+      "id": "express",
+      "label": "Express",
+      "aliases": [
+        "Express.js"
+      ]
+    },
+    {
+      "id": "nestjs",
+      "label": "NestJS",
+      "aliases": [
+        "Nest.js"
+      ]
+    },
+    {
+      "id": "fastify",
+      "label": "Fastify",
+      "aliases": []
+    },
+    {
+      "id": "vite",
+      "label": "Vite",
+      "aliases": []
+    },
+    {
+      "id": "webpack",
+      "label": "Webpack",
+      "aliases": []
+    },
+    {
+      "id": "rollup",
+      "label": "Rollup",
+      "aliases": []
+    },
+    {
+      "id": "esbuild",
+      "label": "esbuild",
+      "aliases": []
+    },
+    {
+      "id": "babel",
+      "label": "Babel",
+      "aliases": []
+    },
+    {
+      "id": "tailwindcss",
+      "label": "Tailwind CSS",
+      "aliases": [
+        "Tailwind"
+      ]
+    },
+    {
+      "id": "sass",
+      "label": "Sass",
+      "aliases": [
+        "SCSS"
+      ]
+    },
+    {
+      "id": "redux",
+      "label": "Redux",
+      "aliases": []
+    },
+    {
+      "id": "pinia",
+      "label": "Pinia",
+      "aliases": []
+    },
+    {
+      "id": "zustand",
+      "label": "Zustand",
+      "aliases": []
+    },
+    {
+      "id": "rxjs",
+      "label": "RxJS",
+      "aliases": []
+    },
+    {
+      "id": "vitest",
+      "label": "Vitest",
+      "aliases": []
+    },
+    {
+      "id": "jest",
+      "label": "Jest",
+      "aliases": []
+    },
+    {
+      "id": "playwright",
+      "label": "Playwright",
+      "aliases": []
+    },
+    {
+      "id": "cypress",
+      "label": "Cypress",
+      "aliases": []
+    },
+    {
+      "id": "spring",
+      "label": "Spring",
+      "aliases": []
+    },
+    {
+      "id": "spring-boot",
+      "label": "Spring Boot",
+      "aliases": [
+        "SpringBoot"
+      ]
+    },
+    {
+      "id": "spring-cloud",
+      "label": "Spring Cloud",
+      "aliases": [
+        "SpringCloud"
+      ]
+    },
+    {
+      "id": "mybatis",
+      "label": "MyBatis",
+      "aliases": []
+    },
+    {
+      "id": "hibernate",
+      "label": "Hibernate",
+      "aliases": []
+    },
+    {
+      "id": "quarkus",
+      "label": "Quarkus",
+      "aliases": []
+    },
+    {
+      "id": "django",
+      "label": "Django",
+      "aliases": []
+    },
+    {
+      "id": "flask",
+      "label": "Flask",
+      "aliases": []
+    },
+    {
+      "id": "fastapi",
+      "label": "FastAPI",
+      "aliases": []
+    },
+    {
+      "id": "sqlalchemy",
+      "label": "SQLAlchemy",
+      "aliases": []
+    },
+    {
+      "id": "pydantic",
+      "label": "Pydantic",
+      "aliases": []
+    },
+    {
+      "id": "celery",
+      "label": "Celery",
+      "aliases": []
+    },
+    {
+      "id": "gin",
+      "label": "Gin",
+      "aliases": []
+    },
+    {
+      "id": "grpc",
+      "label": "gRPC",
+      "aliases": []
+    },
+    {
+      "id": "protobuf",
+      "label": "Protocol Buffers",
+      "aliases": [
+        "Protobuf"
+      ]
+    },
+    {
+      "id": ".net",
+      "label": ".NET",
+      "aliases": [
+        "DotNet"
+      ]
+    },
+    {
+      "id": "asp.net-core",
+      "label": "ASP.NET Core",
+      "aliases": [
+        "ASPNetCore"
+      ]
+    },
+    {
+      "id": "entity-framework",
+      "label": "Entity Framework",
+      "aliases": [
+        "EF Core"
+      ]
+    },
+    {
+      "id": "laravel",
+      "label": "Laravel",
+      "aliases": []
+    },
+    {
+      "id": "rails",
+      "label": "Ruby on Rails",
+      "aliases": [
+        "Rails"
+      ]
+    },
+    {
+      "id": "mysql",
+      "label": "MySQL",
+      "aliases": []
+    },
+    {
+      "id": "postgresql",
+      "label": "PostgreSQL",
+      "aliases": [
+        "Postgres"
+      ]
+    },
+    {
+      "id": "sqlite",
+      "label": "SQLite",
+      "aliases": []
+    },
+    {
+      "id": "oracle-database",
+      "label": "Oracle Database",
+      "aliases": [
+        "Oracle DB"
+      ]
+    },
+    {
+      "id": "sql-server",
+      "label": "SQL Server",
+      "aliases": [
+        "MSSQL"
+      ]
+    },
+    {
+      "id": "mariadb",
+      "label": "MariaDB",
+      "aliases": []
+    },
+    {
+      "id": "tidb",
+      "label": "TiDB",
+      "aliases": []
+    },
+    {
+      "id": "oceanbase",
+      "label": "OceanBase",
+      "aliases": []
+    },
+    {
+      "id": "redis",
+      "label": "Redis",
+      "aliases": []
+    },
+    {
+      "id": "memcached",
+      "label": "Memcached",
+      "aliases": []
+    },
+    {
+      "id": "mongodb",
+      "label": "MongoDB",
+      "aliases": [
+        "Mongo"
+      ]
+    },
+    {
+      "id": "cassandra",
+      "label": "Cassandra",
+      "aliases": []
+    },
+    {
+      "id": "dynamodb",
+      "label": "DynamoDB",
+      "aliases": []
+    },
+    {
+      "id": "elasticsearch",
+      "label": "Elasticsearch",
+      "aliases": [
+        "ElasticSearch",
+        "ES"
+      ]
+    },
+    {
+      "id": "opensearch",
+      "label": "OpenSearch",
+      "aliases": []
+    },
+    {
+      "id": "clickhouse",
+      "label": "ClickHouse",
+      "aliases": []
+    },
+    {
+      "id": "duckdb",
+      "label": "DuckDB",
+      "aliases": []
+    },
+    {
+      "id": "neo4j",
+      "label": "Neo4j",
+      "aliases": []
+    },
+    {
+      "id": "influxdb",
+      "label": "InfluxDB",
+      "aliases": []
+    },
+    {
+      "id": "timescaledb",
+      "label": "TimescaleDB",
+      "aliases": []
+    },
+    {
+      "id": "milvus",
+      "label": "Milvus",
+      "aliases": []
+    },
+    {
+      "id": "qdrant",
+      "label": "Qdrant",
+      "aliases": []
+    },
+    {
+      "id": "weaviate",
+      "label": "Weaviate",
+      "aliases": []
+    },
+    {
+      "id": "chroma",
+      "label": "Chroma",
+      "aliases": [
+        "ChromaDB"
+      ]
+    },
+    {
+      "id": "pgvector",
+      "label": "pgvector",
+      "aliases": []
+    },
+    {
+      "id": "faiss",
+      "label": "FAISS",
+      "aliases": []
+    },
+    {
+      "id": "kafka",
+      "label": "Kafka",
+      "aliases": [
+        "Apache Kafka"
+      ]
+    },
+    {
+      "id": "rabbitmq",
+      "label": "RabbitMQ",
+      "aliases": []
+    },
+    {
+      "id": "rocketmq",
+      "label": "RocketMQ",
+      "aliases": []
+    },
+    {
+      "id": "pulsar",
+      "label": "Pulsar",
+      "aliases": []
+    },
+    {
+      "id": "nats",
+      "label": "NATS",
+      "aliases": []
+    },
+    {
+      "id": "zookeeper",
+      "label": "ZooKeeper",
+      "aliases": []
+    },
+    {
+      "id": "etcd",
+      "label": "etcd",
+      "aliases": []
+    },
+    {
+      "id": "consul",
+      "label": "Consul",
+      "aliases": []
+    },
+    {
+      "id": "nginx",
+      "label": "Nginx",
+      "aliases": []
+    },
+    {
+      "id": "envoy",
+      "label": "Envoy",
+      "aliases": []
+    },
+    {
+      "id": "haproxy",
+      "label": "HAProxy",
+      "aliases": []
+    },
+    {
+      "id": "docker",
+      "label": "Docker",
+      "aliases": []
+    },
+    {
+      "id": "containerd",
+      "label": "containerd",
+      "aliases": []
+    },
+    {
+      "id": "kubernetes",
+      "label": "Kubernetes",
+      "aliases": [
+        "K8s"
+      ]
+    },
+    {
+      "id": "helm",
+      "label": "Helm",
+      "aliases": []
+    },
+    {
+      "id": "istio",
+      "label": "Istio",
+      "aliases": []
+    },
+    {
+      "id": "terraform",
+      "label": "Terraform",
+      "aliases": []
+    },
+    {
+      "id": "ansible",
+      "label": "Ansible",
+      "aliases": []
+    },
+    {
+      "id": "pulumi",
+      "label": "Pulumi",
+      "aliases": []
+    },
+    {
+      "id": "jenkins",
+      "label": "Jenkins",
+      "aliases": []
+    },
+    {
+      "id": "github-actions",
+      "label": "GitHub Actions",
+      "aliases": []
+    },
+    {
+      "id": "gitlab-ci",
+      "label": "GitLab CI",
+      "aliases": []
+    },
+    {
+      "id": "argocd",
+      "label": "Argo CD",
+      "aliases": [
+        "ArgoCD"
+      ]
+    },
+    {
+      "id": "prometheus",
+      "label": "Prometheus",
+      "aliases": []
+    },
+    {
+      "id": "grafana",
+      "label": "Grafana",
+      "aliases": []
+    },
+    {
+      "id": "opentelemetry",
+      "label": "OpenTelemetry",
+      "aliases": [
+        "OTel"
+      ]
+    },
+    {
+      "id": "jaeger",
+      "label": "Jaeger",
+      "aliases": []
+    },
+    {
+      "id": "loki",
+      "label": "Loki",
+      "aliases": []
+    },
+    {
+      "id": "linux",
+      "label": "Linux",
+      "aliases": []
+    },
+    {
+      "id": "windows",
+      "label": "Windows",
+      "aliases": []
+    },
+    {
+      "id": "android",
+      "label": "Android",
+      "aliases": []
+    },
+    {
+      "id": "ios",
+      "label": "iOS",
+      "aliases": []
+    },
+    {
+      "id": "flutter",
+      "label": "Flutter",
+      "aliases": []
+    },
+    {
+      "id": "react-native",
+      "label": "React Native",
+      "aliases": [
+        "ReactNative"
+      ]
+    },
+    {
+      "id": "jetpack-compose",
+      "label": "Jetpack Compose",
+      "aliases": []
+    },
+    {
+      "id": "swiftui",
+      "label": "SwiftUI",
+      "aliases": []
+    },
+    {
+      "id": "electron",
+      "label": "Electron",
+      "aliases": []
+    },
+    {
+      "id": "tauri",
+      "label": "Tauri",
+      "aliases": []
+    },
+    {
+      "id": "qt",
+      "label": "Qt",
+      "aliases": []
+    },
+    {
+      "id": "pytorch",
+      "label": "PyTorch",
+      "aliases": [
+        "Torch"
+      ]
+    },
+    {
+      "id": "tensorflow",
+      "label": "TensorFlow",
+      "aliases": [
+        "TF"
+      ]
+    },
+    {
+      "id": "jax",
+      "label": "JAX",
+      "aliases": []
+    },
+    {
+      "id": "scikit-learn",
+      "label": "scikit-learn",
+      "aliases": [
+        "Sklearn"
+      ]
+    },
+    {
+      "id": "xgboost",
+      "label": "XGBoost",
+      "aliases": []
+    },
+    {
+      "id": "lightgbm",
+      "label": "LightGBM",
+      "aliases": []
+    },
+    {
+      "id": "pandas",
+      "label": "pandas",
+      "aliases": []
+    },
+    {
+      "id": "numpy",
+      "label": "NumPy",
+      "aliases": []
+    },
+    {
+      "id": "polars",
+      "label": "Polars",
+      "aliases": []
+    },
+    {
+      "id": "transformers",
+      "label": "Hugging Face Transformers",
+      "aliases": [
+        "HF Transformers"
+      ]
+    },
+    {
+      "id": "langchain",
+      "label": "LangChain",
+      "aliases": []
+    },
+    {
+      "id": "langgraph",
+      "label": "LangGraph",
+      "aliases": []
+    },
+    {
+      "id": "llamaindex",
+      "label": "LlamaIndex",
+      "aliases": [
+        "Llama Index"
+      ]
+    },
+    {
+      "id": "dspy",
+      "label": "DSPy",
+      "aliases": []
+    },
+    {
+      "id": "autogen",
+      "label": "AutoGen",
+      "aliases": []
+    },
+    {
+      "id": "crewai",
+      "label": "CrewAI",
+      "aliases": []
+    },
+    {
+      "id": "semantic-kernel",
+      "label": "Semantic Kernel",
+      "aliases": []
+    },
+    {
+      "id": "vllm",
+      "label": "vLLM",
+      "aliases": []
+    },
+    {
+      "id": "sglang",
+      "label": "SGLang",
+      "aliases": []
+    },
+    {
+      "id": "ollama",
+      "label": "Ollama",
+      "aliases": []
+    },
+    {
+      "id": "llama.cpp",
+      "label": "llama.cpp",
+      "aliases": [
+        "llamacpp"
+      ]
+    },
+    {
+      "id": "tensorrt",
+      "label": "TensorRT",
+      "aliases": []
+    },
+    {
+      "id": "onnx",
+      "label": "ONNX",
+      "aliases": []
+    },
+    {
+      "id": "onnx-runtime",
+      "label": "ONNX Runtime",
+      "aliases": []
+    },
+    {
+      "id": "triton-inference-server",
+      "label": "Triton Inference Server",
+      "aliases": []
+    },
+    {
+      "id": "deepspeed",
+      "label": "DeepSpeed",
+      "aliases": []
+    },
+    {
+      "id": "ray",
+      "label": "Ray",
+      "aliases": []
+    },
+    {
+      "id": "mlflow",
+      "label": "MLflow",
+      "aliases": []
+    },
+    {
+      "id": "kubeflow",
+      "label": "Kubeflow",
+      "aliases": []
+    },
+    {
+      "id": "mcp",
+      "label": "Model Context Protocol",
+      "aliases": [
+        "MCP"
+      ]
+    },
+    {
+      "id": "a2a",
+      "label": "Agent2Agent",
+      "aliases": [
+        "A2A"
+      ]
+    },
+    {
+      "id": "spark",
+      "label": "Spark",
+      "aliases": [
+        "Apache Spark"
+      ]
+    },
+    {
+      "id": "flink",
+      "label": "Flink",
+      "aliases": [
+        "Apache Flink"
+      ]
+    },
+    {
+      "id": "hadoop",
+      "label": "Hadoop",
+      "aliases": []
+    },
+    {
+      "id": "hive",
+      "label": "Hive",
+      "aliases": []
+    },
+    {
+      "id": "hbase",
+      "label": "HBase",
+      "aliases": []
+    },
+    {
+      "id": "airflow",
+      "label": "Airflow",
+      "aliases": []
+    },
+    {
+      "id": "dagster",
+      "label": "Dagster",
+      "aliases": []
+    },
+    {
+      "id": "dbt",
+      "label": "dbt",
+      "aliases": []
+    },
+    {
+      "id": "iceberg",
+      "label": "Iceberg",
+      "aliases": [
+        "Apache Iceberg"
+      ]
+    },
+    {
+      "id": "hudi",
+      "label": "Hudi",
+      "aliases": [
+        "Apache Hudi"
+      ]
+    },
+    {
+      "id": "delta-lake",
+      "label": "Delta Lake",
+      "aliases": []
+    },
+    {
+      "id": "trino",
+      "label": "Trino",
+      "aliases": []
+    },
+    {
+      "id": "presto",
+      "label": "Presto",
+      "aliases": []
+    },
+    {
+      "id": "snowflake",
+      "label": "Snowflake",
+      "aliases": []
+    },
+    {
+      "id": "bigquery",
+      "label": "BigQuery",
+      "aliases": []
+    },
+    {
+      "id": "redshift",
+      "label": "Redshift",
+      "aliases": []
+    },
+    {
+      "id": "power-bi",
+      "label": "Power BI",
+      "aliases": [
+        "PowerBI"
+      ]
+    },
+    {
+      "id": "tableau",
+      "label": "Tableau",
+      "aliases": []
+    },
+    {
+      "id": "superset",
+      "label": "Superset",
+      "aliases": []
+    },
+    {
+      "id": "jupyter",
+      "label": "Jupyter",
+      "aliases": []
+    },
+    {
+      "id": "git",
+      "label": "Git",
+      "aliases": []
+    },
+    {
+      "id": "maven",
+      "label": "Maven",
+      "aliases": []
+    },
+    {
+      "id": "gradle",
+      "label": "Gradle",
+      "aliases": []
+    },
+    {
+      "id": "cmake",
+      "label": "CMake",
+      "aliases": []
+    },
+    {
+      "id": "gcc",
+      "label": "GCC",
+      "aliases": []
+    },
+    {
+      "id": "clang",
+      "label": "Clang",
+      "aliases": []
+    },
+    {
+      "id": "llvm",
+      "label": "LLVM",
+      "aliases": []
+    },
+    {
+      "id": "gdb",
+      "label": "GDB",
+      "aliases": []
+    },
+    {
+      "id": "pytest",
+      "label": "pytest",
+      "aliases": []
+    },
+    {
+      "id": "junit",
+      "label": "JUnit",
+      "aliases": []
+    },
+    {
+      "id": "selenium",
+      "label": "Selenium",
+      "aliases": []
+    },
+    {
+      "id": "jmeter",
+      "label": "JMeter",
+      "aliases": []
+    },
+    {
+      "id": "k6",
+      "label": "k6",
+      "aliases": []
+    },
+    {
+      "id": "locust",
+      "label": "Locust",
+      "aliases": []
+    },
+    {
+      "id": "postman",
+      "label": "Postman",
+      "aliases": []
+    },
+    {
+      "id": "http",
+      "label": "HTTP",
+      "aliases": []
+    },
+    {
+      "id": "http2",
+      "label": "HTTP/2",
+      "aliases": [
+        "HTTP2"
+      ]
+    },
+    {
+      "id": "http3",
+      "label": "HTTP/3",
+      "aliases": [
+        "HTTP3"
+      ]
+    },
+    {
+      "id": "tcp",
+      "label": "TCP",
+      "aliases": []
+    },
+    {
+      "id": "udp",
+      "label": "UDP",
+      "aliases": []
+    },
+    {
+      "id": "quic",
+      "label": "QUIC",
+      "aliases": []
+    },
+    {
+      "id": "dns",
+      "label": "DNS",
+      "aliases": []
+    },
+    {
+      "id": "tls",
+      "label": "TLS",
+      "aliases": []
+    },
+    {
+      "id": "oauth2",
+      "label": "OAuth 2.0",
+      "aliases": [
+        "OAuth2"
+      ]
+    },
+    {
+      "id": "openid-connect",
+      "label": "OpenID Connect",
+      "aliases": [
+        "OIDC"
+      ]
+    },
+    {
+      "id": "jwt",
+      "label": "JWT",
+      "aliases": []
+    },
+    {
+      "id": "graphql",
+      "label": "GraphQL",
+      "aliases": []
+    },
+    {
+      "id": "websocket",
+      "label": "WebSocket",
+      "aliases": []
+    },
+    {
+      "id": "webrtc",
+      "label": "WebRTC",
+      "aliases": []
+    },
+    {
+      "id": "mqtt",
+      "label": "MQTT",
+      "aliases": []
+    },
+    {
+      "id": "ros",
+      "label": "ROS",
+      "aliases": []
+    },
+    {
+      "id": "ros2",
+      "label": "ROS 2",
+      "aliases": [
+        "ROS2"
+      ]
+    },
+    {
+      "id": "freertos",
+      "label": "FreeRTOS",
+      "aliases": []
+    },
+    {
+      "id": "zephyr",
+      "label": "Zephyr",
+      "aliases": []
+    },
+    {
+      "id": "unity",
+      "label": "Unity",
+      "aliases": []
+    },
+    {
+      "id": "unreal-engine",
+      "label": "Unreal Engine",
+      "aliases": [
+        "UE"
+      ]
+    },
+    {
+      "id": "godot",
+      "label": "Godot",
+      "aliases": []
+    },
+    {
+      "id": "opengl",
+      "label": "OpenGL",
+      "aliases": []
+    },
+    {
+      "id": "vulkan",
+      "label": "Vulkan",
+      "aliases": []
+    },
+    {
+      "id": "directx",
+      "label": "DirectX",
+      "aliases": []
+    },
+    {
+      "id": "cuda",
+      "label": "CUDA",
+      "aliases": []
+    },
+    {
+      "id": "verilog",
+      "label": "Verilog",
+      "aliases": []
+    },
+    {
+      "id": "systemverilog",
+      "label": "SystemVerilog",
+      "aliases": []
+    },
+    {
+      "id": "vhdl",
+      "label": "VHDL",
+      "aliases": []
+    }
+  ],
+  "industries": [
+    {
+      "id": "internet",
+      "label": "互联网",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "internet.social",
+      "label": "社交与内容平台",
+      "aliases": [
+        "社交平台",
+        "内容平台"
+      ],
+      "parent": "internet"
+    },
+    {
+      "id": "internet.ecommerce",
+      "label": "电子商务",
+      "aliases": [
+        "电商"
+      ],
+      "parent": "internet"
+    },
+    {
+      "id": "internet.search",
+      "label": "搜索与信息服务",
+      "aliases": [],
+      "parent": "internet"
+    },
+    {
+      "id": "internet.local-services",
+      "label": "本地生活",
+      "aliases": [],
+      "parent": "internet"
+    },
+    {
+      "id": "internet.travel",
+      "label": "在线旅游",
+      "aliases": [
+        "OTA"
+      ],
+      "parent": "internet"
+    },
+    {
+      "id": "internet.recruiting",
+      "label": "招聘平台",
+      "aliases": [],
+      "parent": "internet"
+    },
+    {
+      "id": "software",
+      "label": "软件与IT服务",
+      "aliases": [
+        "软件行业"
+      ],
+      "parent": null
+    },
+    {
+      "id": "software.enterprise",
+      "label": "企业软件",
+      "aliases": [
+        "企业服务"
+      ],
+      "parent": "software"
+    },
+    {
+      "id": "software.saas",
+      "label": "SaaS服务",
+      "aliases": [
+        "SaaS"
+      ],
+      "parent": "software"
+    },
+    {
+      "id": "software.cloud",
+      "label": "云计算服务",
+      "aliases": [
+        "云计算"
+      ],
+      "parent": "software"
+    },
+    {
+      "id": "software.developer-tools",
+      "label": "开发者工具",
+      "aliases": [],
+      "parent": "software"
+    },
+    {
+      "id": "software.cybersecurity",
+      "label": "网络安全服务",
+      "aliases": [
+        "网安行业"
+      ],
+      "parent": "software"
+    },
+    {
+      "id": "software.consulting",
+      "label": "IT咨询",
+      "aliases": [
+        "技术咨询"
+      ],
+      "parent": "software"
+    },
+    {
+      "id": "software.outsourcing",
+      "label": "IT外包",
+      "aliases": [
+        "软件外包"
+      ],
+      "parent": "software"
+    },
+    {
+      "id": "ai",
+      "label": "人工智能产业",
+      "aliases": [
+        "AI行业"
+      ],
+      "parent": null
+    },
+    {
+      "id": "ai.foundation-models",
+      "label": "基础模型服务",
+      "aliases": [
+        "大模型厂商"
+      ],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.applications",
+      "label": "AI应用",
+      "aliases": [],
+      "parent": "ai"
+    },
+    {
+      "id": "ai.robotics",
+      "label": "智能机器人",
+      "aliases": [],
+      "parent": "ai"
+    },
+    {
+      "id": "finance",
+      "label": "金融",
+      "aliases": [
+        "金融业"
+      ],
+      "parent": null
+    },
+    {
+      "id": "finance.banking",
+      "label": "银行",
+      "aliases": [
+        "银行业"
+      ],
+      "parent": "finance"
+    },
+    {
+      "id": "finance.securities",
+      "label": "证券",
+      "aliases": [
+        "券商"
+      ],
+      "parent": "finance"
+    },
+    {
+      "id": "finance.insurance",
+      "label": "保险",
+      "aliases": [],
+      "parent": "finance"
+    },
+    {
+      "id": "finance.funds",
+      "label": "基金与资管",
+      "aliases": [
+        "资产管理"
+      ],
+      "parent": "finance"
+    },
+    {
+      "id": "finance.payments",
+      "label": "支付",
+      "aliases": [],
+      "parent": "finance"
+    },
+    {
+      "id": "finance.fintech",
+      "label": "金融科技",
+      "aliases": [
+        "FinTech"
+      ],
+      "parent": "finance"
+    },
+    {
+      "id": "finance.quant",
+      "label": "量化投资",
+      "aliases": [
+        "量化"
+      ],
+      "parent": "finance"
+    },
+    {
+      "id": "hardware",
+      "label": "硬件与电子",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "hardware.semiconductor",
+      "label": "半导体与芯片",
+      "aliases": [
+        "半导体",
+        "芯片"
+      ],
+      "parent": "hardware"
+    },
+    {
+      "id": "hardware.consumer",
+      "label": "消费电子",
+      "aliases": [],
+      "parent": "hardware"
+    },
+    {
+      "id": "hardware.computing",
+      "label": "计算设备",
+      "aliases": [
+        "服务器硬件"
+      ],
+      "parent": "hardware"
+    },
+    {
+      "id": "hardware.communication",
+      "label": "通信设备",
+      "aliases": [],
+      "parent": "hardware"
+    },
+    {
+      "id": "telecom",
+      "label": "电信运营",
+      "aliases": [
+        "电信运营商"
+      ],
+      "parent": null
+    },
+    {
+      "id": "manufacturing",
+      "label": "制造业",
+      "aliases": [
+        "工业"
+      ],
+      "parent": null
+    },
+    {
+      "id": "manufacturing.industrial",
+      "label": "工业设备",
+      "aliases": [
+        "工业自动化"
+      ],
+      "parent": "manufacturing"
+    },
+    {
+      "id": "manufacturing.electronics",
+      "label": "电子制造",
+      "aliases": [],
+      "parent": "manufacturing"
+    },
+    {
+      "id": "manufacturing.aerospace",
+      "label": "航空航天",
+      "aliases": [],
+      "parent": "manufacturing"
+    },
+    {
+      "id": "automotive",
+      "label": "汽车与出行",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "automotive.vehicle",
+      "label": "整车制造",
+      "aliases": [
+        "车企"
+      ],
+      "parent": "automotive"
+    },
+    {
+      "id": "automotive.parts",
+      "label": "汽车零部件",
+      "aliases": [],
+      "parent": "automotive"
+    },
+    {
+      "id": "automotive.autonomous",
+      "label": "自动驾驶产业",
+      "aliases": [],
+      "parent": "automotive"
+    },
+    {
+      "id": "automotive.mobility",
+      "label": "出行服务",
+      "aliases": [],
+      "parent": "automotive"
+    },
+    {
+      "id": "energy",
+      "label": "能源",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "energy.electricity",
+      "label": "电力",
+      "aliases": [],
+      "parent": "energy"
+    },
+    {
+      "id": "energy.renewable",
+      "label": "新能源",
+      "aliases": [],
+      "parent": "energy"
+    },
+    {
+      "id": "energy.oil-gas",
+      "label": "石油与天然气",
+      "aliases": [],
+      "parent": "energy"
+    },
+    {
+      "id": "energy.battery",
+      "label": "电池与储能",
+      "aliases": [],
+      "parent": "energy"
+    },
+    {
+      "id": "healthcare",
+      "label": "医疗健康",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "healthcare.hospital",
+      "label": "医疗服务",
+      "aliases": [
+        "医院"
+      ],
+      "parent": "healthcare"
+    },
+    {
+      "id": "healthcare.pharma",
+      "label": "医药",
+      "aliases": [
+        "制药"
+      ],
+      "parent": "healthcare"
+    },
+    {
+      "id": "healthcare.devices",
+      "label": "医疗器械",
+      "aliases": [],
+      "parent": "healthcare"
+    },
+    {
+      "id": "healthcare.biotech",
+      "label": "生物科技",
+      "aliases": [],
+      "parent": "healthcare"
+    },
+    {
+      "id": "education",
+      "label": "教育",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "education.edtech",
+      "label": "教育科技",
+      "aliases": [],
+      "parent": "education"
+    },
+    {
+      "id": "education.higher",
+      "label": "高等教育",
+      "aliases": [
+        "高校"
+      ],
+      "parent": "education"
+    },
+    {
+      "id": "education.training",
+      "label": "培训服务",
+      "aliases": [],
+      "parent": "education"
+    },
+    {
+      "id": "research",
+      "label": "科研",
+      "aliases": [
+        "科研机构"
+      ],
+      "parent": null
+    },
+    {
+      "id": "government",
+      "label": "政务与公共服务",
+      "aliases": [
+        "公共服务"
+      ],
+      "parent": null
+    },
+    {
+      "id": "retail",
+      "label": "零售与消费",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "retail.consumer-goods",
+      "label": "消费品",
+      "aliases": [],
+      "parent": "retail"
+    },
+    {
+      "id": "retail.food",
+      "label": "食品与餐饮",
+      "aliases": [
+        "餐饮"
+      ],
+      "parent": "retail"
+    },
+    {
+      "id": "retail.chain",
+      "label": "连锁零售",
+      "aliases": [],
+      "parent": "retail"
+    },
+    {
+      "id": "logistics",
+      "label": "物流与供应链",
+      "aliases": [
+        "供应链"
+      ],
+      "parent": null
+    },
+    {
+      "id": "logistics.delivery",
+      "label": "快递",
+      "aliases": [],
+      "parent": "logistics"
+    },
+    {
+      "id": "logistics.freight",
+      "label": "货运",
+      "aliases": [],
+      "parent": "logistics"
+    },
+    {
+      "id": "logistics.warehouse",
+      "label": "仓储",
+      "aliases": [],
+      "parent": "logistics"
+    },
+    {
+      "id": "media",
+      "label": "传媒与娱乐",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "media.gaming",
+      "label": "游戏行业",
+      "aliases": [
+        "游戏"
+      ],
+      "parent": "media"
+    },
+    {
+      "id": "media.video",
+      "label": "影视与视频",
+      "aliases": [],
+      "parent": "media"
+    },
+    {
+      "id": "media.publishing",
+      "label": "新闻与出版",
+      "aliases": [],
+      "parent": "media"
+    },
+    {
+      "id": "media.advertising",
+      "label": "广告营销",
+      "aliases": [
+        "广告行业"
+      ],
+      "parent": "media"
+    },
+    {
+      "id": "real-estate",
+      "label": "房地产与建筑",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "real-estate.construction",
+      "label": "建筑工程",
+      "aliases": [],
+      "parent": "real-estate"
+    },
+    {
+      "id": "real-estate.property",
+      "label": "物业服务",
+      "aliases": [],
+      "parent": "real-estate"
+    },
+    {
+      "id": "agriculture",
+      "label": "农业",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "environment",
+      "label": "环保",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "legal",
+      "label": "法律服务",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "professional-services",
+      "label": "专业服务",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "professional-services.accounting",
+      "label": "会计与审计",
+      "aliases": [],
+      "parent": "professional-services"
+    },
+    {
+      "id": "professional-services.consulting",
+      "label": "管理咨询",
+      "aliases": [],
+      "parent": "professional-services"
+    },
+    {
+      "id": "nonprofit",
+      "label": "公益与非营利",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "tourism",
+      "label": "旅游与酒店",
+      "aliases": [],
+      "parent": null
+    },
+    {
+      "id": "sports",
+      "label": "体育",
+      "aliases": [],
+      "parent": null
+    }
+  ],
+  "company_type": [
+    {
+      "id": "platform-company",
+      "label": "平台型企业",
+      "aliases": []
+    },
+    {
+      "id": "software-vendor",
+      "label": "软件产品企业",
+      "aliases": [
+        "软件厂商"
+      ]
+    },
+    {
+      "id": "hardware-vendor",
+      "label": "硬件产品企业",
+      "aliases": [
+        "硬件厂商"
+      ]
+    },
+    {
+      "id": "service-provider",
+      "label": "专业服务企业",
+      "aliases": []
+    },
+    {
+      "id": "consultancy",
+      "label": "咨询机构",
+      "aliases": [
+        "咨询公司"
+      ]
+    },
+    {
+      "id": "outsourcing",
+      "label": "外包服务商",
+      "aliases": [
+        "外包公司"
+      ]
+    },
+    {
+      "id": "enterprise-it",
+      "label": "非科技企业IT部门",
+      "aliases": [
+        "企业信息化部门"
+      ]
+    },
+    {
+      "id": "research-institute",
+      "label": "科研机构",
+      "aliases": []
+    },
+    {
+      "id": "university",
+      "label": "高等院校",
+      "aliases": [
+        "高校"
+      ]
+    },
+    {
+      "id": "government-agency",
+      "label": "政府机关",
+      "aliases": []
+    },
+    {
+      "id": "public-institution",
+      "label": "事业单位",
+      "aliases": []
+    },
+    {
+      "id": "nonprofit",
+      "label": "非营利组织",
+      "aliases": []
+    },
+    {
+      "id": "unknown",
+      "label": "未知",
+      "aliases": []
+    }
+  ],
+  "ownership": [
+    {
+      "id": "private",
+      "label": "民营",
+      "aliases": [
+        "民营企业",
+        "私营"
+      ]
+    },
+    {
+      "id": "state-owned",
+      "label": "国有",
+      "aliases": [
+        "国企"
+      ]
+    },
+    {
+      "id": "foreign-owned",
+      "label": "外资",
+      "aliases": [
+        "外资企业"
+      ]
+    },
+    {
+      "id": "joint-venture",
+      "label": "合资",
+      "aliases": [
+        "合资企业"
+      ]
+    },
+    {
+      "id": "public-sector",
+      "label": "公共部门",
+      "aliases": []
+    },
+    {
+      "id": "nonprofit",
+      "label": "非营利性质",
+      "aliases": []
+    },
+    {
+      "id": "unknown",
+      "label": "未知",
+      "aliases": []
+    }
+  ],
+  "business_models": [
+    {
+      "id": "b2b",
+      "label": "企业客户",
+      "aliases": [
+        "B2B",
+        "ToB"
+      ]
+    },
+    {
+      "id": "b2c",
+      "label": "个人消费者",
+      "aliases": [
+        "B2C",
+        "ToC"
+      ]
+    },
+    {
+      "id": "b2g",
+      "label": "政府客户",
+      "aliases": [
+        "B2G",
+        "ToG"
+      ]
+    },
+    {
+      "id": "marketplace",
+      "label": "交易平台",
+      "aliases": []
+    },
+    {
+      "id": "subscription",
+      "label": "订阅服务",
+      "aliases": []
+    },
+    {
+      "id": "advertising",
+      "label": "广告变现",
+      "aliases": []
+    },
+    {
+      "id": "licensing",
+      "label": "软件授权",
+      "aliases": []
+    },
+    {
+      "id": "transaction-fee",
+      "label": "交易佣金",
+      "aliases": []
+    },
+    {
+      "id": "hardware-sales",
+      "label": "硬件销售",
+      "aliases": []
+    },
+    {
+      "id": "professional-services",
+      "label": "项目与专业服务",
+      "aliases": []
+    },
+    {
+      "id": "open-source-services",
+      "label": "开源配套服务",
+      "aliases": []
+    },
+    {
+      "id": "usage-based",
+      "label": "按量付费",
+      "aliases": []
+    }
+  ]
+}

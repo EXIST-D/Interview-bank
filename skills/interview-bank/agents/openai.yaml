@@ -1,0 +1,4 @@
+interface:
+  display_name: "Interview Bank"
+  short_description: "提取截图面试题、语义分类去重、分析高频题并整理有来源的答案"
+  default_prompt: "使用 $interview-bank 整理面试题截图，保留原文和来源，按岗位、公司和技术分类，合并同义题，默认研究并核验简洁参考答案，导出带答案与纯题目两份报告。"
