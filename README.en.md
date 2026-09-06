@@ -2,9 +2,9 @@
 
 English | [简体中文](README.md)
 
-This repository packages `interview-bank`, an Agent Skill for Codex and other capable agents. It turns collected interview screenshots or selected text into a local question bank: extract questions, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and export reports for reading and self-testing.
+`interview-bank` is an interview-question organization Skill for Codex and other capable agents. It helps users extract questions from screenshots or selected text collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment and experienced-hire interviews. Version **1.4.0** implements the M1–M5 workflow.
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.4.0**.
 
 ## Repository structure
 
@@ -48,6 +48,10 @@ The host agent supplies image viewing, reasoning and web tools. Python validates
 The workflow has been exercised with Windows and Codex. Other hosts need equivalent capabilities. No separate OCR service, model SDK or database server is required. Running the CLI alone does not perform image recognition, semantic judgment or web research.
 
 ## Installation
+
+If you are unfamiliar with installation commands, simply ask your agent:
+
+> Please install the [Interview-bank](https://github.com/EXIST-D/Interview-bank) Skill for me and give me a brief introduction.
 
 View the [interview-bank page on skills.sh](https://skills.sh/exist-d/interview-bank/interview-bank). Install for Codex in the current project using the `skills` CLI:
 
@@ -160,11 +164,18 @@ The main bank layout is shown below. Report names can be customized; these are e
 
 JSONL is the source of truth; SQLite is rebuildable. Mutations use staged validation and commits with history and audits. Reimporting identical image bytes does not increase frequency. Counts describe collected occurrences, not interview participants or market probabilities.
 
-## Status and limits
+## Current status and planned features
 
 Version 1.4 passed 94 automated checks during development, alongside real screenshot organization and sourced-answer exercises for a selected subset. These validate workflow behavior, not universal extraction or answer accuracy.
 
-Audio/video transcription, automatic social-platform scraping, a standalone web UI, mock interviews and spaced repetition are not implemented. Reserved source types do not imply working ingestion adapters.
+Planned development will extend collection, practice and management:
+
+- **Audio/video transcription:** transcribe interview-experience videos, lessons or recordings and extract questions into the existing classification, deduplication and answer workflow.
+- **Mock interviews and spaced repetition:** practice with the personal bank and use review history to schedule spaced repetition.
+- **Social-platform reference collection:** find similar questions and relevant answers on social platforms, retain their sources and verify the content as supplementary reference material.
+- **Standalone local web interface:** browse, search and maintain the personal bank in a browser, including classifications, reference answers and processing progress.
+
+These are planned directions and are not included in the current version.
 
 This public repository contains the Skill, introductions and licenses. Personal screenshots, banks, research records, development plans, test projects and local environments are not published.
 
