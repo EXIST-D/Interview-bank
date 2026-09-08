@@ -4,7 +4,21 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Codex and other capable agents. It helps users extract questions from screenshots or selected text collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.4.0**.
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.7.0**.
+
+## This release: stages 1.5–1.7
+
+Version 1.7.0 brings three completed development stages to the existing screenshot and reference-answer workflow.
+
+| Stage | Completed capabilities | Example use |
+|---|---|---|
+| 1.5 Maintenance | Verified V2 backup, migration and recovery; protected fields and forbidden merges; scoped research with resumable batches and answer-revision checks | Add new material, preserve your edits and resume unfinished research |
+| 1.6 Topics and JD preparation | Combined filters, snapshot/dynamic topics, exact JD excerpts, explained direct/partial matches and gaps, paired reports | Turn a supplied JD into a study selection from your existing bank |
+| 1.7 Review and mock interviews | Self-ratings, review dates and queues, one-question-at-a-time sessions, real responses, reference feedback, follow-ups and resume | Practise a topic, track weak questions and continue a previous session |
+
+V1 banks retain M1–M5 support. Saving topics, durable research workflows and review state requires the Skill's verified V2 migration process. Updating the installed Skill does not automatically migrate a personal bank.
+
+Validation includes 124 automated tests, an independently unpacked installation check and a real incremental screenshot/answer workflow with duplicate-import verification. These checks cover specific behavior, not universal extraction accuracy or factual correctness. See the [v1.7.0 release](https://github.com/EXIST-D/Interview-bank/releases/tag/v1.7.0).
 
 ## Repository structure
 
@@ -32,6 +46,10 @@ Interview-bank/
 - **Deduplication (M3):** candidates from the current batch and existing bank, equivalent-question merging, compatible subquestion consolidation, and preserved original wording and occurrences.
 - **Analysis and export (M4):** combined filters, frequency and domain statistics, Markdown, JSON, JSONL, CSV and viewer JSON output.
 - **Answer research (M5):** public-source research, claim/version/scope checks, concise reference answers, citations, answer history and verification states.
+
+- **Persistent maintenance (1.5):** explicit V2 upgrade with verified backup, user field protections, forbidden merge pairs, durable scoped research, answer-revision checks and resumable batches.
+- **Role/JD preparation (1.6):** saved source-context selections, validated filter expressions, exact JD excerpts, explained matches/gaps and paired reports.
+- **Review and mock interviews (1.7):** self-rated practice events, on-demand review queues, one-at-a-time questions, durable real user responses and source-aware feedback.
 
 The catalog includes **67 roles, 186 technical domains, 229 technology tags and 83 industry labels**, with Chinese names, aliases, multiple labels and hierarchical filters. Company profiles can include evidenced organization types, ownership and business models. Unknown metadata stays unconfirmed.
 
@@ -162,20 +180,15 @@ The main bank layout is shown below. Report names can be customized; these are e
 - **Question-only report:** the same questions and order without answers, citations or answer progress.
 - **Structured attachment:** IDs, original wording, precise dates, source relationships, classifications and answer history.
 
-JSONL is the source of truth; SQLite is rebuildable. Mutations use staged validation and commits with history and audits. Reimporting identical image bytes does not increase frequency. Counts describe collected occurrences, not interview participants or market probabilities.
+The six JSONL tables plus V2 data/state.json are canonical; SQLite is rebuildable. Mutations use staged validation and commits with history and audits. Reimporting identical image bytes does not increase frequency. Counts describe collected occurrences, not interview participants or market probabilities.
 
 ## Current status and planned features
 
-Version 1.4 passed 94 automated checks during development, alongside real screenshot organization and sourced-answer exercises for a selected subset. These validate workflow behavior, not universal extraction or answer accuracy.
+Version 1.7 implements persistent maintenance, saved topics/JD preparation and personal review/mock interviews. Existing V1 banks retain M1–M5 support. New personal features require an explicit V2 upgrade with a verified backup. Legacy answer content is preserved but needs a coverage recheck; a recent date alone does not certify a changed question.
 
-Planned development will extend collection, practice and management:
+The CLI supports research caps by new answer count, task packets and deadline; exact token metering belongs to the host. Interview sessions require actual user responses. Review queues are on demand, without a background notification service.
 
-- **Audio/video transcription:** transcribe interview-experience videos, lessons or recordings and extract questions into the existing classification, deduplication and answer workflow.
-- **Mock interviews and spaced repetition:** practice with the personal bank and use review history to schedule spaced repetition.
-- **Social-platform reference collection:** find similar questions and relevant answers on social platforms, retain their sources and verify the content as supplementary reference material.
-- **Standalone local web interface:** browse, search and maintain the personal bank in a browser, including classifications, reference answers and processing progress.
-
-These are planned directions and are not included in the current version.
+Planned extensions remain audio/video transcription, user-selected public-link/social reference intake, and a local Web management interface. Arbitrary historical unmerge is not supported. Validation covers data and recovery behavior, not universal extraction or factual accuracy.
 
 This public repository contains the Skill, introductions and licenses. Personal screenshots, banks, research records, development plans, test projects and local environments are not published.
 

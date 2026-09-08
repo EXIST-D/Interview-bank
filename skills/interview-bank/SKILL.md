@@ -1,16 +1,16 @@
 ---
 name: interview-bank
-description: Build and maintain a local interview question bank from screenshots or selected text for campus hiring, internships and other interviews. Use for extracting questions with provenance, semantic role/company/technology classification, conservative deduplication, frequency analysis, study exports and evidence-backed reference answers. Uses host vision, reasoning and web tools with a provider-independent Python CLI.
+description: Build and maintain a local interview question bank from screenshots or selected text for campus hiring, internships and other interviews. Use for extracting questions with provenance, semantic role/company/technology classification, conservative deduplication, frequency analysis, study exports, evidence-backed reference answers, durable research tasks, JD study sets, spaced review and mock interviews. Uses host vision, reasoning and web tools with a provider-independent Python CLI.
 license: MIT
 metadata:
   author: EXIST-D
-  version: "1.4.0"
+  version: "1.7.0"
   repository: https://github.com/EXIST-D/Interview-bank
 ---
 
 # Interview Bank
 
-Version 1.4.0 implements M1–M5 with an expanded hierarchical classification catalog. This is an Agent workflow plus deterministic storage tools. **Actually view images and read cited pages**; commands do not perform OCR, model inference or web browsing. Prepare structured responses yourself; do not ask the user to author JSON.
+Version 1.7.0 implements M1–M5 plus durable maintenance (1.5), saved topics/JD preparation (1.6), and personal review/mock interviews (1.7). This is an Agent workflow plus deterministic storage tools. **Actually view images and read cited pages**; commands do not perform OCR, model inference or web browsing. Prepare structured responses yourself; do not ask the user to author JSON.
 
 ## Rules
 
@@ -41,6 +41,18 @@ python -B <cli> init --bank <new-bank> --json
 ```
 
 All command results support --json. ID fields returned by commands are authoritative; never invent task, source or question IDs.
+
+## Personal-bank modes (V2)
+
+Route only to relevant references; do not load all protocols for a narrow request.
+
+- Continuing intake/research, protecting user edits, or recovering work: read [maintenance](references/maintenance.md). V1 remains usable for M1–M5. Enable V2 explicitly with migrate plan/apply for the selected bank; migration verifies a backup and does not silently upgrade other banks. Persistent state is canonical data, not cache.
+- Preparing a role/company topic or a supplied JD: read [study sets](references/studysets.md). Translate natural language into explicit filters, preserve matching source context and create a saved selection; explain gaps. A JD match is not a hiring probability.
+- Reviewing weak questions or interviewing the user: read [practice](references/practice.md). Record only real user responses/self-ratings; ask one question at a time and wait. CLI grading records the Agent's evidence-based feedback, it does not run an evaluation model.
+
+State mutations return run_id and require commit just like existing workflows; inspect the response, then commit within the user's requested scope. migrate apply directly commits an explicit format upgrade. workflow next creates a task packet; it never browses or writes answers. Keep all IDs from returned records and use stable request IDs for retrying practice/session writes.
+
+For a V2 end-to-end intake, commit the final M3 run, create/commit a workflow scoped by from_run, repeatedly call workflow next → actual research → answer → commit, then workflow export and summary. For an existing topic use studyset_id or explicit question_ids. Default answers still cover the entire requested scope; budgets/blocked items remain visible. Legacy migrated answers need a coverage recheck rather than an automatic fresh timestamp.
 
 ## M1: screenshot intake
 

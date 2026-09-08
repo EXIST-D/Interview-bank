@@ -48,6 +48,8 @@ def candidate_task(bank, run_id=None, top_k=None, question_ids=None):
             require(source_run["status"] == "staged", "Use an uncommitted staging run")
             require(source_run.get("config_digest", fingerprint(config)) == fingerprint(config), "Staged configuration is stale; regenerate")
             addition = {t: read_jsonl(path / f"{t}.jsonl") for t in TABLES}
+            if (path / "state.json").exists():
+                addition["_state"] = read_json(path / "state.json")
             require(fingerprint(addition) == source_run["digest"], "Staged data changed")
             if source_run.get("mode") == "snapshot":
                 require(source_run["base_digest"] == fingerprint(current), "Staged data is stale; regenerate")
@@ -146,6 +148,8 @@ def stage_decisions(bank, response=None, task_id=None):
             require(meta["status"] == "staged", "Input stage is no longer staged")
             require(meta.get("config_digest", fingerprint(config)) == fingerprint(config), "Input configuration is stale")
             added = {t: read_jsonl(path / f"{t}.jsonl") for t in TABLES}
+            if (path / "state.json").exists():
+                added["_state"] = read_json(path / "state.json")
             require(meta["digest"] == fingerprint(added), "Input stage changed")
             final = added if meta.get("mode") == "snapshot" else copy.deepcopy(combined(current, added))
         require(fingerprint(final) == task["input_digest"], "Task input changed")

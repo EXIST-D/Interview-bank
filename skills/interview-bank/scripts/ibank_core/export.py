@@ -82,6 +82,21 @@ def markdown(payload, *, include_answers=True):
     companies = {c['id']: c['name'] for c in payload['companies']}
     sources = {s['id']: s for s in payload['sources']}
     out = ['# 面试题整理报告', f"共 {len(questions)} 道题；出现次数按收集记录统计。各领域内按出现次数降序排列、从 1 编号，同次数按题干排序。"]
+    if payload.get("context"):
+        context = payload["context"]
+        out.append("专题：" + md(context.get("name", "")) + " · 选择修订：" + str(context.get("selection_revision", 1)))
+        if 'expression' in context:
+            from .selection import describe
+            out.append('筛选条件：' + md(describe(context['expression'])) + '；来源条件由同一条收集记录满足。')
+        if context.get('source_intent'):
+            out.append('备考目标：' + md(context['source_intent']))
+        if context.get('changed_questions'):
+            out.append(f"其中 {len(context['changed_questions'])} 道题自专题保存后发生变化，相关 JD 映射待重新核验。")
+        coverage = context.get("jd_coverage", {})
+        if coverage.get("requirements"):
+            out.append(f"JD 知识要求 {coverage['requirements']} 项，直接覆盖 {coverage['directly_covered']} 项；这只是当前题库的知识覆盖，不代表岗位能力或面试命中率。")
+        if context.get('requirements'):
+            out.append('\n'.join('- '+md(r['quote'])+'：'+md(r['coverage']) for r in context['requirements']))
     groups = {}
     for q in questions:
         groups.setdefault(report_group(q), []).append(q)
@@ -120,7 +135,7 @@ def markdown(payload, *, include_answers=True):
     return '\n\n'.join(out) + '\n'
 
 
-def export_bank(bank, output, format="markdown", *, include_paths=False, answer_mode="both", **filters):
+def export_bank(bank, output, format="markdown", *, include_paths=False, answer_mode="both", report_context=None, **filters):
     require(format in ("markdown", "json", "jsonl", "csv", "viewer"), "Unsupported export format")
     require(answer_mode in ("both", "with", "without"), "Invalid answer mode")
     require(format == 'markdown' or answer_mode == 'both', "Answer mode only applies to Markdown")
@@ -144,6 +159,8 @@ def export_bank(bank, output, format="markdown", *, include_paths=False, answer_
         payload = {"schema_version": 1, "exported_at": utc_now(), "filters": filters, "questions": questions,
                    "sources": sources, "companies": [c for c in data["companies"] if c["id"] in {o["company_id"] for q in questions for o in q["occurrences"]}],
                    "relations": [r for r in data["relations"] if r["from_question_id"] in qids and r["to_question_id"] in qids]}
+        if report_context is not None:
+            payload["context"] = report_context
         excluded = [{"question_id": q["id"], "reason": exclusion_reason(q)} for q in questions if exclusion_reason(q)]
         omitted = {item["question_id"] for item in excluded}
         payload["report"] = {"question_ids": [q["id"] for q in questions if q["id"] not in omitted],

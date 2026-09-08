@@ -57,6 +57,14 @@ def stage_curate(bank, payload):
     with open_bank(bank) as (_, config, current):
         final = copy.deepcopy(current)
         audit = apply_changes(final, payload.get("changes"), config)
+        if payload.get("override_protection") is True and "_state" in final:
+            require(payload.get("user_requested") is True, "Override requires an actual user instruction")
+            from .state import question
+            for rule in final["_state"]["policies"].values():
+                if rule["active"] and rule["kind"] == "protect":
+                    value = question(final, rule["question_id"])[rule["field"]]
+                    if value != rule["value"]:
+                        rule.update(value=copy.deepcopy(value), updated_at=utc_now())
         return stage_snapshot(bank, current, final, config, operation="curate", audit=audit, summary={"edited_records": len(audit)})
 
 

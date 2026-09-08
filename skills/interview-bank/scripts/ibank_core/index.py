@@ -11,6 +11,12 @@ from .storage import bank_file, dumps, fingerprint, open_bank
 INDEX_VERSION = "1"
 
 
+def projection_digest(data):
+    # Personal workflows/events are not indexed. They must not trigger a full
+    # question-index rebuild on every interview answer or practice record.
+    return fingerprint({table: data[table] for table in TABLES})
+
+
 def fts5_available():
     with closing(sqlite3.connect(":memory:")) as conn:
         try:
@@ -32,7 +38,7 @@ def index_status(bank, data):
             if not set(TABLES) <= tables:
                 return "stale"
             metadata = dict(conn.execute("SELECT key, value FROM metadata"))
-            return "current" if metadata == {"fingerprint": fingerprint(data), "index_version": INDEX_VERSION} else "stale"
+            return "current" if metadata == {"fingerprint": projection_digest(data), "index_version": INDEX_VERSION} else "stale"
     except sqlite3.DatabaseError:
         return "corrupt"
 
@@ -67,7 +73,7 @@ def build_index(bank, data):
                 fields = columns[table]
                 conn.executemany(f"INSERT INTO {table} VALUES ({','.join('?' for _ in range(len(fields) + 2))})",
                                  [(row["id"], *(row[f] for f in fields), dumps(row)) for row in data[table]])
-            conn.executemany("INSERT INTO metadata VALUES (?, ?)", [("fingerprint", fingerprint(data)), ("index_version", INDEX_VERSION)])
+            conn.executemany("INSERT INTO metadata VALUES (?, ?)", [("fingerprint", projection_digest(data)), ("index_version", INDEX_VERSION)])
             conn.commit()
         finally:
             conn.close()

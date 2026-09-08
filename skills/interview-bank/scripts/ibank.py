@@ -131,6 +131,8 @@ def parser():
             query.add_argument("--format", choices=("human", "json", "jsonl"), default="human")
         if name == "search":
             query.add_argument("--offset", type=int, default=0)
+    from ibank_core.advanced_cli import add_parsers
+    add_parsers(sub, common)
     return root
 
 
@@ -138,6 +140,9 @@ def dispatch(args):
     if args.command == "taxonomy" and not getattr(args, "bank", None):
         return catalog_view(args.dimension, args.query, args.limit, args.offset)
     bank = resolve_bank(getattr(args, "bank", None))
+    from ibank_core.advanced_cli import COMMANDS, dispatch as advanced_dispatch
+    if args.command in COMMANDS:
+        return advanced_dispatch(bank, args)
     if args.command == "taxonomy":
         with open_bank(bank) as (_, config, _):
             return catalog_view(args.dimension, args.query, args.limit, args.offset, config.get("taxonomy_extensions"))

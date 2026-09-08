@@ -32,5 +32,6 @@ def doctor(bank):
                     incomplete.append(path.name)
         return {"bank": str(bank), "python": platform.python_version(), "schema_version": manifest["schema_version"],
                 "sqlite": sqlite3.sqlite_version, "fts5_available": fts5_available(), "index": index_status(bank, data),
-                "lock": "acquired (free before this command)", "counts": {t: len(v) for t, v in data.items()},
+                "lock": "acquired (free before this command)", "counts": {t: len(v) for t, v in data.items() if t != '_state'},
+                "state_counts": {k:len(v) for k,v in data.get('_state',{}).items() if k != 'version'},
                 "missing_source_files": missing, "incomplete_runs": incomplete, "pending_runs": pending, "review_required": reviews}

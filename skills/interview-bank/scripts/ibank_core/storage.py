@@ -150,7 +150,10 @@ def empty_data():
 
 def load_data(bank):
     try:
-        return {table: read_jsonl(bank_file(bank, f"data/{table}.jsonl")) for table in TABLES}
+        data = {table: read_jsonl(bank_file(bank, f"data/{table}.jsonl")) for table in TABLES}
+        if read_json(bank_file(bank, "manifest.json"))["schema_version"] == 2:
+            data["_state"] = read_json(bank_file(bank, "data/state.json"))
+        return data
     except FileNotFoundError as exc:
         raise BankUnavailable(f"Missing canonical file: {exc.filename}") from exc
 
@@ -163,6 +166,7 @@ def load_bank(bank):
         raise BankUnavailable(f"Bank is not initialized: {bank}") from exc
     validate_manifest(manifest)
     validate_config(config)
+    require(config["bank_version"] == manifest["bank_version"], "Manifest/config version mismatch")
     data = load_data(bank)
     validate_data(data, config)
     return manifest, config, data
@@ -173,7 +177,7 @@ def fingerprint(data):
 
 
 def _journal_target(bank, relative):
-    allowed = {"manifest.json", "config.json", *(f"data/{table}.jsonl" for table in TABLES)}
+    allowed = {"manifest.json", "config.json", "data/state.json", *(f"data/{table}.jsonl" for table in TABLES)}
     is_run = re.fullmatch(r"runs/run_[a-zA-Z0-9_-]+/(run\.json|commit\.json|report\.md|intake\.json)", relative)
     require(relative in allowed or is_run is not None, f"Unexpected journal target: {relative}")
     return bank_file(bank, relative)

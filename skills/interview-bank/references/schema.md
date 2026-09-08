@@ -1,6 +1,6 @@
-# V1 data contract
+# V1/V2 data contract
 
-The executable validator in ../scripts/ibank_core/schema.py is authoritative. UTF-8 records use schema_version=1. Unknown schema versions fail explicitly; no automatic migration is implemented.
+The executable validator in ../scripts/ibank_core/schema.py is authoritative. UTF-8 records use schema_version=1. Unknown schema versions fail explicitly. V1 remains supported; V2 is enabled only by explicit migrate plan/apply. No read operation silently upgrades a bank.
 
 | File in data/ | Fields beyond id and schema_version |
 | --- | --- |
@@ -44,3 +44,13 @@ Readers/writers acquire an OS lock. Files are flushed and fsynced before same-di
 SQLite includes all six tables and a canonical-data fingerprint; rebuild-index can always regenerate it. No model/provider information is embedded in the data contract. Managed output paths reject traversal and symlink escapes.
 
 Question optional field (1.2): report_exclusion, null or a nonempty string explaining editorial exclusion from reader reports. It does not change active/merged status or delete occurrences. Old banks without this field remain valid.
+
+## V2 personal state (1.5–1.7)
+
+manifest.schema_version and manifest/config.bank_version are 2. The six table records remain schema_version=1; new V2 answers optionally retain question_revision, evidence, checks and version_scope. Migrated answers have null question_revision until an actual new coverage/source check is submitted. Effective staleness includes content revision mismatch, independent of metadata frequency changes.
+
+`data/state.json` is a version=2 object containing policies, workflows, studysets, events, sessions and evidence, each an ID-keyed object. All are loaded and validated under the same lock as the six tables, included in bank/task digests, staged snapshots, before-images, undo and transaction journal. SQLite indexes the six tables; it is still reconstructible. State and private study data are not automatically published by report export.
+
+Workflows bind original scope, occurrence IDs, question revisions and initial answer IDs. Studysets keep selection revisions and matching occurrence IDs; refresh is explicit. Practice uses append-only request-id-deduplicated events; interview responses bind actual prompts, user text and reference-answer versions. Agent tools cannot infer a user's response or self-rating.
+
+Upgrade creates a verified ZIP/hash manifest under backups before activation; restore creates a separate bank under restored and never replaces later changes. See [maintenance](maintenance.md) for commands. The installed V1 runtime rejects a V2 manifest instead of ignoring protections or personal state.

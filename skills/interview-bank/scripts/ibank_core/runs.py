@@ -17,7 +17,11 @@ def run_path(bank, run_id):
 
 
 def combined(current, addition):
-    return {table: current[table] + addition[table] for table in TABLES}
+    result = {table: current[table] + addition[table] for table in TABLES}
+    if "_state" in current:
+        import copy
+        result["_state"] = copy.deepcopy(current["_state"])
+    return result
 
 
 def stage_bundle(bank, bundle, run_id=None):
@@ -38,6 +42,8 @@ def _write_stage(bank, addition, run_id=None, duplicate_sources=0, metadata=None
     path.mkdir(parents=True)
     for table in TABLES:
         atomic_write(bank_file(bank, f"runs/{run_id}/{table}.jsonl"), jsonl_text(addition[table]))
+    if "_state" in addition:
+        atomic_write(path / "state.json", dumps(addition["_state"]) + "\n")
     run = {"schema_version": 1, "id": run_id, "status": "staged", "created_at": utc_now(),
            "digest": fingerprint(addition), "duplicate_sources": duplicate_sources}
     run.update(metadata or {})
@@ -110,6 +116,8 @@ def commit_run(bank, run_id):
             return {**read_json(bank_file(bank, f"runs/{run_id}/commit.json")), "already_committed": True}
         require(run["status"] == "staged", f"Run is {run['status']} and cannot commit")
         addition = {table: read_jsonl(bank_file(bank, f"runs/{run_id}/{table}.jsonl")) for table in TABLES}
+        if (path / "state.json").exists():
+            addition["_state"] = read_json(path / "state.json")
         require(fingerprint(addition) == run["digest"], "Staged files changed; create a new staging run")
         if run.get("review"):
             raise ReviewRequired(f"Run {run_id} has unresolved review items; inspect run-show and stage corrected input")
@@ -131,6 +139,8 @@ def commit_run(bank, run_id):
         if run.get("new_config_digest"):
             target_config = read_json(path / "config_after.json")
             require(fingerprint(target_config) == run["new_config_digest"], "Staged config changed")
+        from .state import enforce_policies
+        enforce_policies(current, final, run.get("operation", "ingest"))
         validate_data(final, target_config)
         committed_at = utc_now()
         result = {"schema_version": 1, "run_id": run_id, "committed_at": committed_at,
@@ -139,6 +149,8 @@ def commit_run(bank, run_id):
                   "duplicate_sources": run.get("duplicate_sources", 0), "summary": run.get("summary", {}),
                   "after_digest": fingerprint(final), "after_config_digest": fingerprint(target_config)}
         files = {f"data/{table}.jsonl": jsonl_text(final[table]) for table in TABLES}
+        if "_state" in final:
+            files["data/state.json"] = dumps(final["_state"]) + "\n"
         manifest["last_updated_at"] = committed_at
         run["status"] = "committed"
         files["manifest.json"] = dumps(manifest) + "\n"
@@ -168,6 +180,8 @@ def commit_run(bank, run_id):
 
 def stage_snapshot(bank, current, final, config, *, operation, audit=(), review=(), summary=None, intake_id=None, supersedes=(), next_config=None):
     """Caller holds open_bank lock; retain an immutable before-image for undo."""
+    from .state import enforce_policies
+    enforce_policies(current, final, operation)
     validate_data(final, next_config or config)
     metadata = {"mode": "snapshot", "operation": operation, "base_digest": fingerprint(current),
                 "config_digest": fingerprint(config), "audit": list(audit), "review": list(review), "summary": summary or {}, "supersedes": list(supersedes)}
@@ -214,6 +228,8 @@ def undo_run(bank, run_id):
             original_path = run_path(bank, predecessors[0])
             original = read_json(original_path / "run.json")
             imported = {t: read_jsonl(original_path / f"{t}.jsonl") for t in TABLES}
+            if (original_path / "state.json").exists():
+                imported["_state"] = read_json(original_path / "state.json")
             require(fingerprint(imported) == original["digest"], "Original import stage changed")
             # Undo merging without deleting imported source/question history.
             before = imported if original.get("mode") == "snapshot" else combined(before, imported)

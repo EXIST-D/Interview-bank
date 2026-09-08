@@ -74,8 +74,8 @@ def confidence(value, label):
 
 def validate_manifest(manifest):
     require(isinstance(manifest, dict), "manifest: expected object")
-    require(type(manifest.get("schema_version")) is int and manifest["schema_version"] == 1, "manifest: unsupported schema_version; migration required")
-    require(type(manifest.get("bank_version")) is int and manifest["bank_version"] == 1, "manifest: unsupported bank_version; migration required")
+    require(type(manifest.get("schema_version")) is int and manifest["schema_version"] in (1, 2), "manifest: unsupported schema_version; migration required")
+    require(type(manifest.get("bank_version")) is int and manifest["bank_version"] == manifest["schema_version"], "manifest: unsupported bank_version; migration required")
     timestamp(manifest.get("created_at"), "manifest.created_at")
     timestamp(manifest.get("last_updated_at"), "manifest.last_updated_at")
 
@@ -84,7 +84,7 @@ def validate_config(config):
     require(isinstance(config, dict), "config: expected object")
     if "answer_stale_days" in config:
         require(type(config["answer_stale_days"]) is int and config["answer_stale_days"] > 0, "answer_stale_days must be positive integer")
-    require(type(config.get("bank_version")) is int and config["bank_version"] == 1, "config: unsupported bank_version")
+    require(type(config.get("bank_version")) is int and config["bank_version"] in (1, 2), "config: unsupported bank_version")
     require(config.get("source_retention") in ("reference", "copy", "none"), "config: invalid source_retention")
     string(config.get("language"), "config.language")
     require(config.get("default_interview_type") in TAXONOMY["interview_type"], "config: invalid interview type")
@@ -117,7 +117,7 @@ def validate_record(table, row, taxonomy=None):
     label = f"{table}/{row.get('id', '?')}"
     required = {"schema_version", "id", *FIELDS[table].split()}
     require(required <= row.keys(), f"{label}: missing fields {sorted(required - row.keys())}")
-    optional = set(PROFILE_FIELDS) if table == "companies" else {"report_exclusion"} if table == "questions" else set()
+    optional = set(PROFILE_FIELDS) if table == "companies" else {"report_exclusion"} if table == "questions" else {"question_revision", "evidence", "checks", "version_scope"} if table == "answers" else set()
     require(not row.keys() - required - optional, f"{label}: unexpected fields {sorted(row.keys() - required - optional)}")
     require(type(row["schema_version"]) is int and row["schema_version"] == 1, f"{label}: unsupported schema_version; migration required")
     require(isinstance(row["id"], str) and re.fullmatch(PREFIXES[table] + r"_[a-zA-Z0-9_-]+", row["id"]), f"{label}: invalid id")
@@ -171,6 +171,21 @@ def validate_record(table, row, taxonomy=None):
         if any(field in row for field in PROFILE_FIELDS):
             string(row.get("profile_evidence"), f"{label}.profile_evidence: describe the source of company facts")
     elif table == "answers":
+        if "question_revision" in row:
+            require(row["question_revision"] is None or (isinstance(row["question_revision"], str) and re.fullmatch(r"[a-f0-9]{64}", row["question_revision"])), "Invalid answer revision")
+        if "checks" in row:
+            strings(row["checks"], "answer.checks")
+        if "version_scope" in row:
+            string(row["version_scope"], "answer.version_scope")
+        if "evidence" in row:
+            require(isinstance(row["evidence"], list), "Invalid evidence map")
+            supported = set()
+            for entry in row["evidence"]:
+                require(isinstance(entry, dict) and type(entry.get("key_point")) is int and 0 <= entry["key_point"] < len(row["key_points"]), "Invalid claim index")
+                strings(entry.get("source_urls"), "claim.sources")
+                require(bool(entry["source_urls"]) and set(entry["source_urls"]) <= {x["url"] for x in row["sources"]}, "Claim references missing source")
+                supported.add(entry["key_point"])
+            require(row["status"] not in ("source_backed", "reviewed") or supported == set(range(len(row["key_points"]))), "Incomplete claim coverage")
         string(row["question_id"], f"{label}.question_id")
         require(type(row["version"]) is int and row["version"] > 0, f"{label}: invalid version")
         require(row["status"] in ("ai_draft", "source_backed", "reviewed", "stale"), f"{label}: invalid answer status (missing is derived)")
@@ -199,7 +214,11 @@ def validate_record(table, row, taxonomy=None):
 
 
 def validate_data(data, config=None):
-    require(isinstance(data, dict) and set(data) == set(TABLES), "data: expected all six tables")
+    require(isinstance(data, dict) and set(data) in (set(TABLES), {*TABLES, "_state"}), "data: expected all six tables")
+    if "_state" in data:
+        from .state import validate_state
+        require(config is None or config["bank_version"] == 2, "V2 state needs V2 config")
+        validate_state(data["_state"], data)
     taxonomy = {key: list(value) if isinstance(value, list) else value for key, value in TAXONOMY.items()}
     if config is not None:
         validate_config(config)

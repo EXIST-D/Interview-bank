@@ -62,12 +62,16 @@ def stage_answers(bank, response):
             qid = item["question_id"]
             if item.get("skip") is True:
                 string(item.get("reason"), "skip.reason")
+                if task.get("workflow_id") and "_state" in final:
+                    flow = final["_state"]["workflows"][task["workflow_id"]]
+                    old = flow["items"].get(qid, {})
+                    flow["items"][qid] = {"reason": item["reason"], "attempts": old.get("attempts", 0)+1}
                 audit.append({"action": "SKIP_ANSWER", "question_id": qid, "reason": item["reason"]})
                 continue
             status = item.get("status")
             require(status in ("ai_draft", "source_backed"), "New answers must be ai_draft or source_backed; human review uses answer-review")
             require(ANSWER_CONTENT <= item.keys(), "Answer is missing structured content fields")
-            require(set(item) <= ANSWER_CONTENT | {"question_id", "status", "evidence"}, "Unknown answer response fields")
+            require(set(item) <= ANSWER_CONTENT | {"question_id", "status", "evidence", "checks", "version_scope"}, "Unknown answer response fields")
             for field in ("short_answer", "spoken_answer", "deep_dive", "interviewer_intent"):
                 string(item[field], f"answer.{field}")
             for field in ("key_points", "common_mistakes", "follow_up_questions"):
@@ -107,6 +111,14 @@ def stage_answers(bank, response):
             record = {"schema_version": 1, "id": new_answer_id(), "question_id": qid, "version": version,
                       "status": status, **{k: item[k] for k in ANSWER_CONTENT}, "created_at": now,
                       "verified_at": min(s["accessed_at"] for s in item["sources"]) + "T00:00:00+00:00" if status == "source_backed" else None}
+            if "_state" in final:
+                from .state import revision, question
+                record.update(question_revision=revision(question(current, qid)), evidence=copy.deepcopy(evidence),
+                              checks=item.get("checks", []), version_scope=item.get("version_scope", "unspecified"))
+                from .storage import fingerprint
+                for source in item["sources"]:
+                    eid = "evidence_" + fingerprint(source)[:32]
+                    final["_state"]["evidence"][eid] = {"id": eid, "created_at": now, **copy.deepcopy(source)}
             final["answers"].append(record)
             audit.append({"action": "ANSWER_VERSION", "question_id": qid, "answer_id": record["id"], "version": version,
                           "status": status, "evidence": evidence, "task_id": task["id"]})
