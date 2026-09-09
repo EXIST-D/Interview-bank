@@ -22,7 +22,8 @@ Unexpected canonical record fields, duplicate JSON keys, nonfinite numbers, dupl
 - Questions are active or merged. merged_into points directly to an active target; no self-links/chains. Every active Question has an Occurrence.
 - Occurrences point to active Questions and existing Sources. Sequence is positive and unique per source. Same-source parents precede children; cross-source parents are allowed. The entire parent graph must be acyclic.
 - Confidence is finite in [0,1]. Text-adapter confidence denotes direct copying of already selected text, not independent semantic review.
-- Sources have unique byte SHA256 hashes. Types: text/image/web/audio/video; adapters currently cover selected text and images. retention=none requires path=null. copy image bytes are stored under bank/media.
+- Sources have unique byte SHA256 hashes. Types: text/image/web/audio/video; adapters cover selected text, images, local media and transcripts. retention=none requires path=null. Copied original bytes are stored under bank/media.
+- Since Skill 1.8, Source may contain `transcription` (engine/model/version, language/duration, segment digest/count); Occurrence then requires `locator` with reviewed raw excerpt, correction, segment IDs, derived times and matching digest. See [media](media.md) for the exact input contract. These optional record extensions work with V1 and V2 banks in 1.8+; older strict runtimes reject media records.
 - Company names/aliases cannot identify multiple companies. Industries are extensible strings.
 - Answers have unique (question_id,version), statuses ai_draft/source_backed/reviewed/stale. missing is derived. Citations contain title/url/publisher/type/accessed_at and may include evidence_note. The answer workflow enforces evidence coverage more strictly than legacy canonical bundle shape validation.
 - Relations connect different active Questions: related, prerequisite, follow_up, contrast, broader, narrower.

@@ -123,11 +123,19 @@ def commit_run(bank, run_id):
             raise ReviewRequired(f"Run {run_id} has unresolved review items; inspect run-show and stage corrected input")
         if run.get("intake_id"):
             intake = read_json(run_path(bank, run["intake_id"]) / "intake.json")
+            if intake.get("operation") == "media-intake":
+                require(not intake.get("completed_at") and intake["digest"] == fingerprint(intake["items"]), "Media intake changed before commit")
+                staged_sources = {s["id"]: s for s in addition["sources"]}
+                for item in intake["items"]:
+                    staged_source = staged_sources.get(item["source"]["id"])
+                    if staged_source:
+                        require(staged_source.get("transcription") == item["source"].get("transcription"), "Transcript changed before commit; restage")
             for item in intake["items"]:
                 view = item.get("view_path")
                 if view:
                     from pathlib import Path
-                    require(hashlib.sha256(Path(view).read_bytes()).hexdigest() == item["source"]["sha256"], "Image changed before commit; intake again")
+                    from .media import file_hash
+                    require(file_hash(view) == item["source"]["sha256"], "Source changed before commit; intake again")
         if run.get("mode") == "snapshot":
             require(fingerprint(read_json(path / "before.json")) == run["base_digest"], "Missing/changed recovery snapshot; restage")
             require(fingerprint(current) == run["base_digest"], "Bank changed since staging; regenerate this operation from current data")
@@ -170,9 +178,12 @@ def commit_run(bank, run_id):
         if run.get("intake_id"):
             intake_path = bank_file(bank, f"runs/{run['intake_id']}/intake.json")
             intake = read_json(intake_path)
+            if intake.get("operation") == "media-intake":
+                intake["completed_at"] = committed_at
             for item in intake["items"]:
                 if item["source"]["retention"] == "none":
                     item.pop("view_path", None)
+                    item.pop("original_path", None)
             files[f"runs/{run['intake_id']}/intake.json"] = dumps(intake) + "\n"
         transaction(bank, files)
         return result

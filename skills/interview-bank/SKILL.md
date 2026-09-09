@@ -1,16 +1,16 @@
 ---
 name: interview-bank
-description: Build and maintain a local interview question bank from screenshots or selected text for campus hiring, internships and other interviews. Use for extracting questions with provenance, semantic role/company/technology classification, conservative deduplication, frequency analysis, study exports, evidence-backed reference answers, durable research tasks, JD study sets, spaced review and mock interviews. Uses host vision, reasoning and web tools with a provider-independent Python CLI.
+description: Build and maintain a local interview question bank from screenshots, selected text, local audio/video recordings, subtitles or transcripts. Use for question extraction with provenance and timestamps, semantic classification, conservative deduplication, concise sourced answers, paired study reports, JD study sets, spaced review and mock interviews. Uses host reasoning/web tools and an optional local speech transcription adapter.
 license: MIT
 metadata:
   author: EXIST-D
-  version: "1.7.0"
+  version: "1.9.0"
   repository: https://github.com/EXIST-D/Interview-bank
 ---
 
 # Interview Bank
 
-Version 1.7.0 implements M1–M5 plus durable maintenance (1.5), saved topics/JD preparation (1.6), and personal review/mock interviews (1.7). This is an Agent workflow plus deterministic storage tools. **Actually view images and read cited pages**; commands do not perform OCR, model inference or web browsing. Prepare structured responses yourself; do not ask the user to author JSON.
+Version 1.9.0 adds measured environment checks, host capability declarations, transcript routing and provider-neutral host result import to the existing media, M1–M5, maintenance, JD and practice workflows. **Actually inspect source material and read cited pages**; only the optional media-transcribe adapter runs a speech model. Other commands do not perform OCR, semantic inference or web browsing. Prepare structured responses yourself; do not ask the user to author JSON.
 
 ## Rules
 
@@ -31,7 +31,7 @@ For new material: M1 → M2 → M3 → commit → M5 for all included questions 
 
 ## Bank and runtime
 
-Use Python 3.10+, standard library only. Resolve scripts/ibank.py to its absolute installed path; examples below abbreviate it as `<cli>`. Use `python -B <cli>` to keep installed files unchanged.
+Use Python 3.10+; the core and supplied-transcript adapters use only the standard library. Raw-media ASR optionally uses a workspace-local faster-whisper environment. Resolve scripts/ibank.py to its absolute installed path; examples below abbreviate it as `<cli>`. Use `python -B <cli>` to keep installed files unchanged.
 
 Bank resolution: explicit --bank, INTERVIEW_BANK_HOME, existing interview-bank directory upward to repository root, then ./interview-bank. Explicitly override any default outside the permitted workspace. Initialize only the intended new bank; a failed lookup is not a reason to create another bank.
 
@@ -53,6 +53,14 @@ Route only to relevant references; do not load all protocols for a narrow reques
 State mutations return run_id and require commit just like existing workflows; inspect the response, then commit within the user's requested scope. migrate apply directly commits an explicit format upgrade. workflow next creates a task packet; it never browses or writes answers. Keep all IDs from returned records and use stable request IDs for retrying practice/session writes.
 
 For a V2 end-to-end intake, commit the final M3 run, create/commit a workflow scoped by from_run, repeatedly call workflow next → actual research → answer → commit, then workflow export and summary. For an existing topic use studyset_id or explicit question_ids. Default answers still cover the entire requested scope; budgets/blocked items remain visible. Legacy migrated answers need a coverage recheck rather than an automatic fresh timestamp.
+
+## Host portability and setup
+
+For a new host or media environment, read [capabilities and routing](references/portability.md). Inspect actual available tools, then use capabilities to measure local runtime separately from host declarations. Use media-plan to prioritize saved/provided transcripts, a declared host tool, or optional local ASR. Host/cloud tools are invoked by the host; media-provider-task/import binds their actual results to one source. Do not infer upload authorization or tool availability from an Agent product name. Unknown capability stays unknown; no file/command execution means the local bank workflow cannot run.
+
+## M1: audio, video and transcripts
+
+Read [media intake](references/media.md) for raw recordings, SRT/VTT, transcript TXT or timestamp JSON. Use media → media-transcribe (optional local ASR) or media-attach (provided sidecar) → paginated media-task → reviewed extraction → existing M2–M5. Preserve segment coverage, derived timestamps, raw wording and evidenced corrections. Video coverage is speech in the audio track; silent on-screen questions require a separate screenshot review. Do not process subtitle sidecars as additional appearances of their media or treat each transcript line as a question.
 
 ## M1: screenshot intake
 

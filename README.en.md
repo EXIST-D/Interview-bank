@@ -2,11 +2,34 @@
 
 English | [简体中文](README.md)
 
-`interview-bank` is an interview-question organization Skill for Codex and other capable agents. It helps users extract questions from screenshots or selected text collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
+`interview-bank` is an interview-question organization Skill for Codex and other capable agents. It helps users extract questions from screenshots, selected text, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.7.0**.
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.9.0**, combining the 1.8 media workflow and 1.9 host portability improvements. See the [v1.9.0 release notes](https://github.com/EXIST-D/Interview-bank/releases/tag/v1.9.0).
 
-## This release: stages 1.5–1.7
+## This release: 1.9 host portability
+
+Measured Python/workspace/dependency probes are separate from host-declared image, web and transcription capabilities. Media routing prioritizes saved transcripts, matching sidecars, declared host tools, and optional local ASR. Ambiguous subtitles require source review.
+
+A provider-neutral handoff normalizes real host tool segments/chunks/text, binds results to the original file digest and handles retries idempotently. Remote tool execution remains with the host and requires an existing authorization covering the provider, destination, file and expected charges. The Python engine performs no media uploads and stores no API keys.
+
+Hosts must be able to read the Skill, access authorized files and execute Python; verified-answer research also needs browsing. Validation covers the current Windows runtime and synthetic host contracts, not every Agent/OS/cloud service. See [host portability](skills/interview-bank/references/portability.md).
+
+Version 1.9 validation: 146 automated tests and an independent installation check passed. A real subtitle-reuse path produced two questions and paired reports. Host/cloud handoff was contract-tested without calling a live cloud service.
+
+## 1.8 media and transcripts
+
+- Optional local ASR reads original recordings and video audio tracks without uploading media. Existing UTF-8 SRT/VTT/TXT/JSON transcripts require no speech model.
+- Timestamped provenance, raw excerpts and explained corrections pass through paginated Agent extraction into the existing classification, deduplication, sourced-answer and paired-report workflow.
+- Completed files are saved before moving on; failed files can resume. Exact original bytes are deduplicated. Attach subtitles to their media instead of importing the same content as two appearances.
+- Coverage is spoken audio, not silent text or diagrams on video frames. Automatic speaker diarization is not implemented. Agent review is required even when ASR did not flag uncertainty.
+
+Ask your Agent to organize a local media/subtitle folder into a chosen bank and generate both report editions. See the [media protocol](skills/interview-bank/references/media.md) for commands, optional dependencies and recovery.
+
+Version 1.8 reads existing V1/V2 banks. After adding media records, continue using 1.8+ because older strict validators do not recognize transcript fields. Back up an existing bank before its first media intake. The 1.8 and 1.9 changes ship together in v1.9.0. Updating the Skill does not automatically migrate or modify a personal bank.
+
+Version 1.8 validation: 136 automated tests and an independently unpacked installation/read-only check passed. Synthetic Chinese/English recordings and video audio tracks completed real ASR and a two-question sourced report workflow.
+
+## Existing capabilities: stages 1.5–1.7
 
 Version 1.7.0 brings three completed development stages to the existing screenshot and reference-answer workflow.
 
@@ -57,7 +80,7 @@ The catalog includes **67 roles, 186 technical domains, 229 technology tags and 
 
 The host agent supplies image viewing, reasoning and web tools. Python validates and stores its structured responses, then queries and exports the bank. No particular model API is required.
 
-- **Python 3.10+**, using only the standard library for the core runtime.
+- **Python 3.10+**, using only the standard library for core and supplied-transcript handling. Raw-media ASR optionally uses `faster-whisper==1.2.1` in a workspace venv, with model caches under the bank.
 - An agent able to view local images, execute Python and access user-authorized files.
 - Actual web search and page-reading tools for sourced answers.
 - Node.js/npm for the optional `npx` installation command; not for the Python runtime.
@@ -188,7 +211,7 @@ Version 1.7 implements persistent maintenance, saved topics/JD preparation and p
 
 The CLI supports research caps by new answer count, task packets and deadline; exact token metering belongs to the host. Interview sessions require actual user responses. Review queues are on demand, without a background notification service.
 
-Planned extensions remain audio/video transcription, user-selected public-link/social reference intake, and a local Web management interface. Arbitrary historical unmerge is not supported. Validation covers data and recovery behavior, not universal extraction or factual accuracy.
+Planned extensions include visual video-question extraction, automatic speaker diarization, finer-grained ASR recovery, user-selected public-link/social reference intake and a local Web management interface. Local speech transcription and supplied-transcript intake are implemented in 1.8. Arbitrary historical unmerge is not supported. Validation covers data and recovery behavior, not universal extraction or factual accuracy.
 
 This public repository contains the Skill, introductions and licenses. Personal screenshots, banks, research records, development plans, test projects and local environments are not published.
 

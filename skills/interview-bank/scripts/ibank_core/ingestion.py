@@ -126,6 +126,7 @@ def stage_extraction(bank, intake_id, extraction):
     require(isinstance(extraction.get("sources"), list), "extraction.sources must be an array")
     with open_bank(bank) as (_, config, current):
         intake = read_json(run_path(bank, intake_id) / "intake.json")
+        require(not intake.get("completed_at"), "Intake already committed")
         require(intake["digest"] == fingerprint(intake["items"]), "Intake changed or completed; create a new intake")
         sources = {i["source"]["id"]: i for i in intake["items"]}
         seen, candidates, review, audit = set(), [], [], []
@@ -137,8 +138,12 @@ def stage_extraction(bank, intake_id, extraction):
             require(isinstance(sid, str) and sid in sources and sid not in seen, "Unknown/duplicate extraction source_id")
             seen.add(sid)
             item = sources[sid]
+            if intake.get("operation") == "media-intake":
+                from .media import prepare_media_result
+                result = prepare_media_result(item, result)
             # Recheck source bytes immediately before staging, to prevent mismatched provenance.
-            require(hashlib.sha256(Path(item["view_path"]).read_bytes()).hexdigest() == item["source"]["sha256"], "Source file changed after intake")
+            from .media import file_hash
+            require(file_hash(item["view_path"]) == item["source"]["sha256"], "Source file changed after intake")
             status = result.get("status")
             require(status in ("extracted", "no_questions", "unreadable", "skip"), "Each image needs an explicit disposition")
             questions = result.get("questions", [])
@@ -216,10 +221,14 @@ def stage_extraction(bank, intake_id, extraction):
                 "original_text": c["original_text"], "company_id": resolve_company(final, c.get("company")), "role_tracks": roles,
                 "interview_type": c.get("interview_type", "unknown"), "round": c.get("round", "unknown"), "event_date": c.get("event_date"),
                 "sequence": c["sequence"], "parent_occurrence_id": by_candidate[parent]["oid"] if parent else None,
-                "extraction_confidence": c["confidence"]["is_question"], "classification_confidence": c["confidence"]["classification"], "created_at": now})
+                "extraction_confidence": c["confidence"]["is_question"], "classification_confidence": c["confidence"]["classification"], "created_at": now,
+                **({"locator": c["locator"]} if "locator" in c else {})})
         summary = {"images": len(sources), "duplicate_sources": len(intake["duplicates"]), "question_candidates": len(candidates),
                    "review_items": len(review), "candidate_ids": {c["id"]: c["qid"] for c in candidates}}
-        result = stage_snapshot(bank, current, final, config, operation="image-ingest", audit=audit, review=review, summary=summary, intake_id=intake_id)
+        operation = "media-ingest" if intake.get("operation") == "media-intake" else "image-ingest"
+        if operation == "media-ingest":
+            summary["media_sources"] = summary.pop("images")
+        result = stage_snapshot(bank, current, final, config, operation=operation, audit=audit, review=review, summary=summary, intake_id=intake_id)
         path = run_path(bank, result["run_id"])
         atomic_write(path / "extracted.json", dumps(extraction) + "\n")
         return result

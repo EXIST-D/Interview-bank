@@ -118,6 +118,10 @@ def validate_record(table, row, taxonomy=None):
     required = {"schema_version", "id", *FIELDS[table].split()}
     require(required <= row.keys(), f"{label}: missing fields {sorted(required - row.keys())}")
     optional = set(PROFILE_FIELDS) if table == "companies" else {"report_exclusion"} if table == "questions" else {"question_revision", "evidence", "checks", "version_scope"} if table == "answers" else set()
+    if table == "sources":
+        optional = {"transcription"}
+    elif table == "occurrences":
+        optional = {"locator"}
     require(not row.keys() - required - optional, f"{label}: unexpected fields {sorted(row.keys() - required - optional)}")
     require(type(row["schema_version"]) is int and row["schema_version"] == 1, f"{label}: unsupported schema_version; migration required")
     require(isinstance(row["id"], str) and re.fullmatch(PREFIXES[table] + r"_[a-zA-Z0-9_-]+", row["id"]), f"{label}: invalid id")
@@ -142,6 +146,9 @@ def validate_record(table, row, taxonomy=None):
         string(row["merged_into"], f"{label}.merged_into", nullable=True)
         require((row["status"] == "merged") == (row["merged_into"] is not None), f"{label}: inconsistent merged_into")
     elif table == "occurrences":
+        if "locator" in row:
+            from .media import validate_locator
+            validate_locator(row["locator"])
         for field in ("question_id", "source_id", "original_text"):
             string(row[field], f"{label}.{field}")
         for field in ("company_id", "parent_occurrence_id"):
@@ -151,6 +158,10 @@ def validate_record(table, row, taxonomy=None):
         for field in ("extraction_confidence", "classification_confidence"):
             confidence(row[field], f"{label}.{field}")
     elif table == "sources":
+        if "transcription" in row:
+            from .media import validate_transcription
+            validate_transcription(row["transcription"])
+            require(row["type"] in ("audio", "video", "text"), "Transcript attached to incompatible source type")
         require(row["type"] in ("image", "text", "web", "audio", "video"), f"{label}: invalid source type")
         require(row["retention"] in ("reference", "copy", "none"), f"{label}: invalid retention")
         require(isinstance(row["sha256"], str) and re.fullmatch(r"[a-f0-9]{64}", row["sha256"]), f"{label}: invalid sha256")
@@ -247,7 +258,15 @@ def validate_data(data, config=None):
     seen_sequences, covered = set(), set()
     for occ in data["occurrences"]:
         foreign("questions", occ["question_id"], occ["id"], active=True)
-        foreign("sources", occ["source_id"], occ["id"])
+        source = foreign("sources", occ["source_id"], occ["id"])
+        if "locator" in occ:
+            locator, meta = occ["locator"], source.get("transcription")
+            require(meta is not None and meta["sha256"] == locator["transcript_sha256"], "Locator does not match source transcript")
+            require(max(locator["segment_ids"]) <= meta["segment_count"], "Locator exceeds transcript segments")
+            if locator["end"] is not None and meta["duration"] is not None:
+                require(locator["end"] <= meta["duration"] + 0.1, "Locator exceeds media duration")
+        elif "transcription" in source:
+            require(False, "Transcribed source occurrence requires a locator")
         if occ["company_id"] is not None:
             foreign("companies", occ["company_id"], occ["id"])
         key = (occ["source_id"], occ["sequence"])

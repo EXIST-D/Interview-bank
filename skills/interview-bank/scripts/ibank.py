@@ -133,13 +133,26 @@ def parser():
             query.add_argument("--offset", type=int, default=0)
     from ibank_core.advanced_cli import add_parsers
     add_parsers(sub, common)
+    from ibank_core.media import add_parsers as add_media_parsers
+    add_media_parsers(sub, common)
+    from ibank_core.portability import add_parsers as add_portability_parsers
+    add_portability_parsers(sub, common)
     return root
 
 
 def dispatch(args):
+    if args.command == "capabilities":
+        from ibank_core.portability import dispatch as portability_dispatch
+        return portability_dispatch(None, args)
     if args.command == "taxonomy" and not getattr(args, "bank", None):
         return catalog_view(args.dimension, args.query, args.limit, args.offset)
     bank = resolve_bank(getattr(args, "bank", None))
+    if args.command in ("media-plan", "media-provider-task", "media-provider-import"):
+        from ibank_core.portability import dispatch as portability_dispatch
+        return portability_dispatch(bank, args)
+    if args.command in ("media", "media-attach", "media-task", "media-transcribe"):
+        from ibank_core.media import dispatch as media_dispatch
+        return media_dispatch(bank, args)
     from ibank_core.advanced_cli import COMMANDS, dispatch as advanced_dispatch
     if args.command in COMMANDS:
         return advanced_dispatch(bank, args)

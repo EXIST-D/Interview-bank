@@ -1,4 +1,4 @@
 interface:
   display_name: "Interview Bank"
-  short_description: "截图题库、来源核验答案、JD 专题、持续复习与模拟面试"
-  default_prompt: "使用 $interview-bank 整理面试题截图，保留原文和来源，按岗位、公司和技术分类，合并同义题，默认研究并核验简洁参考答案，导出带答案与纯题目两份报告；按用户需求维护研究进度、整理岗位/JD 专题或逐题模拟面试。"
+  short_description: "截图与音视频题库、核验答案、JD 专题与模拟面试"
+  default_prompt: "使用 $interview-bank 整理面试题截图、录音、视频中的语音或字幕转写稿，保留原文、来源及可用时间戳，按岗位、公司和技术分类，合并同义题，默认研究并核验简洁参考答案，导出带答案与纯题目两份报告；按用户需求维护研究进度、整理岗位/JD 专题或逐题模拟面试。"
