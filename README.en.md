@@ -6,42 +6,14 @@ English | [简体中文](README.md)
 
 Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.9.0**, combining the 1.8 media workflow and 1.9 host portability improvements. See the [v1.9.0 release notes](https://github.com/EXIST-D/Interview-bank/releases/tag/v1.9.0).
 
-## This release: 1.9 host portability
+## What's new in v1.9.0
 
-Measured Python/workspace/dependency probes are separate from host-declared image, web and transcription capabilities. Media routing prioritizes saved transcripts, matching sidecars, declared host tools, and optional local ASR. Ambiguous subtitles require source review.
+- **Audio, video and transcript intake:** organize recordings, video audio tracks and SRT/VTT/TXT/JSON transcripts with timestamps and original wording, then classify, deduplicate, research answers and export paired reports.
+- **Resumable transcription:** save progress per file, retry failed files and reuse existing transcripts without counting identical originals twice.
+- **Environment checks and routing:** check Python, workspace access and local transcription dependencies, then select supplied subtitles, available host tools or an optional local model.
+- **Unified host transcript import:** accept tool-produced segments or text, preserve available timestamps and speaker labels, validate provenance and handle repeated submissions.
 
-A provider-neutral handoff normalizes real host tool segments/chunks/text, binds results to the original file digest and handles retries idempotently. Remote tool execution remains with the host and requires an existing authorization covering the provider, destination, file and expected charges. The Python engine performs no media uploads and stores no API keys.
-
-Hosts must be able to read the Skill, access authorized files and execute Python; verified-answer research also needs browsing. Validation covers the current Windows runtime and synthetic host contracts, not every Agent/OS/cloud service. See [host portability](skills/interview-bank/references/portability.md).
-
-Version 1.9 validation: 146 automated tests and an independent installation check passed. A real subtitle-reuse path produced two questions and paired reports. Host/cloud handoff was contract-tested without calling a live cloud service.
-
-## 1.8 media and transcripts
-
-- Optional local ASR reads original recordings and video audio tracks without uploading media. Existing UTF-8 SRT/VTT/TXT/JSON transcripts require no speech model.
-- Timestamped provenance, raw excerpts and explained corrections pass through paginated Agent extraction into the existing classification, deduplication, sourced-answer and paired-report workflow.
-- Completed files are saved before moving on; failed files can resume. Exact original bytes are deduplicated. Attach subtitles to their media instead of importing the same content as two appearances.
-- Coverage is spoken audio, not silent text or diagrams on video frames. Automatic speaker diarization is not implemented. Agent review is required even when ASR did not flag uncertainty.
-
-Ask your Agent to organize a local media/subtitle folder into a chosen bank and generate both report editions. See the [media protocol](skills/interview-bank/references/media.md) for commands, optional dependencies and recovery.
-
-Version 1.8 reads existing V1/V2 banks. After adding media records, continue using 1.8+ because older strict validators do not recognize transcript fields. Back up an existing bank before its first media intake. The 1.8 and 1.9 changes ship together in v1.9.0. Updating the Skill does not automatically migrate or modify a personal bank.
-
-Version 1.8 validation: 136 automated tests and an independently unpacked installation/read-only check passed. Synthetic Chinese/English recordings and video audio tracks completed real ASR and a two-question sourced report workflow.
-
-## Existing capabilities: stages 1.5–1.7
-
-Version 1.7.0 brings three completed development stages to the existing screenshot and reference-answer workflow.
-
-| Stage | Completed capabilities | Example use |
-|---|---|---|
-| 1.5 Maintenance | Verified V2 backup, migration and recovery; protected fields and forbidden merges; scoped research with resumable batches and answer-revision checks | Add new material, preserve your edits and resume unfinished research |
-| 1.6 Topics and JD preparation | Combined filters, snapshot/dynamic topics, exact JD excerpts, explained direct/partial matches and gaps, paired reports | Turn a supplied JD into a study selection from your existing bank |
-| 1.7 Review and mock interviews | Self-ratings, review dates and queues, one-question-at-a-time sessions, real responses, reference feedback, follow-ups and resume | Practise a topic, track weak questions and continue a previous session |
-
-V1 banks retain M1–M5 support. Saving topics, durable research workflows and review state requires the Skill's verified V2 migration process. Updating the installed Skill does not automatically migrate a personal bank.
-
-Validation includes 124 automated tests, an independently unpacked installation check and a real incremental screenshot/answer workflow with duplicate-import verification. These checks cover specific behavior, not universal extraction accuracy or factual correctness. See the [v1.7.0 release](https://github.com/EXIST-D/Interview-bank/releases/tag/v1.7.0).
+See the [v1.9.0 release notes](https://github.com/EXIST-D/Interview-bank/releases/tag/v1.9.0) for the full changes and validation record.
 
 ## Repository structure
 
@@ -92,7 +64,7 @@ The workflow has been exercised with Windows and Codex. Other hosts need equival
 
 If you are unfamiliar with installation commands, simply ask your agent:
 
-> Please install the [Interview-bank](https://github.com/EXIST-D/Interview-bank) Skill for me and give me a brief introduction.
+> Please install this Skill: [https://github.com/EXIST-D/Interview-bank](https://github.com/EXIST-D/Interview-bank), and give me a brief introduction.
 
 View the [interview-bank page on skills.sh](https://skills.sh/exist-d/interview-bank/interview-bank). Install for Codex in the current project using the `skills` CLI:
 
@@ -207,13 +179,39 @@ The six JSONL tables plus V2 data/state.json are canonical; SQLite is rebuildabl
 
 ## Current status and planned features
 
-Version 1.7 implements persistent maintenance, saved topics/JD preparation and personal review/mock interviews. Existing V1 banks retain M1–M5 support. New personal features require an explicit V2 upgrade with a verified backup. Legacy answer content is preserved but needs a coverage recheck; a recent date alone does not certify a changed question.
+Version **1.9.0** supports material intake, ongoing bank maintenance and interview preparation. The following capabilities are implemented and invoked by the Agent as needed:
 
-The CLI supports research caps by new answer count, task packets and deadline; exact token metering belongs to the host. Interview sessions require actual user responses. Review queues are on demand, without a background notification service.
+| Implemented capability | What it does today |
+|---|---|
+| Screenshots and selected text | Extract reusable questions in batches, exclude purely personal prompts and preserve original wording and sources |
+| Audio, video and transcripts | Transcribe recordings and video audio tracks, read SRT/VTT/TXT/JSON, preserve available timestamps and corrections, and resume per file |
+| Semantic classification | Classify by role, domain, technology, company and industry, with multiple labels, aliases, hierarchical filters and corrections |
+| Incremental intake and deduplication | Add material to an existing bank, skip identical files and merge equivalent questions while preserving occurrences and decisions |
+| Reference-answer research | Search and read credible sources by default, check claims and scope, provide concise labeled reference answers and citations, and resume research or revisit stale answers |
+| Search, statistics and reports | Apply combined filters, summarize frequency and domains, and export answered/question-only reports with structured details |
+| Personal-bank maintenance | Verified backup, V2 migration and recovery, protected edits, forbidden merges, saved research progress and answer history |
+| Role and JD topics | Select relevant existing questions, explain matches and gaps, save topics and export both report editions |
+| Review and mock interviews | Save self-ratings and review dates, build queues on request, ask one question at a time, record real responses and resume sessions |
+| Host adaptation | Separate measured capabilities from tool declarations, plan transcription routes and import actual host tool results |
 
-Planned extensions include visual video-question extraction, automatic speaker diarization, finer-grained ASR recovery, user-selected public-link/social reference intake and a local Web management interface. Local speech transcription and supplied-transcript intake are implemented in 1.8. Arbitrary historical unmerge is not supported. Validation covers data and recovery behavior, not universal extraction or factual accuracy.
+The Agent needs Skill access, authorized file access and Python execution. Screenshots require image viewing; sourced answers require actual web research. Raw media can use host transcription tools or an optional local speech model; remote calls are performed by the host within user authorization. See [host portability](skills/interview-bank/references/portability.md) and the [media protocol](skills/interview-bank/references/media.md).
 
-This public repository contains the Skill, introductions and licenses. Personal screenshots, banks, research records, development plans, test projects and local environments are not published.
+Existing V1 banks retain extraction, classification, deduplication, research and export support. Saved topics, durable research workflows and review state require a verified backup and explicit V2 migration. Media records require version 1.8+. Updating the Skill neither migrates a personal bank automatically nor marks old answers as freshly verified.
+
+**Planned, not yet implemented:**
+
+| Direction | Remaining capability |
+|---|---|
+| Video-frame question extraction | Extract unspoken text and diagrams from frames; currently video coverage is speech, with separate screenshot review for visual content |
+| Media enhancements | Automatic speaker diarization and checkpoints within long recordings; currently supplied speaker labels are preserved and recovery is per file |
+| Public-link and social-platform intake | Collect related questions and answers from user-selected links or platforms with provenance and verification; existing answer research includes web browsing but no dedicated platform scraping workflow |
+| Local Web management interface | Browse, search, edit and review a bank in the browser; current operation uses an Agent and CLI |
+
+**Other current limits:** review queues have no background reminders; exact token and cost metering depends on the host; arbitrary historical unmerge is unavailable, with undo limited to eligible recent operations. These are not included in the implemented scope.
+
+Version 1.9.0 passed 146 automated tests and independent installation checks. Screenshots, real speech transcription and reports were exercised on Windows. Host integration was contract-tested, not tested against every Agent, operating system or live cloud service. Extracted content and reference answers still require attention to original material, evidence and applicability.
+
+This public repository contains the Skill, introductions and licenses. Personal material, banks, research records, development plans, test projects and local environments are not published.
 
 ## Author and maintenance
 
