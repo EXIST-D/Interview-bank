@@ -4,16 +4,22 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Codex and other capable agents. It helps users extract questions from screenshots, selected text, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.9.0**, combining the 1.8 media workflow and 1.9 host portability improvements. See the [v1.9.0 release notes](https://github.com/EXIST-D/Interview-bank/releases/tag/v1.9.0).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.10.0**. See the [v1.10.0 release notes](https://github.com/EXIST-D/Interview-bank/releases/tag/v1.10.0).
 
-## What's new in v1.9.0
+## What's new: 1.10 optional local Web interface
 
-- **Audio, video and transcript intake:** organize recordings, video audio tracks and SRT/VTT/TXT/JSON transcripts with timestamps and original wording, then classify, deduplicate, research answers and export paired reports.
-- **Resumable transcription:** save progress per file, retry failed files and reuse existing transcripts without counting identical originals twice.
-- **Environment checks and routing:** check Python, workspace access and local transcription dependencies, then select supplied subtitles, available host tools or an optional local model.
-- **Unified host transcript import:** accept tool-produced segments or text, preserve available timestamps and speaker labels, validate provenance and handle repeated submissions.
+- **Visual library:** a clean light interface with text search, role/domain/technology/company/industry/answer filters, pagination and frequency/date/title sorting.
+- **Reading and provenance:** reference answers, source links, original wording and practice history, with missing/draft/stale answers clearly distinguished.
+- **Focused practice:** select a filtered round or a single question, write a response, reveal the answer and self-rate for later review.
+- **Optional startup:** reuse Python without npm or a model service. V1 supports browsing and temporary practice; V2 persists self-ratings and written responses.
 
-See the [v1.9.0 release notes](https://github.com/EXIST-D/Interview-bank/releases/tag/v1.9.0) for the full changes and validation record.
+See [local Web usage](skills/interview-bank/references/web.md). The 159-test suite and independent packaged Web startup check passed. Published versions are listed in [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+
+## Interface preview
+
+![Interview Bank local Web interface showing filters, questions and a reference answer](assets/readme/web-preview.png)
+
+This screenshot shows an actual local bank preview with filters, occurrence counts, reference answers and source links. Stale-answer notices remain visible so older answers are not presented as newly verified. Question and practice counts are illustrative; installing the Skill does not include this bank.
 
 ## Repository structure
 
@@ -22,12 +28,14 @@ Interview-bank/
 ├── README.md
 ├── README.en.md
 ├── LICENSE
+├── assets/readme/                # README images, excluded from Skill installation
 └── skills/
     └── interview-bank/
         ├── SKILL.md
         ├── LICENSE.txt
         ├── agents/
         │   └── openai.yaml
+        ├── assets/web/
         ├── references/
         └── scripts/
             ├── ibank.py
@@ -132,6 +140,18 @@ Save and commit in batches. Report actual question and answer coverage,
 output locations and unresolved items when finished.
 ```
 
+## Optional local Web browsing and practice
+
+Ask your Agent: “Use interview-bank to open the local Web interface for my selected bank so I can browse and practise.” Or replace the paths below with your installation and existing bank:
+
+```text
+python -B <skill-directory>/scripts/ibank.py web --bank <existing-bank> --open
+```
+
+Open the complete returned launch URL. The service selects an available port and binds only to loopback; stop it with Ctrl+C in its terminal. `--read-only` disables practice writes, while normal locks, cache and transaction recovery still apply.
+
+Practice uses user self-ratings, not automatic AI grading. Submitted events persist on V2; an unfinished round or unsubmitted response does not survive page reload. Use the Agent interview workflow for durable conversational sessions and AI feedback.
+
 ## Included content
 
 - [SKILL.md](skills/interview-bank/SKILL.md): triggers, full workflow, operating boundaries and protocol links.
@@ -179,7 +199,7 @@ The six JSONL tables plus V2 data/state.json are canonical; SQLite is rebuildabl
 
 ## Current status and planned features
 
-Version **1.9.0** supports material intake, ongoing bank maintenance and interview preparation. The following capabilities are implemented and invoked by the Agent as needed:
+Version **1.10.0** supports material intake, ongoing bank maintenance and interview preparation. The following capabilities are implemented and invoked by the Agent as needed:
 
 | Implemented capability | What it does today |
 |---|---|
@@ -192,6 +212,7 @@ Version **1.9.0** supports material intake, ongoing bank maintenance and intervi
 | Personal-bank maintenance | Verified backup, V2 migration and recovery, protected edits, forbidden merges, saved research progress and answer history |
 | Role and JD topics | Select relevant existing questions, explain matches and gaps, save topics and export both report editions |
 | Review and mock interviews | Save self-ratings and review dates, build queues on request, ask one question at a time, record real responses and resume sessions |
+| Local Web browsing and practice | Browse and filter existing questions, reveal answers, inspect original wording and save self-ratings/responses on V2 |
 | Host adaptation | Separate measured capabilities from tool declarations, plan transcription routes and import actual host tool results |
 
 The Agent needs Skill access, authorized file access and Python execution. Screenshots require image viewing; sourced answers require actual web research. Raw media can use host transcription tools or an optional local speech model; remote calls are performed by the host within user authorization. See [host portability](skills/interview-bank/references/portability.md) and the [media protocol](skills/interview-bank/references/media.md).
@@ -205,13 +226,13 @@ Existing V1 banks retain extraction, classification, deduplication, research and
 | Video-frame question extraction | Extract unspoken text and diagrams from frames; currently video coverage is speech, with separate screenshot review for visual content |
 | Media enhancements | Automatic speaker diarization and checkpoints within long recordings; currently supplied speaker labels are preserved and recovery is per file |
 | Public-link and social-platform intake | Collect related questions and answers from user-selected links or platforms with provenance and verification; existing answer research includes web browsing but no dedicated platform scraping workflow |
-| Local Web management interface | Browse, search, edit and review a bank in the browser; current operation uses an Agent and CLI |
+| Web management enhancements | Question editing, merge review, intake and durable practice sessions; browsing, filtering and self-rated practice are now implemented |
 
 **Other current limits:** review queues have no background reminders; exact token and cost metering depends on the host; arbitrary historical unmerge is unavailable, with undo limited to eligible recent operations. These are not included in the implemented scope.
 
-Version 1.9.0 passed 146 automated tests and independent installation checks. Screenshots, real speech transcription and reports were exercised on Windows. Host integration was contract-tested, not tested against every Agent, operating system or live cloud service. Extracted content and reference answers still require attention to original material, evidence and applicability.
+Version 1.10.0 passed 159 automated tests and independent installation checks. Local Web browsing, filters, written responses, self-ratings and persistence were also verified against an isolated copy of a real bank. Screenshots, real speech transcription and reports were exercised on Windows. Host integration was contract-tested, not tested against every Agent, operating system or live cloud service. Extracted content and reference answers still require attention to original material, evidence and applicability.
 
-This public repository contains the Skill, introductions and licenses. Personal material, banks, research records, development plans, test projects and local environments are not published.
+This public repository contains the Skill, introductions, licenses and the README example image. Personal material, banks, research records, development plans, test projects and local environments are not published.
 
 ## Author and maintenance
 

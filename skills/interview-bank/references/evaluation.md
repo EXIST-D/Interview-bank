@@ -20,4 +20,4 @@ The release example uses actually read Redis official pages and retained access 
 
 ## Limits to state honestly
 
-Synthetic fixtures and passing unit tests are not real-world extraction accuracy measurements. Unseen screenshots still need actual host vision, appropriate confidence, and review of ambiguous text. Candidate retrieval is lexical/tag-based and bounded; it cannot guarantee exhaustive semantic recall. Human-reviewed status requires an actual human decision. Audio/video and interactive viewer are outside this release.
+Synthetic fixtures and passing unit tests are not real-world extraction accuracy measurements. Unseen screenshots still need actual host vision, appropriate confidence, and review of ambiguous text. Candidate retrieval is lexical/tag-based and bounded; it cannot guarantee exhaustive semantic recall. Human-reviewed status requires an actual human decision. Audio/video speech intake was added in 1.8 and the optional local Web reader/practice UI in 1.10. Their protocol and behavior checks do not establish universal transcription accuracy or AI grading quality; Web practice uses user self-ratings.

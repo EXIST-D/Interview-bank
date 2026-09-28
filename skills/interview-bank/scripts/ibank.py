@@ -43,6 +43,10 @@ def parser():
     root = argparse.ArgumentParser(description=__doc__, parents=[common])
     root.add_argument("--version", action="version", version=__version__)
     sub = root.add_subparsers(dest="command", required=True)
+    web = sub.add_parser("web", parents=[common], help="Open an optional loopback-only question reader and practice UI")
+    web.add_argument("--port", type=int, default=0, help="Local port; 0 selects an available port")
+    web.add_argument("--read-only", action="store_true", help="Disable saving practice ratings")
+    web.add_argument("--open", action="store_true", help="Open the launch URL in the default browser")
     for name in ("init", "doctor", "validate", "rebuild-index"):
         sub.add_parser(name, parents=[common])
     taxonomy = sub.add_parser("taxonomy", parents=[common], help="Browse classification IDs, Chinese labels and aliases (no bank needed)")
@@ -147,6 +151,9 @@ def dispatch(args):
     if args.command == "taxonomy" and not getattr(args, "bank", None):
         return catalog_view(args.dimension, args.query, args.limit, args.offset)
     bank = resolve_bank(getattr(args, "bank", None))
+    if args.command == "web":
+        from ibank_core.web import serve
+        return serve(bank, args.port, args.read_only, args.open)
     if args.command in ("media-plan", "media-provider-task", "media-provider-import"):
         from ibank_core.portability import dispatch as portability_dispatch
         return portability_dispatch(bank, args)

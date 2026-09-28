@@ -20,7 +20,7 @@ export --format markdown|json|jsonl|csv|viewer --output <name> writes under bank
 - json: structured snapshot with question/occurrences/answer history, referenced sources/companies and relations.
 - jsonl: one question envelope per line with its related records.
 - csv: UTF-8 BOM for Excel, formula-safe cells, structured occurrence/citation/company JSON columns.
-- viewer: JSON snapshot for a future viewer; no separate Web application is included.
+- viewer: portable JSON snapshot for downstream tools. For the optional local Web reader/practice UI, use `web --bank <bank>`; it reads the existing bank directly, not the viewer export. See [Web usage](web.md).
 
 Local source paths are omitted by default; --include-paths explicitly includes them. Citation URLs and source URLs remain because they are evidence. Exported snapshots are reading/interchange formats, not stage --input canonical import bundles. Canonical backup consists of manifest/config/data and retained media; operate while no outside writer is modifying it.
 

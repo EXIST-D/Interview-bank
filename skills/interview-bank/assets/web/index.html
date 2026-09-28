@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Interview Bank · 我的题库</title>
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+<a class="skip" href="#main">跳到题库</a>
+<div class="app-shell">
+  <aside class="sidebar" aria-label="题库导航">
+    <a class="brand" href="/" aria-label="Interview Bank 首页"><span class="brand-mark" aria-hidden="true">iB</span><span>Interview Bank<small>每一次积累，都算数。</small></span></a>
+    <p class="nav-caption">个人空间</p>
+    <nav id="views" class="nav-list">
+      <button data-view="all" class="nav-item active"><span class="nav-symbol" aria-hidden="true">▦</span>全部题目<span id="nav-all" class="nav-count">—</span></button>
+      <button data-view="due" class="nav-item"><span class="nav-symbol" aria-hidden="true">◷</span>待复习<span id="nav-due" class="nav-count">—</span></button>
+      <button data-view="weak" class="nav-item"><span class="nav-symbol" aria-hidden="true">◇</span>待巩固<span id="nav-weak" class="nav-count">—</span></button>
+      <button data-view="unseen" class="nav-item"><span class="nav-symbol" aria-hidden="true">○</span>尚未练习<span id="nav-unseen" class="nav-count">—</span></button>
+    </nav>
+    <div class="sidebar-note"><span class="note-line"></span><p>把收集的题目，<br>变成自己的知识。</p><small>先想一想，再看答案。</small></div>
+    <div class="local-info"><span class="status-dot"></span><span>本地题库<small id="bank-name">正在连接…</small></span><span id="version" class="version"></span></div>
+  </aside>
+  <main id="main" tabindex="-1">
+    <header class="page-header"><div><p class="eyebrow">YOUR KNOWLEDGE, GROWING.</p><h1 id="page-title">我的题库<span class="title-dot">.</span></h1><p id="page-subtitle" class="subtitle">将零散的问题，整理成清晰的思路。</p></div><div class="header-actions"><button id="refresh" class="button quiet" title="重新读取题库">刷新题库</button><button id="start-practice" class="button primary" disabled>开始练习 <span aria-hidden="true">↗</span></button></div></header>
+    <div id="notice" class="notice" role="status" hidden></div>
+    <div id="error" class="error" role="alert" hidden></div>
+    <section class="summary" aria-label="题库概览"><div><span id="stat-total">—</span><small>积累题目</small></div><div><span id="stat-answered">—</span><small>已收录参考答案</small></div><div><span id="stat-domains">—</span><small>知识领域</small></div><div class="summary-end"><span id="stat-due">—</span><small>待复习 · 含未练习</small></div></section>
+    <section class="library-controls" aria-label="搜索和筛选">
+      <div class="search-row"><label class="search-box"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="搜索题目或原始问法…" aria-label="搜索题目"><kbd>/</kbd></label><label class="sort-label">排序<select id="sort"><option value="frequency">出现频次</option><option value="recent">最近更新</option><option value="title">题目名称</option></select></label></div>
+      <div class="filter-row"><label><span>领域</span><select id="domain" aria-label="领域"><option value="">全部领域</option></select></label><label><span>岗位</span><select id="role" aria-label="岗位"><option value="">全部岗位</option></select></label><label><span>技术栈</span><select id="technology" aria-label="技术栈"><option value="">全部技术栈</option></select></label><label><span>公司</span><select id="company" aria-label="公司"><option value="">全部公司</option></select></label><label><span>行业</span><select id="industry" aria-label="行业"><option value="">全部行业</option></select></label><label><span>答案</span><select id="answer_status" aria-label="答案状态"><option value="">全部答案状态</option><option value="source_backed">有来源</option><option value="reviewed">人工审阅</option><option value="missing">待补写</option><option value="ai_draft">AI 草稿</option><option value="stale">待重新核验</option></select></label><button id="clear-filters" class="text-button">重置</button></div>
+    </section>
+    <section class="workspace" aria-label="题库阅读区">
+      <div class="question-column"><div class="list-heading"><span>题目清单</span><small id="result-count" aria-live="polite">正在读取</small></div><div id="question-list" class="question-list" aria-busy="true"></div><div class="pagination"><button id="previous" class="button small" disabled>上一页</button><span id="page-number">—</span><button id="next" class="button small" disabled>下一页</button></div></div>
+      <article id="reader" class="reader" aria-label="题目详情"><div class="reader-placeholder"><span class="placeholder-icon" aria-hidden="true">↗</span><h2>从一个问题开始。</h2><p>选择左侧题目，查看参考答案与出处。<br>也可以开始一组练习，检验自己的理解。</p></div></article>
+    </section>
+    <footer class="page-footer"><span>思考在先，参考在后。</span><span>出现次数按收集记录统计</span></footer>
+  </main>
+</div>
+<dialog id="practice-dialog" aria-labelledby="practice-title">
+  <div class="practice-top"><div><p class="eyebrow">A LITTLE PRACTICE, EVERY DAY.</p><h2 id="practice-title">专注练习</h2></div><button id="close-practice" class="icon-button" aria-label="结束并关闭练习">×</button></div>
+  <div id="practice-setup"><p class="subtitle">从当前筛选结果中选题。先独立作答，再对照参考答案。</p><div class="practice-options"><label>本轮题数<select id="practice-limit"><option value="5">5 题 · 轻量热身</option value="10" selected>10 题 · 专注一轮</option><option value="20">20 题 · 深入练习</option></select></label></div><p id="practice-mode" class="hint"></p><button id="begin-round" class="button primary">开始这一轮 <span aria-hidden="true">→</span></button></div>
+  <div id="practice-body" hidden></div>
+  <div id="practice-error" class="error" role="alert" hidden></div>
+</dialog>
+<div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>

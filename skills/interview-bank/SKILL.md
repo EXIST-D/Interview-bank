@@ -1,16 +1,16 @@
 ---
 name: interview-bank
-description: Build and maintain a local interview question bank from screenshots, selected text, local audio/video recordings, subtitles or transcripts. Use for question extraction with provenance and timestamps, semantic classification, conservative deduplication, concise sourced answers, paired study reports, JD study sets, spaced review and mock interviews. Uses host reasoning/web tools and an optional local speech transcription adapter.
+description: Build and maintain a local interview question bank from screenshots, selected text, local audio/video recordings, subtitles or transcripts. Use for question extraction with provenance and timestamps, semantic classification, conservative deduplication, concise sourced answers, paired study reports, JD study sets, spaced review, mock interviews and an optional local Web reader/practice interface. Uses host reasoning/web tools and an optional local speech transcription adapter.
 license: MIT
 metadata:
   author: EXIST-D
-  version: "1.9.0"
+  version: "1.10.0"
   repository: https://github.com/EXIST-D/Interview-bank
 ---
 
 # Interview Bank
 
-Version 1.9.0 adds measured environment checks, host capability declarations, transcript routing and provider-neutral host result import to the existing media, M1–M5, maintenance, JD and practice workflows. **Actually inspect source material and read cited pages**; only the optional media-transcribe adapter runs a speech model. Other commands do not perform OCR, semantic inference or web browsing. Prepare structured responses yourself; do not ask the user to author JSON.
+Version 1.10.0 adds an optional loopback-only Web reader and self-rated practice interface to the existing workflows. **Actually inspect source material and read cited pages**; only the optional media-transcribe adapter runs a speech model. Other commands do not perform OCR, semantic inference or web browsing. Prepare structured responses yourself; do not ask the user to author JSON.
 
 ## Rules
 
@@ -53,6 +53,10 @@ Route only to relevant references; do not load all protocols for a narrow reques
 State mutations return run_id and require commit just like existing workflows; inspect the response, then commit within the user's requested scope. migrate apply directly commits an explicit format upgrade. workflow next creates a task packet; it never browses or writes answers. Keep all IDs from returned records and use stable request IDs for retrying practice/session writes.
 
 For a V2 end-to-end intake, commit the final M3 run, create/commit a workflow scoped by from_run, repeatedly call workflow next → actual research → answer → commit, then workflow export and summary. For an existing topic use studyset_id or explicit question_ids. Default answers still cover the entire requested scope; budgets/blocked items remain visible. Legacy migrated answers need a coverage recheck rather than an automatic fresh timestamp.
+
+## Optional local Web reader and practice
+
+When the user asks to browse or practise in a local browser, read [local Web usage](references/web.md). Start `web --bank <existing-bank>` and use its returned launch URL. Serve only the requested bank; this does not start intake or research. V1 supports reading and temporary practice; V2 also records actual user self-ratings and written responses through audited commits. Do not silently migrate a bank. Keep the process available while the user needs the page and record how to stop it. The Web UI does not run an AI model, research answers or automatically grade responses.
 
 ## Host portability and setup
 
