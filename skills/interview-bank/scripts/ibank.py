@@ -23,7 +23,7 @@ from ibank_core.doctor import doctor
 from ibank_core import __version__
 from ibank_core.catalog import DIMENSIONS, catalog_view
 from ibank_core.companies import list_companies
-from ibank_core.errors import BankError
+from ibank_core.errors import BankError, describe_error
 from ibank_core.index import rebuild_index
 from ibank_core.runs import commit_run, stage_bundle, stage_text, show_run, undo_run, abandon_run, run_path
 from ibank_core.ingestion import intake_images, stage_extraction, save_extraction
@@ -283,7 +283,8 @@ def main(argv=None):
         result = dispatch(args)
     except (BankError, OSError, ValueError) as exc:
         code = exc.code if isinstance(exc, BankError) else 1
-        error = {"ok": False, "command": args.command, "error": str(exc), "code": code}
+        error_type, hint = describe_error(exc)
+        error = {"ok": False, "command": args.command, "error": str(exc), "code": code, "error_type": error_type, "hint": hint}
         print(json.dumps(error, ensure_ascii=False) if machine else f"Error: {exc}", file=sys.stderr)
         return code
     if machine:
