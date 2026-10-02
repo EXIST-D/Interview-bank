@@ -57,7 +57,26 @@ def report_group(question):
     return '其他知识题'
 
 
-def answer_section(question):
+ANSWER_EXTRAS = ('folded', 'inline', 'none')
+
+
+def answer_extras(answer, mode='folded'):
+    """Spoken version, follow-ups and pitfalls are interview practice material; show them when written."""
+    parts = []
+    if answer.get('spoken_answer', '').strip():
+        parts.append(('口述版', '**口述版**：' + md(answer['spoken_answer'].strip())))
+    for field, title in (('follow_up_questions', '常见追问'), ('common_mistakes', '易错点')):
+        if answer.get(field):
+            parts.append((title, f'**{title}**\n' + '\n'.join('- ' + md(item) for item in answer[field])))
+    if mode == 'none' or not parts:
+        return []
+    body = '\n\n'.join(text for _, text in parts)
+    if mode == 'inline':
+        return [body]
+    return ['<details><summary>' + ' · '.join(title for title, _ in parts) + '</summary>\n\n' + body + '\n\n</details>']
+
+
+def answer_section(question, extras='folded'):
     """Publish concise sourced answers; retain unverified/history content in JSON."""
     answer, status = question['answer'], question['answer_status']
     if not answer or status == 'missing':
@@ -76,10 +95,10 @@ def answer_section(question):
         out.append(md(answer['short_answer']))
     links = ['[' + md(s['title']) + '](' + quote(s['url'], safe=':/?&=%+#@!$,;~') + ')' for s in answer['sources']]
     out.append('参考资料：' + '；'.join(links))
-    return out
+    return out + answer_extras(answer, extras)
 
 
-def markdown(payload, *, include_answers=True):
+def markdown(payload, *, include_answers=True, extras='folded'):
     """Navigable study report with topic totals and frequency-ordered questions."""
     selected = set(payload['report']['question_ids'])
     questions = [q for q in payload['questions'] if q['id'] in selected]
@@ -121,7 +140,7 @@ def markdown(payload, *, include_answers=True):
             else:
                 out.append(f'### {number}. ' + md(text))
             if include_answers:
-                out.extend(answer_section(q))
+                out.extend(answer_section(q, extras))
             company_names = sorted({companies[o['company_id']] for o in q['occurrences'] if o['company_id'] in companies})
             tags = list(dict.fromkeys(display(d, v) for d in ('domains', 'technologies') for v in q[d]))
             meta = [f"出现 {q['frequency']} 次"]
@@ -139,8 +158,9 @@ def markdown(payload, *, include_answers=True):
     return '\n\n'.join(out) + '\n'
 
 
-def export_bank(bank, output, format="markdown", *, include_paths=False, answer_mode="both", report_context=None, **filters):
+def export_bank(bank, output, format="markdown", *, include_paths=False, answer_mode="both", report_context=None, answer_extras_mode="folded", **filters):
     require(format in ("markdown", "json", "jsonl", "csv", "viewer"), "Unsupported export format")
+    require(answer_extras_mode in ANSWER_EXTRAS, "answer extras must be folded, inline or none")
     require(answer_mode in ("both", "with", "without"), "Invalid answer mode")
     require(format == 'markdown' or answer_mode == 'both', "Answer mode only applies to Markdown")
     with open_bank(bank) as (_, config, data):
@@ -185,7 +205,7 @@ def export_bank(bank, output, format="markdown", *, include_paths=False, answer_
             payload['report']['answer_mode'] = answer_mode
             payload['report']['answered_questions'] = answered
             payload['report']['pending_answers'] = len(visible) - answered
-            content = markdown(payload, include_answers=answer_mode != 'without')
+            content = markdown(payload, include_answers=answer_mode != 'without', extras=answer_extras_mode)
             question_content = markdown(payload, include_answers=False) if question_target else None
             atomic_write(companion, dumps(payload) + "\n")
             if question_target:

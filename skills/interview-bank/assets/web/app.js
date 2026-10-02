@@ -43,7 +43,13 @@ function answer(q) {
   if(q.answer_status==='stale')wrap.append(el('p','answer-warning','这份答案需要重新核验，请留意版本、题干变化与适用条件。'));
   wrap.append(richText(q.answer.short_answer));
   if(q.answer.code_example)wrap.append(richText('```\n'+q.answer.code_example+'\n```'));
-  const links=el('div','source-links');for(const src of q.answer.sources||[]){const a=safeLink(src.url,'↗ '+(src.title||src.url));if(a)links.append(a);}wrap.append(links);return wrap;
+  const links=el('div','source-links');for(const src of q.answer.sources||[]){const a=safeLink(src.url,'↗ '+(src.title||src.url));if(a)links.append(a);}wrap.append(links);
+  // Optional practice depth written with the answer; collapsed so the concise answer stays first.
+  for(const [field,title] of [['spoken_answer','口述版'],['follow_up_questions','常见追问'],['common_mistakes','易错点'],['deep_dive','深入理解']]){
+    const value=q.answer[field];const text=Array.isArray(value)?value.map(v=>'- '+v).join('\n'):String(value||'').trim();if(!text)continue;
+    const box=el('details','answer-extra');box.append(el('summary','',title),richText(text));wrap.append(box);
+  }
+  return wrap;
 }
 function updateFacets(facets) {
   const labels={domain:'全部领域',role:'全部岗位',technology:'全部技术栈',company:'全部公司',industry:'全部行业'};

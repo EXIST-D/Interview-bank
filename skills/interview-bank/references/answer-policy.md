@@ -21,18 +21,18 @@ For EACH question:
 - Group 5–10 questions by topic. Read a shared primary page once per relevant version and retain a concise source/evidence ledger, URL, actual access date and covered claims. Reuse the evidence only where it supports each question; do not mechanically attach the same citation to unrelated claims.
 - Research task packets intentionally omit occurrences and full answer histories. Use show only when provenance, old wording or deeper answer history is necessary. Avoid repeatedly pasting full webpages or the entire bank into context.
 - Commit each completed batch and record remaining IDs, blocked reasons and completion counts. Resume those IDs rather than starting over. Fresh task packets are required after commits. A batch size limits context, not the total assignment or a guaranteed token budget.
-- Concise reader answers do not require verbose hidden essays: keep deep_dive, spoken answers and other mandatory fields useful and proportionate, not padded. Verify sufficiently before condensing.
+- Required content is short_answer, key_points and sources (plus evidence when source_backed). spoken_answer, deep_dive, interviewer_intent, common_mistakes, follow_up_questions and code_example are optional: write them only when they add practice value, never as padding. Verify sufficiently before condensing.
 - After research, export both editions from the same data using the CLI. The question-only edition requires no second model generation. If a user supplies a budget, honor it and report actual remaining coverage rather than fabricating completion; when usage is unavailable, do not invent precise token or money estimates.
 
 ## Concise reader answers
 
 Always label displayed content 答案（参考）. Write short_answer as one direct conclusion plus usually 3–5 short points, approximately 100–250 Chinese characters for ordinary conceptual questions; use fewer points for simple facts, or more space only to retain required constraints. Newline-separated points render as bullets. Do not repeat the question, add promotional introductions, dump retrieved text, or mechanically truncate an answer. Include the essential mechanism, choice/tradeoff and key boundary. Algorithm answers should state approach and complexity; requested runnable code belongs in code_example, with its concise result in short_answer.
 
-Keep long explanations, spoken versions, examples, common mistakes, verification notes and full evidence in the structured records/ledger. Link the sources that support the reader answer. All substantive claims in short_answer must also be represented by the cited key_points. The reference label signals an aid to study, not permission to relax verification.
+Optional depth fields are rendered for the reader: the answer edition shows a folded 口述版 · 常见追问 · 易错点 block (`export --answer-extras folded|inline|none`) and the Web reader shows collapsible sections. Verification notes and full evidence stay in the structured records/ledger. Link the sources that support the reader answer. All substantive claims in short_answer must also be represented by the cited key_points. The reference label signals an aid to study, not permission to relax verification.
 
 ## Response shape
 
-Return exactly one answer or explicit skip per task question. Example structure below uses placeholder content/IDs/URLs solely to document fields; replace them with actual research, never persist placeholders.
+Return exactly one answer or explicit skip per task question. Example structure below uses placeholder content/IDs/URLs solely to document fields; replace them with actual research, never persist placeholders. The example shows every field; spoken_answer, deep_dive, interviewer_intent, common_mistakes, follow_up_questions and code_example may be omitted.
 
 ```json
 {
