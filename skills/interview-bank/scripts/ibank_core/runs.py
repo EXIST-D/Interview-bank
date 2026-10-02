@@ -1,10 +1,12 @@
 """Validated staging, durable commits and provenance-preserving undo."""
 import hashlib
+import os
 import re
 from contextlib import nullcontext
 
 from .errors import ValidationError, ReviewRequired
 from .catalog import normalize_labels
+from .deltas import apply, diff, inserted, invert, validate_changes
 from .ids import new_company_id, new_occurrence_id, new_question_id, new_run_id, new_source_id, utc_now
 from .normalize import normalize_company_alias, normalize_question_text, normalize_technology
 from .privacy import privacy_check
@@ -16,6 +18,66 @@ from .storage import (atomic_write, bank_file, dumps, empty_data, fingerprint, j
 def run_path(bank, run_id):
     require(isinstance(run_id, str) and re.fullmatch(r"run_[a-zA-Z0-9_-]+", run_id), "Invalid run ID")
     return bank_file(bank, f"runs/{run_id}")
+
+
+def run_format():
+    """2 (default) stores change sets; INTERVIEW_BANK_RUN_FORMAT=1 forces full snapshots."""
+    value = os.environ.get("INTERVIEW_BANK_RUN_FORMAT", "2").strip()
+    require(value in ("1", "2"), "INTERVIEW_BANK_RUN_FORMAT must be 1 or 2")
+    return int(value)
+
+
+def read_changes(bank, run_id):
+    path = run_path(bank, run_id) / "changes.jsonl"
+    require(path.is_file(), f"Run {run_id} was compacted by gc; its change set is no longer available")
+    return validate_changes(read_jsonl(path))
+
+
+def _stage_tables(bank, run_id):
+    path = run_path(bank, run_id)
+    require((path / "questions.jsonl").is_file(), f"Run {run_id} was compacted by gc; its staged tables are no longer available")
+    addition = {table: read_jsonl(path / f"{table}.jsonl") for table in TABLES}
+    if (path / "state.json").exists():
+        addition["_state"] = read_json(path / "state.json")
+    return addition
+
+
+def load_stage(bank, run_id, run, current):
+    """The generation a staged run would commit: its final snapshot, or its addition merged onto current."""
+    if run.get("format") == 2:
+        require(run["base_digest"] == fingerprint(current), "Bank changed since staging; regenerate this operation from current data")
+        final = apply(current, read_changes(bank, run_id))
+        require(fingerprint(final) == run["digest"], "Staged files changed; create a new staging run")
+        return final
+    addition = _stage_tables(bank, run_id)
+    require(fingerprint(addition) == run["digest"], "Staged files changed; create a new staging run")
+    return addition if run.get("mode") == "snapshot" else combined(current, addition)
+
+
+def run_before(bank, run_id, run, after):
+    """Before-image of a committed snapshot run, given the generation it produced."""
+    if run.get("format") == 2:
+        before = apply(after, invert(read_changes(bank, run_id)))
+    else:
+        path = run_path(bank, run_id) / "before.json"
+        require(path.is_file(), f"Run {run_id} was compacted by gc; it can no longer be undone")
+        before = read_json(path)
+    require(fingerprint(before) == run["base_digest"], "Undo snapshot changed")
+    return before
+
+
+def run_inserted(bank, run_id, run, table):
+    """Records a committed run added to one table."""
+    if run.get("format") == 2:
+        return inserted(read_changes(bank, run_id), table)
+    path = run_path(bank, run_id)
+    require((path / f"{table}.jsonl").is_file(), f"Run {run_id} was compacted by gc; scope the workflow with question_ids or expression instead")
+    rows = read_jsonl(path / f"{table}.jsonl")
+    if run.get("mode") == "snapshot":
+        require((path / "before.json").is_file(), f"Run {run_id} was compacted by gc; scope the workflow with question_ids or expression instead")
+        old = {row["id"] for row in read_json(path / "before.json")[table]}
+        rows = [row for row in rows if row["id"] not in old]
+    return rows
 
 
 def combined(current, addition):
@@ -37,15 +99,19 @@ def stage_bundle(bank, bundle, run_id=None):
         return _write_stage(bank, addition, run_id)
 
 
-def _write_stage(bank, addition, run_id=None, duplicate_sources=0, metadata=None):
+def _write_stage(bank, addition, run_id=None, duplicate_sources=0, metadata=None, changes=None):
+    """Write a stage; with changes, only the change set is stored and addition is the final generation."""
     run_id = run_id or new_run_id()
     path = run_path(bank, run_id)
     require(not path.exists(), f"Run already exists: {run_id}; use a new run ID")
     path.mkdir(parents=True)
-    for table in TABLES:
-        atomic_write(bank_file(bank, f"runs/{run_id}/{table}.jsonl"), jsonl_text(addition[table]))
-    if "_state" in addition:
-        atomic_write(path / "state.json", dumps(addition["_state"]) + "\n")
+    if changes is None:
+        for table in TABLES:
+            atomic_write(bank_file(bank, f"runs/{run_id}/{table}.jsonl"), jsonl_text(addition[table]))
+        if "_state" in addition:
+            atomic_write(path / "state.json", dumps(addition["_state"]) + "\n")
+    else:
+        atomic_write(path / "changes.jsonl", jsonl_text(changes))
     run = {"schema_version": 1, "id": run_id, "status": "staged", "created_at": utc_now(),
            "digest": fingerprint(addition), "duplicate_sources": duplicate_sources}
     run.update(metadata or {})
@@ -120,17 +186,27 @@ def commit_run(bank, run_id, loaded=None):
         if run["status"] == "committed":
             return {**read_json(bank_file(bank, f"runs/{run_id}/commit.json")), "already_committed": True}
         require(run["status"] == "staged", f"Run is {run['status']} and cannot commit")
-        addition = {table: read_jsonl(bank_file(bank, f"runs/{run_id}/{table}.jsonl")) for table in TABLES}
-        if (path / "state.json").exists():
-            addition["_state"] = read_json(path / "state.json")
-        require(fingerprint(addition) == run["digest"], "Staged files changed; create a new staging run")
+        incremental = run.get("format") == 2
+        if incremental:
+            changes, addition = read_changes(bank, run_id), None
+        else:
+            addition = _stage_tables(bank, run_id)
+            require(fingerprint(addition) == run["digest"], "Staged files changed; create a new staging run")
         if run.get("review"):
             raise ReviewRequired(f"Run {run_id} has unresolved review items; inspect run-show and stage corrected input")
+        if run.get("mode") == "snapshot":
+            require(incremental or fingerprint(read_json(path / "before.json")) == run["base_digest"], "Missing/changed recovery snapshot; restage")
+            require(fingerprint(current) == run["base_digest"], "Bank changed since staging; regenerate this operation from current data")
+            require(fingerprint(config) == run["config_digest"], "Bank configuration changed; restage")
+            final = apply(current, changes) if incremental else addition
+            require(fingerprint(final) == run["digest"], "Staged files changed; create a new staging run")
+        else:
+            final = combined(current, addition)
         if run.get("intake_id"):
             intake = read_json(run_path(bank, run["intake_id"]) / "intake.json")
             if intake.get("operation") == "media-intake":
                 require(not intake.get("completed_at") and intake["digest"] == fingerprint(intake["items"]), "Media intake changed before commit")
-                staged_sources = {s["id"]: s for s in addition["sources"]}
+                staged_sources = {s["id"]: s for s in (addition or final)["sources"]}
                 for item in intake["items"]:
                     staged_source = staged_sources.get(item["source"]["id"])
                     if staged_source:
@@ -141,13 +217,6 @@ def commit_run(bank, run_id, loaded=None):
                     from pathlib import Path
                     from .media import file_hash
                     require(file_hash(view) == item["source"]["sha256"], "Source changed before commit; intake again")
-        if run.get("mode") == "snapshot":
-            require(fingerprint(read_json(path / "before.json")) == run["base_digest"], "Missing/changed recovery snapshot; restage")
-            require(fingerprint(current) == run["base_digest"], "Bank changed since staging; regenerate this operation from current data")
-            require(fingerprint(config) == run["config_digest"], "Bank configuration changed; restage")
-            final = addition
-        else:
-            final = combined(current, addition)
         target_config = config
         if run.get("new_config_digest"):
             target_config = read_json(path / "config_after.json")
@@ -161,8 +230,9 @@ def commit_run(bank, run_id, loaded=None):
                   "total_counts": {t: len(final[t]) for t in TABLES},
                   "duplicate_sources": run.get("duplicate_sources", 0), "summary": run.get("summary", {}),
                   "after_digest": fingerprint(final), "after_config_digest": fingerprint(target_config)}
-        files = {f"data/{table}.jsonl": jsonl_text(final[table]) for table in TABLES}
-        if "_state" in final:
+        # Only rewrite what changed: an answer batch should not rewrite every table.
+        files = {f"data/{table}.jsonl": jsonl_text(final[table]) for table in TABLES if final[table] != current[table]}
+        if "_state" in final and final["_state"] != current.get("_state"):
             files["data/state.json"] = dumps(final["_state"]) + "\n"
         manifest["last_updated_at"] = committed_at
         run["status"] = "committed"
@@ -205,8 +275,15 @@ def stage_snapshot(bank, current, final, config, *, operation, audit=(), review=
         metadata["intake_id"] = intake_id
     if next_config is not None:
         metadata["new_config_digest"] = fingerprint(next_config)
-    result = _write_stage(bank, final, metadata=metadata)
-    atomic_write(run_path(bank, result["run_id"]) / "before.json", dumps(current) + "\n")
+    changes = diff(current, final) if run_format() == 2 else None
+    # Never trust the change set blindly: it must reproduce the validated final generation exactly.
+    if changes is not None and fingerprint(apply(current, changes)) != fingerprint(final):
+        changes = None
+    if changes is not None:
+        metadata["format"] = 2
+    result = _write_stage(bank, final, metadata=metadata, changes=changes)
+    if changes is None:
+        atomic_write(run_path(bank, result["run_id"]) / "before.json", dumps(current) + "\n")
     if next_config is not None:
         atomic_write(run_path(bank, result["run_id"]) / "config_before.json", dumps(config) + "\n")
         atomic_write(run_path(bank, result["run_id"]) / "config_after.json", dumps(next_config) + "\n")
@@ -243,20 +320,15 @@ def undo_run(bank, run_id):
         receipt = read_json(path / "commit.json")
         require(receipt["after_digest"] == fingerprint(current), "Later changes exist; undo them first to avoid overwriting data")
         require(receipt.get("after_config_digest", fingerprint(config)) == fingerprint(config), "Later configuration changes exist; undo them first")
-        before = read_json(path / "before.json")
-        require(fingerprint(before) == run["base_digest"], "Undo snapshot changed")
+        before = run_before(bank, run_id, run, current)
         undo_scope = "full_snapshot"
         if {q["id"] for q in current["questions"]} != {q["id"] for q in before["questions"]} and run.get("operation") == "dedupe":
             predecessors = run.get("supersedes", [])
             require(len(predecessors) == 1, "Missing original import stage for merge undo")
-            original_path = run_path(bank, predecessors[0])
-            original = read_json(original_path / "run.json")
-            imported = {t: read_jsonl(original_path / f"{t}.jsonl") for t in TABLES}
-            if (original_path / "state.json").exists():
-                imported["_state"] = read_json(original_path / "state.json")
-            require(fingerprint(imported) == original["digest"], "Original import stage changed")
+            original = read_json(run_path(bank, predecessors[0]) / "run.json")
             # Undo merging without deleting imported source/question history.
-            before = imported if original.get("mode") == "snapshot" else combined(before, imported)
+            # The import was staged on the same base as the merge, so it replays onto the before-image.
+            before = load_stage(bank, predecessors[0], original, before)
             undo_scope = "dedupe_only_preserve_import"
         require({q["id"] for q in current["questions"]} == {q["id"] for q in before["questions"]},
                 "Undo cannot physically remove imported questions; use curation or a subsequent merge correction")

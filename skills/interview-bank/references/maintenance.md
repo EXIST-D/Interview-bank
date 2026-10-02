@@ -81,11 +81,13 @@ Existing undo remains restricted to the latest unchanged snapshot; arbitrary his
 
 ## Disk housekeeping
 
-Every snapshot operation keeps a full before-image and the staged tables under runs/, so runs/ grows by about twice the bank per write. doctor reports `runs_bytes` and `data_bytes` and sets `runs_hint` when runs/ exceeds five times the data.
+Snapshot operations store a change set (`changes.jsonl`, run format 2): only the records that were inserted, updated or deleted, each with its before-image, so undo replays it backwards. A commit checks that the change set reproduces the exact staged fingerprint. When records were reordered the stage falls back to a full snapshot (format 1: staged tables plus before.json). `INTERVIEW_BANK_RUN_FORMAT=1` forces format 1. Older format 1 runs stay readable and undoable.
+
+runs/ still accumulates audit records, intakes and task packets, and banks written before 1.12 hold full snapshots. doctor reports `runs_bytes` and `data_bytes` and sets `runs_hint` when runs/ exceeds five times the data.
 
 ```text
 python -B <cli> gc --bank <bank> --json
 python -B <cli> gc --bank <bank> --apply --keep-days 30 --keep-last 20 --json
 ```
 
-The first form is a dry-run: show the user what it would compact and how many bytes it would reclaim, and run `--apply` only after they agree. Apply works under the bank lock and logs to logs/gc-*.json. It removes table snapshots and before-images from committed, superseded or abandoned runs older than `--keep-days` and outside the newest `--keep-last`; their run.json audit, commit.json and report.md stay. Expired task packets and spilled outputs under cache/outputs are deleted. It always keeps pending stages, the latest undo point (and the import stage a merge undo restores) and every intake, because media intakes hold the only full transcripts. A compacted run can no longer seed `workflow create --from_run`; scope by question_ids instead.
+The first form is a dry-run: show the user what it would compact and how many bytes it would reclaim, and run `--apply` only after they agree. Apply works under the bank lock and logs to logs/gc-*.json. It removes change sets, table snapshots and before-images from committed, superseded or abandoned runs older than `--keep-days` and outside the newest `--keep-last`; their run.json audit, commit.json and report.md stay. Expired task packets and spilled outputs under cache/outputs are deleted. It always keeps pending stages, the latest undo point (and the import stage a merge undo restores) and every intake, because media intakes hold the only full transcripts. A compacted run can no longer seed `workflow create --from_run`; scope by question_ids instead.
