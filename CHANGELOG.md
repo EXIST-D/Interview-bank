@@ -2,6 +2,26 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.12.0] - 2026-10-02
+
+### Added
+- Run format 2: snapshot stages store a change set (`changes.jsonl`) of inserted, updated and deleted records with before-images; commit replays it, undo replays it inverted, and both check the recorded fingerprint. A stage the change set cannot reproduce (reordered records, duplicate IDs) falls back to a full snapshot. `INTERVIEW_BANK_RUN_FORMAT=1` forces full snapshots; CI runs the whole suite in both formats.
+- `backup create [--include-runs] / verify / restore --destination <new dir>`: hash manifest, `.sha256` sidecar, re-verified on write; restore validates before renaming into a directory that must not exist.
+- `answer-recheck`: rebinds a source-backed answer to reworded question wording with recorded checks, keeping content, sources and `verified_at`.
+- `search` and `research` report `answer_stale_reason` (`marked_stale`, `evidence_age`, `wording_changed`).
+- JSON errors carry `error_type` and `hint`.
+- Shared (reader) locks: search, show, stats, export, doctor, validate, companies, taxonomy, run-show and Web pages run side by side; writers stay exclusive (LockFileEx on Windows).
+
+### Changed
+- CLI `search` returns question cards, 20 per page with `next_offset`; `--detail` returns the previous full records.
+- Queries filter the loaded JSONL in memory. init and commit no longer build `cache/bank.sqlite`; `rebuild-index` is a deprecated no-op that removes a leftover cache, and gc removes it too. doctor drops `sqlite`, `fts5_available` and `index` and reports `legacy_index_cache`.
+- Commits rewrite only the data files that changed.
+- Contact details inside an extracted image/media candidate become a review item (`pii_reviewed` + `pii_reason` to keep an example address); other paths still refuse, naming the kind of match with the value masked.
+- `migrate apply` and the legacy `migrate restore` use the shared backup engine.
+
+### Measured
+- 1,000-question bank: `runs/` growth per 10-answer batch 1.9 MB → 17 KB; every measured command stays within 32 KB of stdout.
+
 ## [1.11.0] - 2026-10-02
 
 ### Added

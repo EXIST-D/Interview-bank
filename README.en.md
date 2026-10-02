@@ -4,15 +4,16 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.11.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.12.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## What's new: 1.11 reliability and lighter agent workflows
+## What's new: 1.12 change-set runs, standalone backups and leaner context
 
-- **Public tests and CI:** the test suite (196 tests), fixtures and release tools are now in the repository; CI runs them on Windows, macOS and Linux with Python 3.10–3.13 and installs the packaged Skill read-only.
-- **Bounded output:** `--json` is compact and capped at 32 KB per result; large tasks are paged (`_page`, `run-show --offset/--limit`) instead of flooding the agent's context.
-- **Disk cleanup:** `gc` compacts old run snapshots while keeping audit records and undo (a real 289-question bank went from 53.9 MB to 10.8 MB of runs/).
-- **Answers:** only short answer, key points and sources are required; spoken version, follow-ups and pitfalls are shown folded in the report and the Web reader when written.
-- **Fixes:** Web/CLI lock conflicts, the missing 10-question practice option, report grouping for all 18 top-level domains, privacy-check gaps and false alarms, UTC+8 reading dates, Python version checks, slow Web startup on some hosts, and V2 migration now keeps verified answers of unchanged questions.
+- **Change-set runs:** writes store only the records that changed (`changes.jsonl`); commit and undo replay them and check the fingerprint. On a 1,000-question bank an answer batch now adds about 17 KB to runs/ instead of about 1.9 MB. `INTERVIEW_BANK_RUN_FORMAT=1` restores full snapshots; older runs stay readable and undoable.
+- **Standalone backups:** `backup create / verify / restore` with a hash manifest and `.sha256` sidecar; restore writes only into a directory that does not exist yet, and only after validation.
+- **No SQLite on the query path:** queries read the loaded JSONL directly and commits no longer rebuild an index; `rebuild-index` remains as a deprecated no-op.
+- **Cheap rechecks:** `answer-recheck` rebinds an answer after a wording-only change without refreshing its verification date, recording the coverage checks; `search` reports `answer_stale_reason`.
+- **Shared reads:** read-only commands and Web pages share the bank lock; writes stay exclusive.
+- **Friendlier to agents:** `search` returns question cards by default (`--detail` for full records); JSON errors carry a stable `error_type` and a `hint`; contact details in extracted screenshot questions become review items instead of failing the batch.
 
 Details are in the [CHANGELOG](CHANGELOG.md). The local Web interface is described in [local Web usage](skills/interview-bank/references/web.md).
 
@@ -218,7 +219,7 @@ The six JSONL tables plus V2 data/state.json are canonical and queried directly 
 
 ## Current status and planned features
 
-Version **1.11.0** supports material intake, ongoing bank maintenance and interview preparation. The following capabilities are implemented and invoked by the Agent as needed:
+Version **1.12.0** supports material intake, ongoing bank maintenance and interview preparation. The following capabilities are implemented and invoked by the Agent as needed:
 
 | Implemented capability | What it does today |
 |---|---|
@@ -233,7 +234,7 @@ Version **1.11.0** supports material intake, ongoing bank maintenance and interv
 | Review and mock interviews | Save self-ratings and review dates, build queues on request, ask one question at a time, record real responses and resume sessions |
 | Local Web browsing and practice | Browse and filter existing questions, reveal answers, inspect original wording and save self-ratings/responses on V2 |
 | Host adaptation | Separate measured capabilities from tool declarations, plan transcription routes and import actual host tool results |
-| Agent-friendly output and housekeeping | Compact, size-bounded JSON with paging; `gc` compacts old run snapshots while keeping audit and undo |
+| Agent-friendly output and housekeeping | Compact, size-bounded JSON, question cards and paging; change-set runs, `gc`, standalone backup and restore, shared read locks, errors with `error_type` |
 
 The Agent needs Skill access, authorized file access and Python execution. Screenshots require image viewing; sourced answers require actual web research. Raw media can use host transcription tools or an optional local speech model; remote calls are performed by the host within user authorization. See [host portability](skills/interview-bank/references/portability.md) and the [media protocol](skills/interview-bank/references/media.md).
 
@@ -250,7 +251,7 @@ Existing V1 banks retain extraction, classification, deduplication, research and
 
 **Other current limits:** review queues have no background reminders; exact token and cost metering depends on the host; arbitrary historical unmerge is unavailable, with undo limited to eligible recent operations. These are not included in the implemented scope.
 
-Version 1.11.0 passes 196 automated tests in CI (Windows, macOS and Linux; Python 3.10–3.13) plus a packaged-install check; run them yourself with `python -B -m unittest discover -s tests`. Local Web browsing, filters, written responses, self-ratings and persistence were also verified against an isolated copy of a real bank. Screenshots, real speech transcription and reports were exercised on Windows. Host integration was contract-tested, not tested against every Agent, operating system or live cloud service. Extracted content and reference answers still require attention to original material, evidence and applicability.
+Version 1.12.0 passes 228 automated tests in CI (Windows, macOS and Linux; Python 3.10–3.13) plus a packaged-install check; run them yourself with `python -B -m unittest discover -s tests`. Local Web browsing, filters, written responses, self-ratings and persistence were also verified against an isolated copy of a real bank. Screenshots, real speech transcription and reports were exercised on Windows. Host integration was contract-tested, not tested against every Agent, operating system or live cloud service. Extracted content and reference answers still require attention to original material, evidence and applicability.
 
 This repository contains the Skill, its tests and development tools, introductions, licenses and the README example image. Personal material, banks, research records and local environments are not published; test fixtures are synthetic.
 
