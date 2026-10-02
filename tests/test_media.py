@@ -10,8 +10,8 @@ from ibank_core.media import (intake_media, parse_transcript, media_task, attach
                               transcribe_media, validate_segments)
 from ibank_core.ingestion import stage_extraction, save_extraction
 from ibank_core.runs import commit_run
-from ibank_core.storage import load_data, read_json, dumps, fingerprint
-from ibank_core.errors import ValidationError, ReviewRequired
+from ibank_core.storage import load_data, read_json, dumps
+from ibank_core.errors import ValidationError
 from ibank_core.export import export_bank
 from ibank_core.schema import validate_data
 

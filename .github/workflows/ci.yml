@@ -30,6 +30,18 @@ jobs:
           test -z "$(find skills -name __pycache__ -print -quit)"
           test -z "$(git status --porcelain -- skills)"
 
+  lint:
+    name: lint (pyflakes rules)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff==0.16.10
+      - name: Unused imports, undefined names, unused variables
+        run: ruff check --select F --target-version py310 skills tests tools evals
+
   legacy-runs:
     name: test (full-snapshot run format)
     runs-on: ubuntu-latest

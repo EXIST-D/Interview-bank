@@ -13,7 +13,6 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "skills/interview-bank/scripts"))
 from ibank_core.dedupe import candidate_task, exact_equivalent, stage_decisions
 from ibank_core.ingestion import intake_images, stage_extraction
-from ibank_core.runs import commit_run
 from ibank_core.storage import initialize, dumps, open_bank
 
 
@@ -98,7 +97,6 @@ def main():
             return
     visual = ROOT / ".work/visual-evals"
     manifest = json.loads((visual / "manifest.json").read_text(encoding="utf-8"))
-    by_path = {str(Path(m["path"]).resolve()): m for m in manifest}
     intake = intake_images(bank, [visual / "batch50"], retention="copy")
     extraction = {"schema_version": 1, "sources": []}
     for item in intake["items"]:

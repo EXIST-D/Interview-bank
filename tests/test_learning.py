@@ -1,5 +1,4 @@
 """Learning loop: Anki export, the optional FSRS scheduler, problem links and a study calendar."""
-import json
 import unittest
 from pathlib import Path
 

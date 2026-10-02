@@ -1,7 +1,6 @@
 """Capability probes and provider-neutral host transcription handoff. No network client."""
 import copy
 import importlib.metadata
-import json
 import os
 import platform
 import re
