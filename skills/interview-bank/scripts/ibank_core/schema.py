@@ -2,13 +2,14 @@
 import json
 import math
 import re
-from datetime import date, datetime
+from datetime import date
 from pathlib import Path
 from urllib.parse import urlparse
 
 from .errors import ValidationError
 from .catalog import CATALOG, PROFILE_FIELDS
 from .normalize import normalize_company_alias, normalize_question_text, normalize_technology, legacy_technology_key
+from .timestamps import parse_timestamp
 
 TABLES = ("questions", "occurrences", "sources", "companies", "answers", "relations")
 PREFIXES = dict(zip(TABLES, ("q", "occ", "src", "company", "ans", "rel")))
@@ -50,7 +51,7 @@ def timestamp(value, label, nullable=False):
         return
     string(value, label)
     try:
-        parsed = datetime.fromisoformat(value)
+        parsed = parse_timestamp(value)
         require(parsed.tzinfo is not None, f"{label}: timezone required")
     except ValueError as exc:
         raise ValidationError(f"{label}: invalid ISO timestamp") from exc

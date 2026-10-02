@@ -8,6 +8,7 @@ from .storage import open_bank, read_json, bank_file, fingerprint, atomic_write,
 from .ids import new_id, utc_now
 from .runs import stage_snapshot
 from .studysets import select
+from .timestamps import parse_timestamp
 
 
 def progress(bank, data, config, flow):
@@ -138,7 +139,7 @@ def next_batch(bank, key):
         if view['status'] in ('paused', 'cancelled', 'completed'):
             return {'workflow': progress_card(view), 'task': None, 'reason': view['status']}
         limits = flow['limits']
-        if limits.get('deadline') and datetime.now(timezone.utc) >= datetime.fromisoformat(limits['deadline']):
+        if limits.get('deadline') and datetime.now(timezone.utc) >= parse_timestamp(limits['deadline']):
             return {'workflow': progress_card(view), 'task': None, 'reason': 'deadline reached'}
         tasks = []
         for p in bank_file(bank, 'runs').glob('run_*/task.json'):

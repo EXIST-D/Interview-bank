@@ -5,6 +5,16 @@ import sys
 # Installed skill is read-only, including on the first invocation.
 sys.dont_write_bytecode = True
 
+if sys.version_info < (3, 10):
+    MESSAGE = (f"Interview Bank requires Python 3.10+, but {sys.executable} is {sys.version.split()[0]}. "
+               "Run this CLI with a newer interpreter (for example python3.12).")
+    if "--json" in sys.argv:
+        import json
+        print(json.dumps({"ok": False, "command": None, "error": MESSAGE, "code": 1}), file=sys.stderr)
+    else:
+        print(f"Error: {MESSAGE}", file=sys.stderr)
+    raise SystemExit(1)
+
 import argparse
 import json
 import sqlite3

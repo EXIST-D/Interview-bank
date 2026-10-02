@@ -8,6 +8,7 @@ from .state import require_v2, question, revision, resolve
 from .ids import new_id, utc_now
 from .storage import open_bank
 from .runs import stage_snapshot
+from .timestamps import parse_timestamp
 
 
 def user_zone(name):
@@ -36,11 +37,11 @@ def event(data, payload):
     tz = user_zone(zone)
     at = payload.get('occurred_at', utc_now())
     timestamp(at, 'occurred_at')
-    now = datetime.fromisoformat(at)
+    now = parse_timestamp(at)
     require(now <= datetime.now(timezone.utc)+timedelta(minutes=5), 'Practice time cannot be in the future')
     history = sorted([e for e in state['events'].values() if resolve(data,e['question_id']) == q['id']], key=lambda e:(e['occurred_at'],e['id']))
     if history:
-        require(now >= datetime.fromisoformat(history[-1]['occurred_at']), 'Backdated events would rewrite scheduling; submit in chronological order')
+        require(now >= parse_timestamp(history[-1]['occurred_at']), 'Backdated events would rewrite scheduling; submit in chronological order')
     revision_matches = history and history[-1]['question_revision'] == revision(q) and history[-1]['question_id'] == q['id']
     previous = history[-1]['interval_days'] if revision_matches else 0
     days = {'again':1, 'hard':max(1,previous), 'good':3 if previous < 3 else min(90,previous*2), 'easy':7 if previous < 7 else min(180,previous*2)}[rating]
@@ -51,7 +52,7 @@ def event(data, payload):
     due = now.astimezone(tz)+timedelta(days=days)
     if payload.get('next_review_at'):
         timestamp(payload['next_review_at'], 'next_review_at')
-        due = datetime.fromisoformat(payload['next_review_at'])
+        due = parse_timestamp(payload['next_review_at'])
         require(due > now, 'Next review must follow this practice')
     value = {'id':new_id('event'), 'created_at':utc_now(), 'request_id':payload['request_id'], 'request_digest':fingerprint(payload), 'question_id':q['id'],
              'question_revision':revision(q), 'rating':rating, 'timezone':zone, 'occurred_at':now.astimezone(timezone.utc).isoformat(),
@@ -81,7 +82,7 @@ def study(bank, action, payload=None):
             rows = select(current,config,bank,ids=ids)
             as_of = payload.get('as_of',utc_now())
             timestamp(as_of,'as_of')
-            at = datetime.fromisoformat(as_of)
+            at = parse_timestamp(as_of)
             tz = user_zone(payload.get('timezone','Asia/Shanghai'))
             queue = []
             targets = {q['id']:q['merged_into'] or q['id'] for q in current['questions']}
@@ -92,11 +93,11 @@ def study(bank, action, payload=None):
                 history = sorted(histories.get(q['id'], []),key=lambda e:(e['occurred_at'],e['id']))
                 latest = history[-1] if history else None
                 changed = bool(latest and (latest['question_revision'] != revision(q) or latest['question_id'] != q['id']))
-                due = not latest or changed or datetime.fromisoformat(latest['next_review_at']) <= at
+                due = not latest or changed or parse_timestamp(latest['next_review_at']) <= at
                 if due or payload.get('include_future') is True:
                     queue.append({'question_id':q['id'],'canonical':q['canonical'],'due':due,
                                   'state':'unseen' if not latest else 'needs_repractice' if changed else 'mastered' if latest['rating'] in ('good','easy') else 'needs_practice',
-                                  'next_review_at':datetime.fromisoformat(latest['next_review_at']).astimezone(tz).isoformat() if latest else None,
+                                  'next_review_at':parse_timestamp(latest['next_review_at']).astimezone(tz).isoformat() if latest else None,
                                   'changed_since_practice':changed})
             return {'questions':sorted(queue,key=lambda q:(not q['due'],q['next_review_at'] or '',q['canonical'])),'timezone':str(tz)}
         require(action == 'record','Unknown study action')
