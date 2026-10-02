@@ -130,22 +130,37 @@ def stage_answers(bank, response):
                               summary={"answer_versions_added": len(final["answers"]) - len(current["answers"]), "task_id": task["id"]})
 
 
-def review_answer(bank, question_id, status, reason, human_reviewed=False):
-    require(status in ("reviewed", "stale"), "Review status must be reviewed or stale")
-    string(reason, "review.reason")
-    require(status != "reviewed" or human_reviewed is True, "reviewed requires explicit human confirmation via --human-reviewed")
-    with open_bank(bank) as (_, config, current):
-        versions = [a for a in current["answers"] if a["question_id"] == question_id]
-        require(bool(versions), "Question has no answer to review")
-        final = copy.deepcopy(current)
-        latest = max(versions, key=lambda a: a["version"])
-        record = {**copy.deepcopy(latest), "id": new_answer_id(), "version": latest["version"] + 1, "status": status,
-                  "created_at": utc_now(), "verified_at": utc_now() if status == "reviewed" else latest["verified_at"]}
-        final["answers"].append(record)
-        return stage_snapshot(bank, current, final, config, operation="answer-review",
-            audit=[{"action": "ANSWER_REVIEW", "previous_answer_id": latest["id"], "answer_id": record["id"], "reason": reason, "human_reviewed": human_reviewed}],
-            summary={"question_id": question_id, "version": record["version"], "status": status})
+REVIEW_ACTORS = ("local_web", "terminal")
 
+
+def review_change(current, question_id, status, reason, actor, answer_id=None):
+    """Append a reviewed/stale copy of the latest answer. Returns (final, audit, summary).
+
+    reviewed records an actual human decision, so only the Web button (actor local_web) or an
+    interactive terminal confirmation (actor terminal) may produce it; agents cannot.
+    """
+    require(status in ("reviewed", "stale"), "Review status must be reviewed or stale")
+    require(actor in REVIEW_ACTORS or (status == "stale" and actor == "agent"), "reviewed needs the Web button or an interactive terminal")
+    string(reason, "review.reason")
+    versions = [a for a in current["answers"] if a["question_id"] == question_id]
+    require(bool(versions), "Question has no answer to review")
+    latest = max(versions, key=lambda a: a["version"])
+    require(answer_id is None or answer_id == latest["id"], "The answer changed since it was shown; reload before reviewing")
+    final = copy.deepcopy(current)
+    record = {**copy.deepcopy(latest), "id": new_answer_id(), "version": latest["version"] + 1, "status": status,
+              "created_at": utc_now(), "verified_at": utc_now() if status == "reviewed" else latest["verified_at"]}
+    final["answers"].append(record)
+    audit = [{"action": "ANSWER_REVIEW", "previous_answer_id": latest["id"], "answer_id": record["id"], "reason": reason,
+              "actor": actor, "human_reviewed": status == "reviewed"}]
+    return final, audit, {"question_id": question_id, "version": record["version"], "status": status}
+
+
+def review_answer(bank, question_id, status, reason, human_reviewed=False, actor=None):
+    """Stage a review. The CLI passes actor="terminal" only after an interactive confirmation."""
+    actor = actor or ("terminal" if human_reviewed else "agent")
+    with open_bank(bank) as (_, config, current):
+        final, audit, summary = review_change(current, question_id, status, reason, actor)
+        return stage_snapshot(bank, current, final, config, operation="answer-review", audit=audit, summary=summary)
 
 def recheck_answers(bank, payload):
     """Rebind still-valid answers to reworded questions without new research.

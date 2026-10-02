@@ -64,14 +64,14 @@ workflow summary distinguishes the attached intake receipt from bank changes sin
 First make the user's desired correction with curate. Then `policy add --input ...`, commit, using either:
 
 ```json
-{"kind":"protect","question_id":"q_ACTUAL","field":"canonical","reason":"用户要求保留此题干","user_requested":true}
+{"kind":"protect","question_id":"q_ACTUAL","field":"canonical","reason":"用户要求保留此题干","user_requested":true,"user_quote":"这道题的题干不要改"}
 ```
 
 ```json
-{"kind":"never_merge","question_ids":["q_FIRST","q_SECOND"],"reason":"用户确认考点不同","user_requested":true}
+{"kind":"never_merge","question_ids":["q_FIRST","q_SECOND"],"reason":"用户确认考点不同","user_requested":true,"user_quote":"这两题考点不一样，别合并"}
 ```
 
-Supported protected fields: canonical, domains, role_tracks, technologies, difficulty, report_exclusion. A missing field must first be set via curate. Do not set user_requested for a model preference. Automatic classification and merges cannot override protections; forbidden pairs remain effective across transitive merges. Conflict errors identify the rule/reason. Keep the current state and resolve with evidence or an explicit user correction.
+Supported protected fields: canonical, domains, role_tracks, technologies, difficulty, report_exclusion. A missing field must first be set via curate. Do not set user_requested for a model preference; `user_quote` keeps the user's instruction verbatim in the rule. Automatic classification and merges cannot override protections; forbidden pairs remain effective across transitive merges. Conflict errors identify the rule/reason. Keep the current state and resolve with evidence or an explicit user correction.
 
 When the user explicitly changes a protected value, curate input may include `override_protection: true` and `user_requested: true`; the same audited snapshot updates the protection. `policy disable --id ... --input ...` requires reason and then commit. `policy list` shows active and inactive history. Free-form “以后这类题” should be narrowed to evidenced labels/explicit targets, not silently converted into a global keyword rule.
 

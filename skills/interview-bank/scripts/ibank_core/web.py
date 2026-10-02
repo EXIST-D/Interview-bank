@@ -111,7 +111,7 @@ class WebApp:
             facets['industry'] = [{'value': v, 'label': display('industries', v)} for v in sorted({v for c in used for v in c['industries']})]
             return {
                 'name': self.bank.name, 'version': __version__, 'schema_version': manifest['schema_version'],
-                'can_record': manifest['schema_version'] == 2 and not self.read_only,
+                'can_record': manifest['schema_version'] == 2 and not self.read_only, 'can_review': not self.read_only,
                 'read_only': self.read_only, 'updated_at': manifest.get('last_updated_at'),
                 'summary': {'questions': len(rows), 'answered': sum(q['answer_status'] in ('source_backed', 'reviewed') for q in rows),
                             'answer_count': sum(q['answer'] is not None for q in rows), 'stale': sum(q['answer_status'] == 'stale' for q in rows),
@@ -150,7 +150,7 @@ class WebApp:
                 require('_state' in data, 'Saving practice requires an explicit V2 migration')
                 prior = next((e for e in data['_state']['events'].values() if e['request_id'] == submitted['request_id']), None)
                 if prior:
-                    value, _ = event(copy.deepcopy(data), submitted)
+                    value, _ = event(copy.deepcopy(data), submitted, source='user_self_rating')
                     require(prior['question_revision'] == payload['revision'], 'Practice retry has a different revision')
                     return {'saved': True, 'already_recorded': True, 'event': value}
                 q = next((q for q in data['questions'] if q['id'] == submitted['question_id'] and q['status'] == 'active'), None)
@@ -158,7 +158,7 @@ class WebApp:
                 from .editorial import exclusion_reason
                 require(not exclusion_reason(q), 'This question is excluded from practice')
                 final = copy.deepcopy(data)
-                value, _ = event(final, submitted)
+                value, _ = event(final, submitted, source='user_self_rating')
                 staged = stage_snapshot(self.bank, data, final, config, operation='study', audit=[{'event': value, 'interface': 'local_web'}], summary={'event_id': value['id']})
                 # Commit under the same lock: no reader or CLI commit can slip between stage and commit.
                 try:
@@ -167,6 +167,27 @@ class WebApp:
                     abandon_run(self.bank, staged['run_id'], locked=True)
                     raise
             return {'saved': True, 'already_recorded': False, 'event': value}
+
+
+    def review(self, payload):
+        """The person at the page marks the answer they just read as reviewed or stale."""
+        require(not self.read_only, 'This server is in read-only mode')
+        require(isinstance(payload, dict) and set(payload) == {'question_id', 'answer_id', 'decision', 'note'}, 'Invalid review payload')
+        require(all(isinstance(v, str) for v in payload.values()), 'Review values must be strings')
+        require(payload['decision'] in ('reviewed', 'stale'), 'decision must be reviewed or stale')
+        require(1 <= len(payload['note'].strip()) <= 2000, 'Write a short note on what you checked')
+        from .answers import review_change
+        with self.mutation_lock:
+            with open_bank(self.bank) as (manifest, config, data):
+                final, audit, summary = review_change(data, payload['question_id'], payload['decision'], payload['note'].strip(),
+                                                      'local_web', answer_id=payload['answer_id'])
+                staged = stage_snapshot(self.bank, data, final, config, operation='answer-review', audit=audit, summary=summary)
+                try:
+                    commit_run(self.bank, staged['run_id'], loaded=(manifest, config, data))
+                except BankError:
+                    abandon_run(self.bank, staged['run_id'], locked=True)
+                    raise
+            return {'saved': True, **summary}
 
 
 class LocalServer(ThreadingHTTPServer):
@@ -230,7 +251,7 @@ class Handler(BaseHTTPRequestHandler):
         require(all(len(v) == 1 for v in query.values()), 'Duplicate query parameters')
         params = {k: v[0] for k, v in query.items()}
         if post:
-            if path != '/api/practice':
+            if path not in ('/api/practice', '/api/review'):
                 return self.send(404, {'error': 'Unknown endpoint'})
             require(self.headers.get('Content-Type', '').split(';')[0] == 'application/json', 'Expected JSON')
             require(not self.headers.get('Transfer-Encoding'), 'Transfer encoding not supported')
@@ -238,7 +259,8 @@ class Handler(BaseHTTPRequestHandler):
             require(len(sizes) == 1 and sizes[0].isdigit() and 0 < int(sizes[0]) <= 65536, 'Invalid content length')
             body = self.rfile.read(int(sizes[0]))
             require(len(body) == int(sizes[0]), 'Incomplete request')
-            result = self.server.app.record(json.loads(body))
+            handler = self.server.app.record if path == '/api/practice' else self.server.app.review
+            result = handler(json.loads(body))
         elif path == '/api/library':
             result = self.server.app.library(params)
         elif path == '/api/practice':

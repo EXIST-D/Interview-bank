@@ -97,15 +97,15 @@ class MaintenanceTests(BankFixture):
 
     def test_policy_protection_and_explicit_override(self):
         self.ready()
-        self.commit(policy(self.bank,'add',{'kind':'protect','question_id':'q_demo1','field':'canonical','reason':'Keep my wording','user_requested':True}))
+        self.commit(policy(self.bank,'add',{'kind':'protect','question_id':'q_demo1','field':'canonical','reason':'Keep my wording','user_requested':True,'user_quote':'这题保持我的写法'}))
         change={'schema_version':1,'changes':[{'table':'questions','id':'q_demo1','set':{'canonical':'Redis 为什么快，有哪些边界？'},'reason':'User refinement'}]}
         with self.assertRaisesRegex(ValidationError,'Protected field'):stage_curate(self.bank,change)
-        self.commit(stage_curate(self.bank,{**change,'override_protection':True,'user_requested':True}))
+        self.commit(stage_curate(self.bank,{**change,'override_protection':True,'user_requested':True,'user_quote':'这题保持我的写法'}))
         self.assertIn('边界',search(self.bank,technology='redis')['questions'][0]['canonical'])
 
     def test_forbidden_merge_transitive_cluster(self):
         self.ready()
-        self.commit(policy(self.bank,'add',{'kind':'never_merge','question_ids':['q_demo0','q_demo2'],'reason':'Distinct','user_requested':True}))
+        self.commit(policy(self.bank,'add',{'kind':'never_merge','question_ids':['q_demo0','q_demo2'],'reason':'Distinct','user_requested':True,'user_quote':'这题保持我的写法'}))
         with open_bank(self.bank) as (_,config,data):
             final=copy.deepcopy(data)
             merge_questions(final,'q_demo0','q_demo1','MERGE_VARIANT',.99,'fixture')
@@ -114,7 +114,7 @@ class MaintenanceTests(BankFixture):
 
     def test_state_snapshot_undo_and_append_preserve_state(self):
         self.ready()
-        result=policy(self.bank,'add',{'kind':'protect','question_id':'q_demo1','field':'canonical','reason':'Keep','user_requested':True})
+        result=policy(self.bank,'add',{'kind':'protect','question_id':'q_demo1','field':'canonical','reason':'Keep','user_requested':True,'user_quote':'这题保持我的写法'})
         self.commit(result)
         self.commit(undo_run(self.bank,result['run_id']))
         self.assertEqual(policy(self.bank,'list')['policies'],[])
@@ -199,7 +199,7 @@ class MaintenanceTests(BankFixture):
 
     def test_practice_idempotency_timezone_and_changed_wording(self):
         self.ready()
-        payload={'request_id':'practice-1','question_id':'q_demo1','rating':'good','timezone':'Asia/Shanghai'}
+        payload={'request_id':'practice-1','question_id':'q_demo1','rating':'good','timezone':'Asia/Shanghai','user_quote':'这题我基本会了'}
         self.commit(study(self.bank,'record',payload))
         self.assertTrue(study(self.bank,'record',payload)['already_recorded'])
         history=study(self.bank,'history')['events'];self.assertEqual(len(history),1)
@@ -332,10 +332,10 @@ class MaintenanceTests(BankFixture):
             with open_bank(self.bank):pass
 
     def test_practice_retry_conflict_and_time_validation(self):
-        self.ready();p={'request_id':'once','question_id':'q_demo1','rating':'good','note':'original'}
+        self.ready();p={'request_id':'once','question_id':'q_demo1','rating':'good','note':'original','user_quote':'这题我基本会了'}
         self.commit(study(self.bank,'record',p))
         with self.assertRaises(ValidationError):study(self.bank,'record',{**p,'note':'changed'})
-        with self.assertRaises(ValidationError):study(self.bank,'record',{'request_id':'next','question_id':'q_demo1','rating':'good','occurred_at':'2099-01-01T00:00:00+00:00'})
+        with self.assertRaises(ValidationError):study(self.bank,'record',{'request_id':'next','question_id':'q_demo1','rating':'good','occurred_at':'2099-01-01T00:00:00+00:00','user_quote':'会了'})
         with self.assertRaises(ValidationError):study(self.bank,'queue',{'as_of':'2026-09-07T12:00:00'})
 
     def test_task_staleness_and_budget_batch_count(self):

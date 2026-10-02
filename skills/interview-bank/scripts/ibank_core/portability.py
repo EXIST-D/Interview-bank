@@ -155,12 +155,14 @@ def provider_task(bank, run, sid, profile, consent=None):
         require(item is not None and "segments" not in item, "Unknown source or transcript already saved")
         require(file_hash(item["view_path"]) == item["source"]["sha256"], "Source changed after intake")
         if provider["execution"] == "remote":
-            require(isinstance(consent, dict) and set(consent) == {"provider", "destination", "source_sha256", "cost_note", "user_instruction"},
+            consent = {"granted_via": "chat", **consent} if isinstance(consent, dict) else consent
+            require(isinstance(consent, dict) and set(consent) == {"provider", "destination", "source_sha256", "cost_note", "user_instruction", "granted_via"},
                     "Remote transfer needs provider/destination/file scope, cost note and actual user instruction")
             require(consent["provider"] == provider["provider"] and consent["destination"] == provider["destination"] and
                     consent["source_sha256"] == item["source"]["sha256"], "Authorization does not cover this provider, destination and source")
             string(consent["cost_note"], "consent.cost_note")
             string(consent["user_instruction"], "consent.user_instruction")
+            require(consent["granted_via"] in ("chat", "terminal", "web"), "consent.granted_via must be chat, terminal or web")
         else:
             require(consent is None, "Local host transcription does not need remote consent")
         packet = {"schema_version": 1, "id": new_run_id(), "intake_id": run, "source_id": sid,

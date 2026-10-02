@@ -51,6 +51,20 @@ function answer(q) {
   }
   return wrap;
 }
+function reviewControls(q) {
+  // Human review is the reader's own decision; the agent has no way to submit it.
+  const box=el('details','review-box');box.append(el('summary','','人工审阅'));
+  const note=el('textarea','practice-response review-note');note.maxLength=2000;note.placeholder='写下你核对了什么，例如：对照官方文档确认了要点 1–3。';note.setAttribute('aria-label','审阅说明');
+  const actions=el('div','practice-actions');
+  const send=async decision=>{
+    if(!note.value.trim()){toast('请先写一句你核对了什么。');note.focus();return;}
+    actions.querySelectorAll('button').forEach(b=>b.disabled=true);
+    try{await api('/api/review',{question_id:q.id,answer_id:q.answer.id,decision,note:note.value});toast(decision==='reviewed'?'已记录人工审阅':'已标记为待重新核验');await loadLibrary();}
+    catch(e){message('error',e.message);}finally{actions.querySelectorAll('button').forEach(b=>b.disabled=false);}
+  };
+  actions.append(button('人工审阅通过','button small primary',()=>send('reviewed')),button('标记为待重新核验','text-button',()=>send('stale')));
+  box.append(el('p','hint','只有你本人核对过这份答案后，才点击“人工审阅通过”。Agent 不能代替你完成这一步。'),note,actions);return box;
+}
 function updateFacets(facets) {
   const labels={domain:'全部领域',role:'全部岗位',technology:'全部技术栈',company:'全部公司',industry:'全部行业'};
   for(const [key,values] of Object.entries(facets)){
@@ -99,6 +113,7 @@ async function openQuestion(id,focus=true) {
     const tags=el('div','tags');for(const t of q.technologies)tags.append(el('span','tag',t));reader.append(tags);
     const block=el('section','answer-block');const ah=el('div','answer-heading');ah.append(el('h3','','答案（参考）'));const content=answer(q);
     const toggle=button('收起答案','text-button',()=>{content.hidden=!content.hidden;toggle.textContent=content.hidden?'展开答案':'收起答案';toggle.setAttribute('aria-expanded',String(!content.hidden));});toggle.setAttribute('aria-expanded','true');ah.append(toggle);block.append(ah,content);reader.append(block);
+    if(state.data?.can_review&&q.answer)reader.append(reviewControls(q));
     const sources=el('details');sources.append(el('summary','',`原始问法与出处 · ${q.occurrences.length} 条记录`));
     for(const o of q.occurrences){const n=el('div','occurrence',o.text);let time='';if(o.locator){const start=o.locator.start_seconds??o.locator.start;const end=o.locator.end_seconds??o.locator.end;if(start!==undefined)time=`${start}s – ${end??'?'}s`;}
       n.append(el('small','',[o.platform,o.type,o.year,time].filter(Boolean).join(' · ')));sources.append(n);}reader.append(sources);

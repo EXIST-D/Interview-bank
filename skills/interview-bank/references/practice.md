@@ -6,7 +6,7 @@ Requires V2; see [maintenance](maintenance.md). Practice data belongs to the use
 
 Use `study queue --input <selection.json>` with optional question_ids/studyset_id, timezone (default Asia/Shanghai), as_of (aware ISO timestamp), include_future. `study history` optionally filters question_id. Returned IDs identify questions; report numbers are not stable IDs.
 
-Record the user's self-rating with `study record`, then commit. Generate one stable request_id for the logical action and reuse the exact payload after an uncertain response; don't invent a fresh ID on retry.
+Record the user's self-rating with `study record`, then commit. The payload must include `user_quote`: the user's own words that gave the rating (for example 这题我基本会了). Events written this way are marked `rating_source: agent_relayed`; ratings clicked in the Web page are `user_self_rating`. Generate one stable request_id for the logical action and reuse the exact payload after an uncertain response; don't invent a fresh ID on retry.
 
 ```json
 {"request_id":"practice-unique-action","question_id":"q_ACTUAL","rating":"hard","timezone":"Asia/Shanghai","note":"用户表示还不能解释复杂度"}
@@ -30,7 +30,7 @@ interview next --id <session-id> --bank <bank> --json
 
 Present only the current prompt to the user. next returns no reference answer in the question state. Ask one question and wait for the user's real response; an interactive interview cannot be “completed” by supplying both sides yourself.
 
-Once the user responds, write `interview answer` input with request_id, question_id, text; commit. next then returns an Agent-only awaiting_feedback packet with the actual response and a currently valid reference answer if available. Preserve the original response exactly; quotes in feedback must be actual substrings of it.
+Once the user responds, write `interview answer` input with request_id, question_id, text (the user's answer verbatim) and optionally `captured_via` (`chat`, default, or `voice_transcript`); commit. next then returns an Agent-only awaiting_feedback packet with the actual response and a currently valid reference answer if available. Preserve the original response exactly; quotes in feedback must be actual substrings of it.
 
 Feedback payload for `interview feedback`, followed by commit:
 
