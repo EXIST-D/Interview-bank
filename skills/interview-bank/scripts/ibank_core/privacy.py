@@ -14,17 +14,37 @@ ACCOUNT = re.compile(r"(?:微信号?|手机号|QQ群?|群号|wechat|weixin)[\s�
 HEX_RUN = re.compile(r"(?<![0-9A-Fa-f])[0-9A-Fa-f]{32,}(?![0-9A-Fa-f])")
 
 
-def contact_findings(text):
+def classified_findings(text):
+    """Contact-like matches by kind (email, mobile, account), masked so errors do not repeat them."""
     text = HEX_RUN.sub(" ", text)
-    found = [m.group(0) for m in EMAIL.finditer(text) if not EXAMPLE_DOMAIN.search(m.group(1))]
-    found += MOBILE.findall(text)
-    found += [m.group(0) for m in ACCOUNT.finditer(text)]
-    return found
+    found = [("email", m.group(0)) for m in EMAIL.finditer(text) if not EXAMPLE_DOMAIN.search(m.group(1))]
+    found += [("mobile", m) for m in MOBILE.findall(text)]
+    found += [("account", m.group(0)) for m in ACCOUNT.finditer(text)]
+    return [{"kind": kind, "masked": _mask(value)} for kind, value in found]
+
+
+def contact_findings(text):
+    return [item["masked"] for item in classified_findings(text)]
+
+
+def _mask(value):
+    keep = max(1, len(value) // 4)
+    return value[:keep] + "*" * (len(value) - 2 * keep) + value[-keep:] if len(value) > 2 * keep else "*" * len(value)
+
+
+HINTS = {"email": "an email address (use user@example.com in technical examples)",
+         "mobile": "a mobile number (use 138xxxxxxxx-style placeholders)",
+         "account": "an account ID after a 微信/QQ/手机号 label"}
+
+
+def describe(findings):
+    kinds = list(dict.fromkeys(item["kind"] for item in findings))
+    return "; ".join(HINTS[kind] for kind in kinds) + " — found " + ", ".join(item["masked"] for item in findings[:3])
 
 
 def privacy_check(text, config):
     if config["privacy"]["persist_pii"]:
         return
-    require(not contact_findings(text),
-            "Possible personal contact information; remove irrelevant PII before staging "
-            "(technical examples can use example.com-style placeholders)")
+    findings = classified_findings(text)
+    require(not findings, "Possible personal contact information: " + describe(findings)
+            + ". Remove it before staging; it is not needed to keep the question.")

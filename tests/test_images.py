@@ -89,11 +89,30 @@ class ImageTests(BankFixture):
         extraction = self.extraction(intake)
         # example.com is a documentation domain (RFC 2606) and is allowed; a real mailbox is not.
         extraction["sources"][0]["questions"][0]["original_text"] = "联系 me@qq.com"
+        # A candidate with contact details becomes a review item instead of failing the whole batch.
+        flagged = stage_extraction(self.bank, intake["id"], extraction)
+        self.assertIn("email", flagged["review"][0]["reason"])
+        self.assertNotIn("me@qq.com", flagged["review"][0]["reason"])
+        with self.assertRaises(ReviewRequired):
+            commit_run(self.bank, flagged["run_id"])
+        # Contact details in source metadata are still refused outright.
+        bad_metadata = self.extraction(intake)
+        bad_metadata["sources"][0]["metadata"]["source_url"] = "微信：wxid_abcdef123"
         with self.assertRaisesRegex(ValidationError, "contact information"):
-            stage_extraction(self.bank, intake["id"], extraction)
+            stage_extraction(self.bank, intake["id"], bad_metadata)
         (self.base / "screen-0.png").write_bytes(b"changed")
         with self.assertRaisesRegex(ValidationError, "changed after intake"):
             stage_extraction(self.bank, intake["id"], self.extraction(intake))
+
+    def test_reviewed_example_address_is_kept(self):
+        intake = self.intake()
+        extraction = self.extraction(intake)
+        question = extraction["sources"][0]["questions"][0]
+        question.update(original_text="如何校验 admin@qq.com 这种邮箱格式？", pii_reviewed=True, pii_reason="题目里的示例邮箱，不是个人联系方式")
+        run = stage_extraction(self.bank, intake["id"], extraction)
+        self.assertEqual(run["review"], [])
+        commit_run(self.bank, run["run_id"])
+        self.assertIn("admin@qq.com", load_data(self.bank)["occurrences"][0]["original_text"])
 
     def test_snapshot_stale_conflict_and_undo(self):
         intake = self.intake()
