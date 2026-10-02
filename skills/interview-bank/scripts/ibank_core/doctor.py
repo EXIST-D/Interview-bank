@@ -17,6 +17,8 @@ def doctor(bank):
                 if not path.is_file():
                     missing.append(source["id"])
         incomplete, pending, reviews, media_intakes = [], [], [], []
+        runs_bytes = sum(p.stat().st_size for p in bank_file(bank, "runs").rglob("*") if p.is_file()) if bank_file(bank, "runs").exists() else 0
+        data_bytes = sum(p.stat().st_size for p in bank_file(bank, "data").rglob("*") if p.is_file())
         runs = bank_file(bank, "runs")
         if runs.exists():
             for path in runs.iterdir():
@@ -38,6 +40,8 @@ def doctor(bank):
         return {"bank": str(bank), "python": platform.python_version(), "schema_version": manifest["schema_version"],
                 "sqlite": sqlite3.sqlite_version, "fts5_available": fts5_available(), "index": index_status(bank, data),
                 "lock": "acquired (free before this command)", "counts": {t: len(v) for t, v in data.items() if t != '_state'},
+                "runs_bytes": runs_bytes, "data_bytes": data_bytes,
+                "runs_hint": "runs/ holds over 5x the canonical data; gc (dry-run) shows what compaction would reclaim" if runs_bytes > 5 * max(data_bytes, 1) else None,
                 "state_counts": {k:len(v) for k,v in data.get('_state',{}).items() if k != 'version'},
                 "missing_source_files": missing, "incomplete_runs": incomplete, "pending_runs": pending, "review_required": reviews,
                 "media_intakes": media_intakes}

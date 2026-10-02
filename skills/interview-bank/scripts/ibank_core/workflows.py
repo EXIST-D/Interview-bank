@@ -64,6 +64,8 @@ def workflow(bank, action, payload=None, key=None):
                 from .runs import run_path
                 meta = read_json(run_path(bank, payload['from_run'])/'run.json')
                 require(meta['status'] == 'committed', 'Intake scope requires a committed run')
+                require((run_path(bank, payload['from_run'])/'occurrences.jsonl').is_file(),
+                        'This run was compacted by gc; scope the workflow with question_ids or expression instead')
                 from .storage import read_jsonl
                 occurrences = read_jsonl(run_path(bank, payload['from_run'])/'occurrences.jsonl')
                 if meta.get('mode') == 'snapshot':

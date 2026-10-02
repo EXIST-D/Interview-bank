@@ -101,6 +101,10 @@ def parser():
     run.add_argument("--run")
     run.add_argument("--offset", type=int)
     run.add_argument("--limit", type=positive_int)
+    gc = sub.add_parser("gc", parents=[common], help="Compact old run snapshots and drop expired tasks (dry-run unless --apply)")
+    gc.add_argument("--apply", action="store_true", help="Actually compact/delete; review the dry-run with the user first")
+    gc.add_argument("--keep-days", type=int, default=30, help="Keep every run younger than this many days (default 30)")
+    gc.add_argument("--keep-last", type=int, default=20, help="Always keep the newest N stages and N tasks (default 20)")
     abandon = sub.add_parser("abandon", parents=[common])
     abandon.add_argument("--run", required=True)
     undo = sub.add_parser("undo", parents=[common], help="Stage an audited undo of the latest snapshot operation")
@@ -210,6 +214,9 @@ def dispatch(args):
         return show_run(bank, args.run, args.offset, args.limit)
     if args.command == "extract-save":
         return save_extraction(bank, args.run, read_json(args.input))
+    if args.command == "gc":
+        from ibank_core.cleanup import gc
+        return gc(bank, apply=args.apply, keep_days=args.keep_days, keep_last=args.keep_last)
     if args.command == "abandon":
         return abandon_run(bank, args.run)
     if args.command == "undo":
