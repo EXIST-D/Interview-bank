@@ -3,6 +3,7 @@ import copy
 import hmac
 import json
 import secrets
+import socketserver
 import threading
 import webbrowser
 from collections import Counter
@@ -177,6 +178,12 @@ class LocalServer(ThreadingHTTPServer):
         self.token = secrets.token_urlsafe(32)
         super().__init__(('127.0.0.1', port), Handler)
         self.origin = f'http://127.0.0.1:{self.server_port}'
+
+    def server_bind(self):
+        # HTTPServer.server_bind() resolves socket.getfqdn('127.0.0.1'); slow reverse DNS can stall
+        # startup for tens of seconds and a loopback-only server never uses the name.
+        socketserver.TCPServer.server_bind(self)
+        self.server_name, self.server_port = '127.0.0.1', self.server_address[1]
 
     @property
     def url(self):
