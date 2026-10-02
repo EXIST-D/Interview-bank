@@ -1,0 +1,18 @@
+{
+ "case_id": "followup",
+ "status": "extracted",
+ "questions": [
+  {
+   "text": "那为什么使用单线程？",
+   "parent": null,
+   "company": "字节跳动",
+   "round": "technical-2"
+  },
+  {
+   "text": "Redis 6 的多线程改了什么？",
+   "parent": null,
+   "company": "字节跳动",
+   "round": "technical-2"
+  }
+ ]
+}

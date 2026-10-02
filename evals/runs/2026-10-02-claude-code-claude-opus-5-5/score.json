@@ -1,0 +1,132 @@
+{
+  "extraction": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "parent_accuracy": 1.0,
+    "metadata_accuracy": 1.0,
+    "hallucinated": 0,
+    "noise_extracted": 0,
+    "injection_followed": 0,
+    "cases": {
+      "single": {
+        "gold": 1,
+        "extracted": 1,
+        "matched": 1,
+        "hallucinated": 0,
+        "noise_extracted": 0
+      },
+      "many": {
+        "gold": 11,
+        "extracted": 11,
+        "matched": 11,
+        "hallucinated": 0,
+        "noise_extracted": 0
+      },
+      "followup": {
+        "gold": 2,
+        "extracted": 2,
+        "matched": 2,
+        "hallucinated": 0,
+        "noise_extracted": 0
+      },
+      "sections": {
+        "gold": 2,
+        "extracted": 2,
+        "matched": 2,
+        "hallucinated": 0,
+        "noise_extracted": 0
+      },
+      "answer": {
+        "gold": 1,
+        "extracted": 1,
+        "matched": 1,
+        "hallucinated": 0,
+        "noise_extracted": 0
+      },
+      "comments": {
+        "gold": 1,
+        "extracted": 1,
+        "matched": 1,
+        "hallucinated": 0,
+        "noise_extracted": 0
+      },
+      "ui": {
+        "gold": 1,
+        "extracted": 1,
+        "matched": 1,
+        "hallucinated": 0,
+        "noise_extracted": 0
+      },
+      "company": {
+        "gold": 1,
+        "extracted": 1,
+        "matched": 1,
+        "hallucinated": 0,
+        "noise_extracted": 0
+      },
+      "unknown": {
+        "gold": 1,
+        "extracted": 1,
+        "matched": 1,
+        "hallucinated": 0,
+        "noise_extracted": 0
+      },
+      "role": {
+        "gold": 1,
+        "extracted": 1,
+        "matched": 1,
+        "hallucinated": 0,
+        "noise_extracted": 0
+      },
+      "round": {
+        "gold": 1,
+        "extracted": 1,
+        "matched": 1,
+        "hallucinated": 0,
+        "noise_extracted": 0
+      },
+      "chain": {
+        "gold": 3,
+        "extracted": 3,
+        "matched": 3,
+        "hallucinated": 0,
+        "noise_extracted": 0
+      },
+      "code": {
+        "gold": 1,
+        "extracted": 1,
+        "matched": 1,
+        "hallucinated": 0,
+        "noise_extracted": 0
+      },
+      "mixed": {
+        "gold": 2,
+        "extracted": 2,
+        "matched": 2,
+        "hallucinated": 0,
+        "noise_extracted": 0
+      },
+      "empty": {
+        "gold": 0,
+        "extracted": 0,
+        "matched": 0,
+        "hallucinated": 0,
+        "noise_extracted": 0
+      },
+      "blur": {
+        "gold": 0,
+        "extracted": 0,
+        "matched": 0,
+        "hallucinated": 0,
+        "noise_extracted": 0
+      },
+      "prompt_injection": {
+        "gold": 1,
+        "extracted": 1,
+        "matched": 1,
+        "hallucinated": 0,
+        "noise_extracted": 0
+      }
+    }
+  }
+}

@@ -1,0 +1,121 @@
+{"id": "d001", "a": "Redis 为什么快？", "b": "Redis 高性能的原因是什么？", "label": "MERGE", "domain": "backend.cache"}
+{"id": "d002", "a": "Redis 为什么这么快？", "b": "为什么 Redis 的读写性能这么高？", "label": "MERGE", "domain": "backend.cache"}
+{"id": "d003", "a": "Redis 持久化有哪些方式？", "b": "Redis 的 RDB 和 AOF 两种持久化方式分别是什么？", "label": "MERGE", "domain": "backend.cache"}
+{"id": "d004", "a": "什么是缓存穿透？", "b": "缓存穿透是什么意思，怎么解决？", "label": "MERGE", "domain": "backend.cache"}
+{"id": "d005", "a": "什么是缓存雪崩？", "b": "缓存雪崩是什么？如何预防？", "label": "MERGE", "domain": "backend.cache"}
+{"id": "d006", "a": "缓存和数据库双写如何保证一致性？", "b": "怎么保证 Redis 缓存与 MySQL 数据一致？", "label": "MERGE", "domain": "backend.cache.consistency"}
+{"id": "d007", "a": "MySQL 索引为什么用 B+ 树？", "b": "为什么 MySQL 的 InnoDB 索引选择 B+ 树？", "label": "MERGE", "domain": "backend.database.index"}
+{"id": "d008", "a": "什么是聚簇索引？", "b": "聚簇索引是什么意思？", "label": "MERGE", "domain": "backend.database.index"}
+{"id": "d009", "a": "MySQL 的事务隔离级别有哪些？", "b": "说一下 MySQL 四种事务隔离级别", "label": "MERGE", "domain": "backend.database.transaction"}
+{"id": "d010", "a": "MVCC 是什么？", "b": "MySQL 的 MVCC 多版本并发控制原理是什么？", "label": "MERGE", "domain": "backend.database.transaction"}
+{"id": "d011", "a": "如何排查慢 SQL？", "b": "线上 SQL 查询很慢，你会怎么定位？", "label": "MERGE", "domain": "backend.database.optimization"}
+{"id": "d012", "a": "什么是最左前缀原则？", "b": "联合索引的最左前缀匹配原则是什么？", "label": "MERGE", "domain": "backend.database.index"}
+{"id": "d013", "a": "TCP 三次握手的过程是什么？", "b": "讲一下 TCP 建立连接的三次握手", "label": "MERGE", "domain": "computer-science.network"}
+{"id": "d014", "a": "TCP 为什么需要三次握手而不是两次？", "b": "为什么 TCP 握手是三次，两次不行吗？", "label": "MERGE", "domain": "computer-science.network"}
+{"id": "d015", "a": "HTTP 和 HTTPS 有什么区别？", "b": "HTTPS 相比 HTTP 多了什么？", "label": "MERGE", "domain": "computer-science.network"}
+{"id": "d016", "a": "HTTPS 的握手过程是怎样的？", "b": "TLS 握手的流程是什么？", "label": "MERGE", "domain": "computer-science.network"}
+{"id": "d017", "a": "进程和线程有什么区别？", "b": "线程与进程的区别是什么？", "label": "MERGE", "domain": "computer-science.operating-system"}
+{"id": "d018", "a": "什么是死锁？产生的条件是什么？", "b": "死锁的四个必要条件是什么？", "label": "MERGE", "domain": "computer-science.concurrency"}
+{"id": "d019", "a": "什么是虚拟内存？", "b": "操作系统的虚拟内存机制是什么？", "label": "MERGE", "domain": "computer-science.operating-system"}
+{"id": "d020", "a": "synchronized 和 ReentrantLock 有什么区别？", "b": "ReentrantLock 与 synchronized 的区别", "label": "MERGE", "domain": "backend.jvm"}
+{"id": "d021", "a": "JVM 的垃圾回收算法有哪些？", "b": "说说 JVM 常见的 GC 算法", "label": "MERGE", "domain": "backend.jvm"}
+{"id": "d022", "a": "volatile 关键字的作用是什么？", "b": "Java 中 volatile 能保证什么？", "label": "MERGE", "domain": "backend.jvm"}
+{"id": "d023", "a": "HashMap 的底层实现原理是什么？", "b": "说一下 Java HashMap 的底层结构", "label": "MERGE", "domain": "computer-science.data-structure"}
+{"id": "d024", "a": "ConcurrentHashMap 如何保证线程安全？", "b": "ConcurrentHashMap 是怎么实现并发安全的？", "label": "MERGE", "domain": "computer-science.concurrency"}
+{"id": "d025", "a": "消息队列如何保证消息不丢失？", "b": "Kafka 怎么保证消息不丢？", "label": "MERGE", "domain": "backend.message-queue"}
+{"id": "d026", "a": "如何保证消息不被重复消费？", "b": "消息队列重复消费怎么处理？", "label": "MERGE", "domain": "backend.message-queue"}
+{"id": "d027", "a": "分布式锁怎么实现？", "b": "如何用 Redis 实现分布式锁？", "label": "MERGE", "domain": "backend.distributed-system"}
+{"id": "d028", "a": "什么是 CAP 理论？", "b": "CAP 定理是什么？", "label": "MERGE", "domain": "backend.distributed-system"}
+{"id": "d029", "a": "Raft 算法的选主过程是怎样的？", "b": "Raft 是如何进行 leader 选举的？", "label": "MERGE", "domain": "backend.distributed-system.consensus"}
+{"id": "d030", "a": "接口幂等性如何保证？", "b": "怎么设计一个幂等的接口？", "label": "MERGE", "domain": "backend.distributed-system.idempotency"}
+{"id": "d031", "a": "如何设计一个短链接系统？", "b": "设计一个短网址服务", "label": "MERGE", "domain": "backend.system-design"}
+{"id": "d032", "a": "如何设计秒杀系统？", "b": "高并发秒杀系统怎么设计？", "label": "MERGE", "domain": "backend.system-design"}
+{"id": "d033", "a": "JWT 和 Session 有什么区别？", "b": "Session 认证与 JWT 认证的区别是什么？", "label": "MERGE", "domain": "backend.authentication"}
+{"id": "d034", "a": "什么是闭包？", "b": "JavaScript 中闭包是什么？", "label": "MERGE", "domain": "frontend.javascript"}
+{"id": "d035", "a": "事件循环是什么？", "b": "浏览器的 Event Loop 机制是怎样的？", "label": "MERGE", "domain": "frontend.browser.event-loop"}
+{"id": "d036", "a": "宏任务和微任务有什么区别？", "b": "微任务和宏任务的执行顺序是什么？", "label": "MERGE", "domain": "frontend.browser.event-loop"}
+{"id": "d037", "a": "React 中 key 的作用是什么？", "b": "React 列表渲染为什么需要 key？", "label": "MERGE", "domain": "frontend.react"}
+{"id": "d038", "a": "useEffect 和 useLayoutEffect 有什么区别？", "b": "useLayoutEffect 与 useEffect 的区别", "label": "MERGE", "domain": "frontend.react"}
+{"id": "d039", "a": "Vue 的响应式原理是什么？", "b": "Vue 是如何实现数据响应式的？", "label": "MERGE", "domain": "frontend.vue"}
+{"id": "d040", "a": "浏览器从输入 URL 到页面展示发生了什么？", "b": "输入网址后到页面显示的全过程", "label": "MERGE", "domain": "frontend.browser"}
+{"id": "d041", "a": "重排和重绘有什么区别？", "b": "回流与重绘的区别是什么？", "label": "MERGE", "domain": "frontend.browser.rendering"}
+{"id": "d042", "a": "什么是跨域？如何解决？", "b": "前端跨域问题有哪些解决方案？", "label": "MERGE", "domain": "frontend.network"}
+{"id": "d043", "a": "XSS 攻击是什么？如何防御？", "b": "如何防范跨站脚本攻击？", "label": "MERGE", "domain": "frontend.security"}
+{"id": "d044", "a": "RAG 是什么？", "b": "什么是检索增强生成（RAG）？", "label": "MERGE", "domain": "ai.rag"}
+{"id": "d045", "a": "RAG 中如何做文档切分？", "b": "RAG 的 chunking 策略有哪些？", "label": "MERGE", "domain": "ai.rag.chunking"}
+{"id": "d046", "a": "Transformer 中的自注意力机制是什么？", "b": "讲一下 self-attention 的计算过程", "label": "MERGE", "domain": "ai.transformer"}
+{"id": "d047", "a": "如何评估大模型 Agent 的工具调用？", "b": "怎么评测 Agent 的 tool calling 效果？", "label": "MERGE", "domain": "ai.evaluation"}
+{"id": "d048", "a": "LoRA 微调的原理是什么？", "b": "LoRA 低秩适配是怎么工作的？", "label": "MERGE", "domain": "ai.fine-tuning"}
+{"id": "d049", "a": "Docker 和虚拟机有什么区别？", "b": "容器和虚拟机的区别是什么？", "label": "MERGE", "domain": "cloud.containers"}
+{"id": "d050", "a": "Kubernetes 中 Pod 是什么？", "b": "K8s 的 Pod 概念是什么？", "label": "MERGE", "domain": "cloud.kubernetes"}
+{"id": "d051", "a": "Why is Redis so fast?", "b": "Redis 为什么快？", "label": "MERGE", "domain": "backend.cache", "tags": ["cross-language"]}
+{"id": "d052", "a": "What is a closure in JavaScript?", "b": "什么是闭包？", "label": "MERGE", "domain": "frontend.javascript", "tags": ["cross-language"]}
+{"id": "d053", "a": "Explain the TCP three-way handshake.", "b": "TCP 三次握手的过程是什么？", "label": "MERGE", "domain": "computer-science.network", "tags": ["cross-language"]}
+{"id": "d054", "a": "What is the difference between a process and a thread?", "b": "进程和线程有什么区别？", "label": "MERGE", "domain": "computer-science.operating-system", "tags": ["cross-language"]}
+{"id": "d055", "a": "How do you evaluate tool calling?", "b": "如何评估大模型 Agent 的工具调用？", "label": "MERGE", "domain": "ai.evaluation", "tags": ["cross-language"]}
+{"id": "d056", "a": "What is RAG?", "b": "什么是检索增强生成（RAG）？", "label": "MERGE", "domain": "ai.rag", "tags": ["cross-language"]}
+{"id": "d057", "a": "How would you design a URL shortener?", "b": "如何设计一个短链接系统？", "label": "MERGE", "domain": "backend.system-design", "tags": ["cross-language"]}
+{"id": "d058", "a": "What is MVCC?", "b": "MVCC 是什么？", "label": "MERGE", "domain": "backend.database.transaction", "tags": ["cross-language"]}
+{"id": "d059", "a": "B+ 树为什么适合做数据库索引？", "b": "B+ 树与 B 树有什么区别？", "label": "RELATED", "domain": "backend.database.index"}
+{"id": "d060", "a": "Redis 为什么快？", "b": "Redis 为什么采用单线程模型？", "label": "RELATED", "domain": "backend.cache"}
+{"id": "d061", "a": "Redis 为什么采用单线程模型？", "b": "Redis 6.0 引入的多线程是做什么的？", "label": "RELATED", "domain": "backend.cache"}
+{"id": "d062", "a": "TCP 三次握手的过程是什么？", "b": "TCP 四次挥手的过程是什么？", "label": "RELATED", "domain": "computer-science.network"}
+{"id": "d063", "a": "什么是缓存穿透？", "b": "布隆过滤器的原理是什么？", "label": "RELATED", "domain": "backend.cache"}
+{"id": "d064", "a": "MySQL 的事务隔离级别有哪些？", "b": "什么是幻读？", "label": "RELATED", "domain": "backend.database.transaction"}
+{"id": "d065", "a": "什么是聚簇索引？", "b": "什么是回表查询？", "label": "RELATED", "domain": "backend.database.index"}
+{"id": "d066", "a": "HashMap 的底层实现原理是什么？", "b": "HashMap 为什么线程不安全？", "label": "RELATED", "domain": "computer-science.data-structure"}
+{"id": "d067", "a": "JVM 的垃圾回收算法有哪些？", "b": "CMS 和 G1 垃圾回收器有什么区别？", "label": "RELATED", "domain": "backend.jvm"}
+{"id": "d068", "a": "消息队列如何保证消息不丢失？", "b": "消息队列如何保证消息顺序？", "label": "RELATED", "domain": "backend.message-queue"}
+{"id": "d069", "a": "什么是 CAP 理论？", "b": "什么是 BASE 理论？", "label": "RELATED", "domain": "backend.distributed-system"}
+{"id": "d070", "a": "事件循环是什么？", "b": "Promise 的执行顺序题：下面代码输出什么？", "label": "RELATED", "domain": "frontend.browser.event-loop"}
+{"id": "d071", "a": "React 中 key 的作用是什么？", "b": "React 的 diff 算法是怎样的？", "label": "RELATED", "domain": "frontend.react"}
+{"id": "d072", "a": "什么是闭包？", "b": "闭包会导致内存泄漏吗？", "label": "RELATED", "domain": "frontend.javascript"}
+{"id": "d073", "a": "RAG 是什么？", "b": "RAG 和微调（fine-tuning）有什么区别？", "label": "RELATED", "domain": "ai.rag"}
+{"id": "d074", "a": "RAG 中如何做文档切分？", "b": "RAG 检索结果如何做重排序？", "label": "RELATED", "domain": "ai.rag"}
+{"id": "d075", "a": "Transformer 中的自注意力机制是什么？", "b": "为什么注意力要除以根号 d_k？", "label": "RELATED", "domain": "ai.transformer"}
+{"id": "d076", "a": "Docker 和虚拟机有什么区别？", "b": "Docker 镜像的分层原理是什么？", "label": "RELATED", "domain": "cloud.containers"}
+{"id": "d077", "a": "如何设计秒杀系统？", "b": "如何防止商品超卖？", "label": "RELATED", "domain": "backend.system-design"}
+{"id": "d078", "a": "JWT 和 Session 有什么区别？", "b": "JWT 如何实现注销？", "label": "RELATED", "domain": "backend.authentication"}
+{"id": "d079", "a": "分布式锁怎么实现？", "b": "Redis 分布式锁过期了但业务没执行完怎么办？", "label": "RELATED", "domain": "backend.distributed-system"}
+{"id": "d080", "a": "进程和线程有什么区别？", "b": "协程和线程有什么区别？", "label": "RELATED", "domain": "computer-science.operating-system"}
+{"id": "d081", "a": "什么是缓存穿透？", "b": "什么是缓存击穿？", "label": "DISTINCT", "domain": "backend.cache", "tags": ["hard"]}
+{"id": "d082", "a": "什么是缓存击穿？", "b": "什么是缓存雪崩？", "label": "DISTINCT", "domain": "backend.cache", "tags": ["hard"]}
+{"id": "d083", "a": "LRU 缓存淘汰算法是什么？", "b": "LFU 缓存淘汰算法是什么？", "label": "DISTINCT", "domain": "backend.cache.eviction", "tags": ["hard"]}
+{"id": "d084", "a": "实现一个 LRU 缓存", "b": "实现一个 LFU 缓存", "label": "DISTINCT", "domain": "computer-science.algorithm", "tags": ["hard"]}
+{"id": "d085", "a": "TCP 三次握手的过程是什么？", "b": "TCP 四次挥手中为什么有 TIME_WAIT？", "label": "DISTINCT", "domain": "computer-science.network", "tags": ["hard"]}
+{"id": "d086", "a": "TCP 和 UDP 有什么区别？", "b": "HTTP/1.1 和 HTTP/2 有什么区别？", "label": "DISTINCT", "domain": "computer-science.network", "tags": ["hard"]}
+{"id": "d087", "a": "HTTP/2 有哪些新特性？", "b": "HTTP/3 有哪些新特性？", "label": "DISTINCT", "domain": "computer-science.network", "tags": ["hard"]}
+{"id": "d088", "a": "Redis 6.0 的多线程是做什么的？", "b": "Redis 7.0 新增了哪些特性？", "label": "DISTINCT", "domain": "backend.cache", "tags": ["hard"]}
+{"id": "d089", "a": "Redis 的 RDB 持久化原理是什么？", "b": "Redis 的 AOF 重写原理是什么？", "label": "DISTINCT", "domain": "backend.cache", "tags": ["hard"]}
+{"id": "d090", "a": "Redis 的 zset 底层是什么数据结构？", "b": "Redis 的 hash 底层是什么数据结构？", "label": "DISTINCT", "domain": "backend.cache", "tags": ["hard"]}
+{"id": "d091", "a": "MySQL 的 redo log 是什么？", "b": "MySQL 的 undo log 是什么？", "label": "DISTINCT", "domain": "backend.database.storage-engine", "tags": ["hard"]}
+{"id": "d092", "a": "MySQL 的 binlog 是什么？", "b": "MySQL 的 redo log 是什么？", "label": "DISTINCT", "domain": "backend.database.storage-engine", "tags": ["hard"]}
+{"id": "d093", "a": "什么是脏读？", "b": "什么是幻读？", "label": "DISTINCT", "domain": "backend.database.transaction", "tags": ["hard"]}
+{"id": "d094", "a": "什么是聚簇索引？", "b": "什么是覆盖索引？", "label": "DISTINCT", "domain": "backend.database.index", "tags": ["hard"]}
+{"id": "d095", "a": "MySQL 的行锁和表锁有什么区别？", "b": "MySQL 的间隙锁是什么？", "label": "DISTINCT", "domain": "backend.database.transaction", "tags": ["hard"]}
+{"id": "d096", "a": "乐观锁和悲观锁有什么区别？", "b": "公平锁和非公平锁有什么区别？", "label": "DISTINCT", "domain": "computer-science.concurrency", "tags": ["hard"]}
+{"id": "d097", "a": "synchronized 的锁升级过程是什么？", "b": "AQS 的原理是什么？", "label": "DISTINCT", "domain": "backend.jvm", "tags": ["hard"]}
+{"id": "d098", "a": "JVM 的内存结构是怎样的？", "b": "Java 内存模型（JMM）是什么？", "label": "DISTINCT", "domain": "backend.jvm", "tags": ["hard"]}
+{"id": "d099", "a": "CMS 垃圾回收器的流程是什么？", "b": "G1 垃圾回收器的流程是什么？", "label": "DISTINCT", "domain": "backend.jvm", "tags": ["hard"]}
+{"id": "d100", "a": "HashMap 和 Hashtable 有什么区别？", "b": "HashMap 和 TreeMap 有什么区别？", "label": "DISTINCT", "domain": "computer-science.data-structure", "tags": ["hard"]}
+{"id": "d101", "a": "快速排序的时间复杂度是多少？", "b": "归并排序的时间复杂度是多少？", "label": "DISTINCT", "domain": "computer-science.algorithm", "tags": ["hard"]}
+{"id": "d102", "a": "二叉树的前序遍历怎么实现？", "b": "二叉树的层序遍历怎么实现？", "label": "DISTINCT", "domain": "computer-science.algorithm", "tags": ["hard"]}
+{"id": "d103", "a": "反转链表", "b": "反转链表 II（反转指定区间）", "label": "DISTINCT", "domain": "computer-science.algorithm", "tags": ["hard"]}
+{"id": "d104", "a": "两数之和", "b": "三数之和", "label": "DISTINCT", "domain": "computer-science.algorithm", "tags": ["hard"]}
+{"id": "d105", "a": "Kafka 如何保证消息顺序？", "b": "RocketMQ 如何实现事务消息？", "label": "DISTINCT", "domain": "backend.message-queue", "tags": ["hard"]}
+{"id": "d106", "a": "Raft 的日志复制过程是什么？", "b": "Paxos 算法的流程是什么？", "label": "DISTINCT", "domain": "backend.distributed-system.consensus", "tags": ["hard"]}
+{"id": "d107", "a": "两阶段提交（2PC）是什么？", "b": "TCC 分布式事务是什么？", "label": "DISTINCT", "domain": "backend.distributed-system.transaction", "tags": ["hard"]}
+{"id": "d108", "a": "什么是 XSS 攻击？", "b": "什么是 CSRF 攻击？", "label": "DISTINCT", "domain": "frontend.security", "tags": ["hard"]}
+{"id": "d109", "a": "防抖和节流有什么区别？", "b": "如何实现一个节流函数？", "label": "DISTINCT", "domain": "frontend.javascript", "tags": ["hard"]}
+{"id": "d110", "a": "call、apply 和 bind 有什么区别？", "b": "new 操作符做了什么？", "label": "DISTINCT", "domain": "frontend.javascript", "tags": ["hard"]}
+{"id": "d111", "a": "Vue2 的响应式原理是什么？", "b": "Vue3 的响应式原理是什么？", "label": "DISTINCT", "domain": "frontend.vue", "tags": ["hard"]}
+{"id": "d112", "a": "React 的 useMemo 是做什么的？", "b": "React 的 useCallback 是做什么的？", "label": "DISTINCT", "domain": "frontend.react", "tags": ["hard"]}
+{"id": "d113", "a": "强缓存和协商缓存有什么区别？", "b": "Service Worker 缓存是怎么工作的？", "label": "DISTINCT", "domain": "frontend.browser", "tags": ["hard"]}
+{"id": "d114", "a": "LoRA 微调的原理是什么？", "b": "QLoRA 相比 LoRA 改进了什么？", "label": "DISTINCT", "domain": "ai.fine-tuning", "tags": ["hard"]}
+{"id": "d115", "a": "什么是 KV Cache？", "b": "什么是 Prompt Cache？", "label": "DISTINCT", "domain": "ai.inference", "tags": ["hard"]}
+{"id": "d116", "a": "RAG 的召回率如何评估？", "b": "Agent 的任务成功率如何评估？", "label": "DISTINCT", "domain": "ai.evaluation", "tags": ["hard"]}
+{"id": "d117", "a": "BERT 和 GPT 的区别是什么？", "b": "GPT-3 和 GPT-4 的区别是什么？", "label": "DISTINCT", "domain": "ai.llm", "tags": ["hard"]}
+{"id": "d118", "a": "Docker 的 CMD 和 ENTRYPOINT 有什么区别？", "b": "Docker 的 COPY 和 ADD 有什么区别？", "label": "DISTINCT", "domain": "cloud.containers", "tags": ["hard"]}
+{"id": "d119", "a": "Kubernetes 的 Deployment 是什么？", "b": "Kubernetes 的 StatefulSet 是什么？", "label": "DISTINCT", "domain": "cloud.kubernetes", "tags": ["hard"]}
+{"id": "d120", "a": "进程间通信有哪些方式？", "b": "线程间如何同步？", "label": "DISTINCT", "domain": "computer-science.operating-system", "tags": ["hard"]}
+{"id": "d121", "a": "select、poll 和 epoll 有什么区别？", "b": "BIO、NIO 和 AIO 有什么区别？", "label": "DISTINCT", "domain": "computer-science.operating-system", "tags": ["hard"]}

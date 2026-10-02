@@ -1,0 +1,12 @@
+{
+ "case_id": "answer",
+ "status": "extracted",
+ "questions": [
+  {
+   "text": "Redis 为什么快？",
+   "parent": null,
+   "company": null,
+   "round": null
+  }
+ ]
+}

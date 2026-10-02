@@ -31,7 +31,6 @@ OBSERVED = {
              q("HTTP 和 HTTPS 有什么区别？", "computer-science.network"), q("什么是死锁？", "computer-science.operating-system"),
              q("如何排查慢 SQL？", "backend.database", "mysql", question_type="debugging"), q("什么是缓存穿透？", "backend.cache"),
              q("B+ 树和 B 树的区别？", "computer-science.data-structure"), q("为什么需要连接池？", "backend.database"),
-             q("自我介绍", "computer-science.operating-system", question_type="behavioral", domains=[]),
              q("项目里如何使用消息队列？", "backend.message-queue", question_type="project")],
     "followup": [q("那为什么使用单线程？", "backend.cache", "redis", canonical_suggestion="Redis 为什么使用单线程？"),
                  q("Redis 6 的多线程改了什么？", "backend.cache", "redis")],

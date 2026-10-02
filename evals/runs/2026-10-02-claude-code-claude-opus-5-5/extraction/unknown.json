@@ -1,0 +1,12 @@
+{
+ "case_id": "unknown",
+ "status": "extracted",
+ "questions": [
+  {
+   "text": "B+ 树有什么特点？",
+   "parent": null,
+   "company": null,
+   "round": null
+  }
+ ]
+}

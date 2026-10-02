@@ -1,0 +1,24 @@
+{"id": "h001", "a": "Kafka 为什么吞吐量高？", "b": "Kafka 高吞吐的原因有哪些？", "label": "MERGE", "domain": "backend.message-queue"}
+{"id": "h002", "a": "什么是零拷贝？", "b": "零拷贝技术的原理是什么？", "label": "MERGE", "domain": "computer-science.operating-system"}
+{"id": "h003", "a": "什么是布隆过滤器？", "b": "布隆过滤器的原理和误判率", "label": "MERGE", "domain": "backend.cache"}
+{"id": "h004", "a": "Redis 的过期删除策略有哪些？", "b": "Redis 过期 key 是怎么删除的？", "label": "MERGE", "domain": "backend.cache.eviction"}
+{"id": "h005", "a": "MySQL 主从复制的原理是什么？", "b": "讲讲 MySQL 主从同步是怎么实现的", "label": "MERGE", "domain": "backend.database.replication"}
+{"id": "h006", "a": "分库分表之后如何生成全局唯一 ID？", "b": "分布式系统中全局 ID 怎么生成？", "label": "MERGE", "domain": "backend.database.sharding"}
+{"id": "h007", "a": "什么是 SQL 注入？", "b": "SQL 注入攻击怎么防范？", "label": "MERGE", "domain": "security.web"}
+{"id": "h008", "a": "一致性哈希是什么？", "b": "讲一下一致性 Hash 算法", "label": "MERGE", "domain": "backend.distributed-system"}
+{"id": "h009", "a": "Spring 的 IoC 是什么？", "b": "什么是控制反转（IoC）？", "label": "MERGE", "domain": "backend"}
+{"id": "h010", "a": "Spring AOP 的实现原理是什么？", "b": "Spring 的面向切面编程是怎么实现的？", "label": "MERGE", "domain": "backend"}
+{"id": "h011", "a": "线程池的核心参数有哪些？", "b": "Java 线程池的几个核心参数分别是什么意思？", "label": "MERGE", "domain": "computer-science.concurrency"}
+{"id": "h012", "a": "CSS 盒模型是什么？", "b": "标准盒模型和 IE 盒模型的区别", "label": "MERGE", "domain": "frontend.css"}
+{"id": "h013", "a": "BFC 是什么？", "b": "什么是块级格式化上下文？", "label": "MERGE", "domain": "frontend.css"}
+{"id": "h014", "a": "Webpack 的构建流程是什么？", "b": "Webpack 打包的过程是怎样的？", "label": "MERGE", "domain": "frontend.build"}
+{"id": "h015", "a": "TypeScript 中 interface 和 type 有什么区别？", "b": "TS 的 type 与 interface 的区别", "label": "MERGE", "domain": "frontend.typescript"}
+{"id": "h016", "a": "什么是 Prompt Engineering？", "b": "提示词工程是什么？", "label": "MERGE", "domain": "ai.prompt-engineering"}
+{"id": "h017", "a": "大模型幻觉是什么？如何缓解？", "b": "如何减少 LLM 的幻觉问题？", "label": "MERGE", "domain": "ai.llm"}
+{"id": "h018", "a": "向量数据库是什么？", "b": "什么是向量检索数据库？", "label": "MERGE", "domain": "backend.database.vector"}
+{"id": "h019", "a": "What is a deadlock and how do you avoid it?", "b": "死锁是什么？如何避免？", "label": "MERGE", "domain": "computer-science.concurrency", "tags": ["cross-language"]}
+{"id": "h020", "a": "How does HTTPS keep data secure?", "b": "HTTPS 是如何保证数据安全的？", "label": "MERGE", "domain": "computer-science.network", "tags": ["cross-language"]}
+{"id": "h021", "a": "What is the difference between TCP and UDP?", "b": "TCP 和 UDP 有什么区别？", "label": "MERGE", "domain": "computer-science.network", "tags": ["cross-language"]}
+{"id": "h022", "a": "How does a hash map work?", "b": "哈希表的原理是什么？", "label": "MERGE", "domain": "computer-science.data-structure", "tags": ["cross-language"]}
+{"id": "h023", "a": "What is virtual DOM?", "b": "什么是虚拟 DOM？", "label": "MERGE", "domain": "frontend.react", "tags": ["cross-language"]}
+{"id": "h024", "a": "How do you design a rate limiter?", "b": "如何设计一个限流器？", "label": "MERGE", "domain": "backend.system-design", "tags": ["cross-language"]}

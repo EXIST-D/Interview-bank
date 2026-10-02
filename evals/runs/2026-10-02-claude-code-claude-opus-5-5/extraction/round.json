@@ -1,0 +1,12 @@
+{
+ "case_id": "round",
+ "status": "extracted",
+ "questions": [
+  {
+   "text": "MySQL 的 MVCC 是什么？",
+   "parent": null,
+   "company": "字节",
+   "round": "technical-2"
+  }
+ ]
+}

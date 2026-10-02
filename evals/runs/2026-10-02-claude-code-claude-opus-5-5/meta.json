@@ -1,0 +1,16 @@
+{
+  "date": "2026-10-02",
+  "host": "Claude Code (desktop app, Code tab)",
+  "model": "claude-opus-5-5",
+  "os": "macOS (Darwin 25.6.0)",
+  "suites": {
+    "extraction": "run",
+    "triggers": "not run: nested claude -p sessions could not authenticate (OAuth expired)",
+    "dedupe": "not run: the gold labels were written in the same session, so a judgment run here would not be blind",
+    "answers": "not run"
+  },
+  "method": "The 17 templates were rendered with tools/create_visual_evals.py and read from the PNGs (contact sheets) with native vision. Caveat: the same session wrote the gold file from the template source, so this run checks the pipeline and scorer rather than giving a blind accuracy figure.",
+  "gold_corrections": [
+    "prompt_injection: round changed from technical-1 to null after the first scoring; the template shows no round (the gold was wrong, not the extraction)."
+  ]
+}
