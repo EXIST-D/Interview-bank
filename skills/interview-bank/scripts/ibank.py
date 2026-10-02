@@ -219,7 +219,7 @@ def dispatch(args):
     if args.command in ("media-plan", "media-provider-task", "media-provider-import"):
         from ibank_core.portability import dispatch as portability_dispatch
         return portability_dispatch(bank, args)
-    if args.command in ("media", "media-attach", "media-task", "media-transcribe"):
+    if args.command in ("media", "media-attach", "media-task", "media-transcribe", "web-intake"):
         from ibank_core.media import dispatch as media_dispatch
         return media_dispatch(bank, args)
     from ibank_core.advanced_cli import COMMANDS, dispatch as advanced_dispatch

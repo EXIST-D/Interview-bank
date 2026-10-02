@@ -11,6 +11,7 @@ from pathlib import Path
 
 from .ids import new_run_id, new_source_id, utc_now
 from .runs import run_path
+from .errors import ValidationError
 from .schema import require, string
 from .storage import atomic_write, bank_file, dumps, fingerprint, open_bank, read_json
 
@@ -39,7 +40,10 @@ def validate_segments(segments):
     timing_modes = set()
     for index, segment in enumerate(segments):
         require(isinstance(segment, dict), "segment must be an object")
-        require(set(segment) <= {"id", "start", "end", "text", "speaker", "uncertain"}, "Unknown segment field")
+        require(set(segment) <= {"id", "start", "end", "text", "speaker", "uncertain", "source_cues"}, "Unknown segment field")
+        if "source_cues" in segment:
+            require(isinstance(segment["source_cues"], list) and all(type(c) is int and c > 0 for c in segment["source_cues"]),
+                    "source_cues must list original cue numbers")
         require(type(segment.get("id")) is int and segment["id"] == index + 1, "Segment IDs must be consecutive from 1")
         string(segment.get("text"), "segment.text")
         start, end = segment.get("start"), segment.get("end")
@@ -71,7 +75,12 @@ def parse_transcript(path):
     suffix = path.suffix.lower()
     if suffix == ".json":
         payload = read_json(path)
-        require(isinstance(payload, dict) and payload.get("schema_version") == 1, "Expected v1 transcript JSON")
+        if isinstance(payload, dict) and "schema_version" not in payload and isinstance(payload.get("body"), list):
+            segments = bilibili_segments(payload["body"])
+            validate_segments(segments)
+            require(bool(segments), "Transcript contains no text; do not infer questions")
+            return segments
+        require(isinstance(payload, dict) and payload.get("schema_version") == 1, "Expected v1 transcript JSON (or a Bilibili subtitle body)")
         require(isinstance(payload.get("segments"), list), "Missing transcript segments")
         for i, segment in enumerate(payload["segments"]):
             require(isinstance(segment, dict), "Invalid transcript segment")
@@ -96,9 +105,52 @@ def parse_transcript(path):
             end = clock_seconds(parts[1].strip().split()[0])
             wording = "\n".join(lines[timing + 1:]).strip()
             segments.append({"id": len(segments) + 1, "start": start, "end": end, "text": wording})
+        segments = merge_rolling(segments)
     validate_segments(segments)
     require(bool(segments), "Transcript contains no text; do not infer questions")
     return segments
+
+
+def bilibili_segments(body):
+    """Bilibili subtitle JSON: {"body": [{"from": 1.2, "to": 3.4, "content": "…"}]}."""
+    segments = []
+    for item in body:
+        require(isinstance(item, dict) and {"from", "to", "content"} <= set(item), "Bilibili subtitle items need from, to and content")
+        text = str(item["content"]).strip()
+        if text:
+            segments.append({"id": len(segments) + 1, "start": seconds(item["from"]), "end": seconds(item["to"]), "text": text})
+    return segments
+
+
+TAG = re.compile(r"<[^>]+>")
+
+
+def merge_rolling(segments):
+    """Auto-generated (YouTube-style) captions repeat the previous line at the top of each cue.
+
+    Inline timing tags are dropped and repeated leading lines removed; cues left empty are folded into the
+    previous segment. Each segment keeps the original cue numbers in source_cues for provenance. Captions
+    without repetition come back unchanged (no source_cues).
+    """
+    cleaned = [{**s, "text": TAG.sub("", s["text"]).strip()} for s in segments]
+    rolling = any(i and cleaned[i]["text"].splitlines()[:1] == cleaned[i - 1]["text"].splitlines()[-1:]
+                  for i in range(1, len(cleaned)) if cleaned[i]["text"])
+    if not rolling and all(c["text"] == s["text"] for c, s in zip(cleaned, segments)):
+        return segments
+    merged, shown = [], []
+    for number, cue in enumerate(cleaned, 1):
+        lines = [line.strip() for line in cue["text"].splitlines() if line.strip()]
+        while lines and shown and lines[0] in shown[-2:]:
+            lines.pop(0)
+        if not lines:
+            if merged and cue["end"] is not None and cue["end"] > merged[-1]["end"]:
+                merged[-1]["end"] = cue["end"]
+            if merged:
+                merged[-1]["source_cues"].append(number)
+            continue
+        shown.extend(lines)
+        merged.append({"id": len(merged) + 1, "start": cue["start"], "end": cue["end"], "text": "\n".join(lines), "source_cues": [number]})
+    return merged
 
 
 def transcript_metadata(segments, *, engine, model=None, version=None, language=None, duration=None):
@@ -377,6 +429,10 @@ def add_parsers(sub, common):
     media.add_argument("--retention", choices=("reference", "copy", "none"))
     media.add_argument("--recursive", action="store_true")
     media.add_argument("--reprocess", action="store_true")
+    web = sub.add_parser("web-intake", parents=[common], help="Import the text of a page the host read (no fetching) as numbered paragraphs")
+    web.add_argument("--url", required=True, help="The page's public URL, kept as the source URL")
+    web.add_argument("--text", required=True, type=Path, help="UTF-8 file with the page body the host saved")
+    web.add_argument("--retention", choices=("reference", "copy", "none"))
     attach = sub.add_parser("media-attach", parents=[common], help="Attach provided transcript to one media source")
     attach.add_argument("--run", required=True)
     attach.add_argument("--source", required=True)
@@ -397,8 +453,58 @@ def add_parsers(sub, common):
 def dispatch(bank, args):
     if args.command == "media":
         return intake_media(bank, args.paths, retention=args.retention, recursive=args.recursive, reprocess=args.reprocess)
+    if args.command == "web-intake":
+        return intake_web(bank, args.url, args.text, retention=args.retention)
     if args.command == "media-attach":
         return attach_transcript(bank, args.run, args.source, args.input)
     if args.command == "media-task":
         return media_task(bank, args.run, args.source, args.offset, args.limit)
     return transcribe_media(bank, args.run, model=args.model, language=args.language, download_model=args.download_model, device=args.device)
+
+
+def page_segments(text):
+    """A saved web page body as numbered paragraphs (blank-line separated; very long ones split by line)."""
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    paragraphs = [p.strip() for p in re.split(r"\n[ \t]*\n", text) if p.strip()]
+    pieces = []
+    for paragraph in paragraphs:
+        pieces.extend([line.strip() for line in paragraph.splitlines() if line.strip()] if len(paragraph) > 2000 else [paragraph])
+    return [{"id": i + 1, "start": None, "end": None, "text": piece} for i, piece in enumerate(pieces)]
+
+
+def intake_web(bank, url, text_path, *, retention=None):
+    """Import the body of a page the host read (the CLI never fetches it) as a paragraph-numbered source."""
+    from urllib.parse import urlparse
+    parsed = urlparse(url or "")
+    require(parsed.scheme in ("http", "https") and bool(parsed.netloc) and not parsed.username, "web-intake needs the page's public http(s) URL")
+    path = Path(text_path).expanduser().resolve()
+    require(path.is_file() and path.stat().st_size > 0, f"Missing or empty page text: {path}")
+    require(path.stat().st_size <= 5 * 1024 * 1024, "Page text exceeds 5 MiB; save only the article body")
+    try:
+        segments = page_segments(path.read_text(encoding="utf-8-sig"))
+    except UnicodeError as exc:
+        raise ValidationError("Page text must be UTF-8") from exc
+    require(bool(segments), "Page text has no paragraphs")
+    with open_bank(bank) as (_, config, current):
+        from .privacy import privacy_check
+        privacy_check(url, config)
+        retention = retention or config["source_retention"]
+        require(retention in ("reference", "copy", "none"), "Invalid retention")
+        digest = file_hash(path)
+        old = next((s for s in current["sources"] if s["sha256"] == digest), None)
+        if old:
+            return {"id": None, "operation": "media-intake", "duplicates": [{"sha256": digest, "source_id": old["id"]}], "items": []}
+        source_path = str(path)
+        if retention == "copy":
+            source_path = f"media/{digest}.txt"
+            copy_media(path, bank_file(bank, source_path), digest)
+        source = {"schema_version": 1, "id": new_source_id(), "type": "web", "path": source_path if retention != "none" else None,
+                  "sha256": digest, "platform": parsed.hostname, "source_url": url, "source_date": None,
+                  "imported_at": utc_now(), "retention": retention,
+                  "transcription": transcript_metadata(segments, engine="web-text")}
+        item = {"source": source, "view_path": str(bank / source_path) if retention == "copy" else str(path),
+                "original_path": str(path), "order": 1, "reprocess": False, "segments": segments}
+        payload = {"schema_version": 1, "id": new_run_id(), "operation": "media-intake", "created_at": utc_now(), "items": [item], "duplicates": []}
+        payload["digest"] = fingerprint(payload["items"])
+        atomic_write(run_path(bank, payload["id"]) / "intake.json", dumps(payload) + "\n")
+        return intake_summary(payload)

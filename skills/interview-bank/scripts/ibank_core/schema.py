@@ -174,7 +174,7 @@ def validate_record(table, row, taxonomy=None):
         if "transcription" in row:
             from .media import validate_transcription
             validate_transcription(row["transcription"])
-            require(row["type"] in ("audio", "video", "text"), "Transcript attached to incompatible source type")
+            require(row["type"] in ("audio", "video", "text", "web"), "Transcript attached to incompatible source type")
         require(row["type"] in ("image", "text", "web", "audio", "video"), f"{label}: invalid source type")
         require(row["retention"] in ("reference", "copy", "none"), f"{label}: invalid retention")
         require(isinstance(row["sha256"], str) and re.fullmatch(r"[a-f0-9]{64}", row["sha256"]), f"{label}: invalid sha256")

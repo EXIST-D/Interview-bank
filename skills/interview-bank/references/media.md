@@ -71,6 +71,20 @@ python -B <cli> dedupe-candidates --run <staged-run-id> --bank <bank> --json
 
 Review and submit M3 decisions using the existing protocol, commit the final run, then research the requested canonical questions and export both editions. Fields/timestamps remain in structured JSON/CSV provenance; reader Markdown retains topic headings, frequencies and concise reference answers.
 
+## Subtitle formats and web pages
+
+- Bilibili subtitle JSON (`{"body": [{"from": 1.2, "to": 3.4, "content": "…"}]}`) is read as timed segments; empty lines are dropped.
+- Auto-generated captions that repeat the previous line at the top of each cue (YouTube style) are merged:
+  inline timing tags are removed, repeated lines dropped and empty cues folded in. Each segment lists its original
+  cue numbers in `source_cues`. Ordinary subtitles are unchanged.
+- A web page the user points to: read it with your own web tools, save only the article body as UTF-8 text, then
+  `web-intake --url <page URL> --text <file> [--retention reference|copy|none]`. The CLI does not fetch anything.
+  The source is `type: web` with `source_url` and the host as platform; the body becomes numbered paragraphs.
+  Continue exactly as for transcripts: `media-task` pages the paragraphs, the extraction cites `segment_ids`
+  (`ingest submit` and `ingest finalize` work too), so every question points to its paragraph.
+  Do not bypass logins, paywalls or anti-scraping measures; keep only the questions and the excerpts you need,
+  and never republish whole articles in reports.
+
 ## Resume, provenance and compatibility
 
 - Transcription saves after each completed file. Rerun `media-transcribe` with the same intake ID to process only files still missing transcripts; decoding/model errors keep completed work. Interrupted work inside one file restarts that file. Model download can resume through its cache. There is no background worker or mid-file ASR checkpoint.
