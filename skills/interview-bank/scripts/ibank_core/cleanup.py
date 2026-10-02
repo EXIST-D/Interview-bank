@@ -14,7 +14,7 @@ from .schema import TABLES, require
 from .storage import atomic_write, bank_file, dumps, fingerprint, open_bank, read_json
 from .timestamps import parse_timestamp
 
-SNAPSHOT_FILES = (*(f"{table}.jsonl" for table in TABLES), "before.json", "state.json",
+SNAPSHOT_FILES = (*(f"{table}.jsonl" for table in TABLES), "before.json", "state.json", "changes.jsonl",
                   "config_before.json", "config_after.json")
 
 

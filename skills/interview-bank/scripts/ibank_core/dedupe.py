@@ -4,9 +4,9 @@ from collections import Counter, defaultdict
 from difflib import SequenceMatcher
 
 from .ids import new_relation_id, utc_now
-from .runs import combined, run_path, stage_snapshot
-from .schema import TABLES, require, confidence, string
-from .storage import fingerprint, open_bank, read_json, read_jsonl
+from .runs import load_stage, run_path, stage_snapshot
+from .schema import require, confidence, string
+from .storage import fingerprint, open_bank, read_json
 from .tasks import read_task, write_task
 from .curation import apply_changes
 from .editorial import exclusion_reason
@@ -43,19 +43,12 @@ def candidate_task(bank, run_id=None, top_k=None, question_ids=None):
         final = current
         source_run = None
         if run_id:
-            path = run_path(bank, run_id)
-            source_run = read_json(path / "run.json")
+            source_run = read_json(run_path(bank, run_id) / "run.json")
             require(source_run["status"] == "staged", "Use an uncommitted staging run")
             require(source_run.get("config_digest", fingerprint(config)) == fingerprint(config), "Staged configuration is stale; regenerate")
-            addition = {t: read_jsonl(path / f"{t}.jsonl") for t in TABLES}
-            if (path / "state.json").exists():
-                addition["_state"] = read_json(path / "state.json")
-            require(fingerprint(addition) == source_run["digest"], "Staged data changed")
             if source_run.get("mode") == "snapshot":
                 require(source_run["base_digest"] == fingerprint(current), "Staged data is stale; regenerate")
-                final = addition
-            else:
-                final = combined(current, addition)
+            final = load_stage(bank, run_id, source_run, current)
         current_ids = {q["id"] for q in current["questions"]}
         prior, items, postings, tag_postings = [], [], defaultdict(set), defaultdict(set)
         for q in final["questions"]:
@@ -143,15 +136,10 @@ def stage_decisions(bank, response=None, task_id=None):
         task = read_task(bank, task_id, "dedupe", current, config)
         final, meta = copy.deepcopy(current), {}
         if task["input_run"]:
-            path = run_path(bank, task["input_run"])
-            meta = read_json(path / "run.json")
+            meta = read_json(run_path(bank, task["input_run"]) / "run.json")
             require(meta["status"] == "staged", "Input stage is no longer staged")
             require(meta.get("config_digest", fingerprint(config)) == fingerprint(config), "Input configuration is stale")
-            added = {t: read_jsonl(path / f"{t}.jsonl") for t in TABLES}
-            if (path / "state.json").exists():
-                added["_state"] = read_json(path / "state.json")
-            require(meta["digest"] == fingerprint(added), "Input stage changed")
-            final = added if meta.get("mode") == "snapshot" else copy.deepcopy(combined(current, added))
+            final = copy.deepcopy(load_stage(bank, task["input_run"], meta, current))
         require(fingerprint(final) == task["input_digest"], "Task input changed")
         items = {i["incoming"]["id"]: i for i in task["items"]}
         if response is None:

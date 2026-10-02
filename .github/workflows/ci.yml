@@ -30,6 +30,19 @@ jobs:
           test -z "$(find skills -name __pycache__ -print -quit)"
           test -z "$(git status --porcelain -- skills)"
 
+  legacy-runs:
+    name: test (full-snapshot run format)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Whole suite with INTERVIEW_BANK_RUN_FORMAT=1
+        env:
+          INTERVIEW_BANK_RUN_FORMAT: "1"
+        run: python -B -X utf8 -m unittest discover -s tests
+
   package:
     name: package (${{ matrix.os }})
     strategy:
