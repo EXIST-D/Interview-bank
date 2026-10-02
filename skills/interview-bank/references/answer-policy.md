@@ -65,6 +65,8 @@ Return exactly one answer or explicit skip per task question. Example structure 
 
 Citation type is a nonempty descriptive string (e.g. official_doc, standard, paper). accessed_at is the actual YYYY-MM-DD reading date and cannot be future. Every key_point (zero-based index) needs an evidence entry containing one or more supplied citation URLs. URLs must be HTTP(S) without embedded credentials; duplicate URLs fail. evidence_note is at most 2000 characters. Evidence mapping is retained in run audit; citation notes are retained on the Answer.
 
+`answer --input <file> --commit` stages and commits a clean batch in one call; a batch with review items stays staged.
+
 ## Quotes and link checks
 
 `evidence_quote` (optional, at most 300 characters) is a verbatim excerpt of the cited page. Save the text you actually read and pass `answer --input <file> --page-texts <pages.json>`, where pages.json maps each citation URL to that text file (`{"https://…": "redis-faq.txt"}`, paths relative to pages.json). The CLI checks that each quote occurs in its page (ignoring case, width and whitespace) and stores `quote_verified: true`; a quote without page text is kept with `quote_verified: false`; a quote missing from its page is refused. This turns "I read it" into something checkable; it still does not prove the page supports the claim.

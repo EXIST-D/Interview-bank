@@ -8,9 +8,13 @@ COMMANDS = {
     'workflow': ('list','create','show','next','pause','resume','cancel','block','reconcile','revise','summary','export'),
     'studyset': ('list','create','show','refresh','export'),
     'study': ('record','queue','history'),
-    'interview': ('list','start','next','answer','feedback','follow-up','end','show','summary'),
+    'interview': ('list','start','next','answer','feedback','follow-up','end','show','summary','turn','review'),
     'evidence': ('list',),
 }
+
+
+# Composite commits only for routine lifecycle writes; policy and migrate stay explicit.
+COMMIT_ALLOWED = ('workflow', 'studyset', 'study', 'interview')
 
 
 def add_parsers(sub, common):
@@ -22,12 +26,22 @@ def add_parsers(sub, common):
         p.add_argument('--input', type=Path)
         p.add_argument('--output')
         p.add_argument('--answers', choices=('both','with','without'), default='both')
+        if name in COMMIT_ALLOWED:
+            p.add_argument('--commit', action='store_true', help='Commit at once when the stage has no review items')
         if name == 'migrate':
             p.add_argument('--archive')
             p.add_argument('--destination')
 
 
 def dispatch(bank, args):
+    result = _dispatch(bank, args)
+    if getattr(args, 'commit', False) and isinstance(result, dict) and 'run_id' in result:
+        from .flows import commit_unless_review
+        return commit_unless_review(bank, result)
+    return result
+
+
+def _dispatch(bank, args):
     payload = read_json(args.input) if args.input else {}
     require(isinstance(payload, dict), 'Input must be a JSON object')
     if payload:
@@ -65,6 +79,15 @@ def dispatch(bank, args):
         return study(bank,args.action,payload)
     if args.command == 'interview':
         from .interview import interview
+        if args.action in ('turn', 'review'):
+            # turn = answer + commit + next (the feedback packet); review = feedback + commit + next question.
+            from .flows import commit_unless_review
+            staged = commit_unless_review(bank, interview(bank, 'answer' if args.action == 'turn' else 'feedback', payload, args.id))
+            if staged.get('already_recorded'):
+                return {**staged, 'next': interview(bank, 'next', {}, args.id)}
+            if not staged.get('committed'):
+                return staged
+            return {'committed': staged['run_id'], 'next': interview(bank, 'next', {}, args.id)}
         return interview(bank,args.action,payload,args.id)
     from .state import require_v2
     with open_bank(bank) as (_,_,data):
