@@ -166,6 +166,22 @@ class WebPracticeMarkup(unittest.TestCase):
         self.assertEqual(parser.options, [("5", False), ("10", True), ("20", False)])
 
 
+class WebStartup(unittest.TestCase):
+    """The macOS CI runner timed out waiting for `web`: server_bind() did a reverse DNS lookup."""
+
+    def test_server_binds_without_reverse_dns(self):
+        bank = Bank()
+        try:
+            with mock.patch("socket.getfqdn", side_effect=AssertionError("reverse DNS lookup")):
+                server = web.LocalServer(web.WebApp(bank.path))
+            try:
+                self.assertTrue(server.url.startswith(f"http://127.0.0.1:{server.server_port}/#token="))
+            finally:
+                server.server_close()
+        finally:
+            bank.close()
+
+
 class ReportGrouping(unittest.TestCase):
     """B4: ten of eighteen top-level domains fell into a catch-all 其他知识题 section."""
 
