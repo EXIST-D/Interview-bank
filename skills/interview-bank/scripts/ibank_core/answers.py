@@ -1,5 +1,6 @@
 """Lazy evidence-led answer enrichment and immutable answer versions."""
 import copy
+import unicodedata
 from datetime import datetime
 from urllib.parse import quote_plus, urlparse
 
@@ -48,7 +49,27 @@ def research_task(bank, question_ids=None, limit=10, **filters):
             instruction="Research every question in this batch using host web tools and references/answer-policy.md. Read primary pages, cross-check key claims and versions, verify examples/algorithm constraints when relevant, record accessed_at and evidence_note, and map every key point to citation URLs via evidence. Write a concise short_answer (usually one conclusion and 3-5 brief points); keep detailed reasoning in deep_dive. Never label an unverified answer source_backed. If verification cannot finish, skip with a specific reason; ai_draft is allowed only when the user accepts unverified drafts. Commit this batch, then generate fresh tasks for the remaining user-selected questions; this batch limit is not the total assignment. Do not invent citations, human review or executable-test results.")
 
 
-def stage_answers(bank, response):
+def _quote_text(text):
+    return " ".join(unicodedata.normalize("NFKC", text).casefold().split())
+
+
+def check_quotes(item, page_texts):
+    """evidence_quote is a short excerpt of the cited page; when the host supplied that page's text, it must occur in it."""
+    for citation in item["sources"]:
+        if not isinstance(citation, dict) or "evidence_quote" not in citation:
+            continue
+        string(citation["evidence_quote"], "citation.evidence_quote")
+        require(len(citation["evidence_quote"]) <= 300, "citation.evidence_quote is limited to 300 characters")
+        page = page_texts.get(citation.get("url"))
+        if page is not None:
+            require(_quote_text(citation["evidence_quote"]) in _quote_text(page),
+                    f"evidence_quote does not occur in the supplied page text for {citation.get('url')}")
+        citation["quote_verified"] = page is not None
+
+
+def stage_answers(bank, response, page_texts=None):
+    """page_texts maps citation URL -> page text the host read; it lets the CLI check evidence_quote."""
+    page_texts = page_texts or {}
     require(isinstance(response, dict) and response.get("schema_version") == 1, "Expected v1 answer response")
     with open_bank(bank) as (_, config, current):
         task = read_task(bank, response.get("task_id"), "research", current, config)
@@ -81,6 +102,8 @@ def stage_answers(bank, response):
                 strings(item[field], f"answer.{field}")
             string(item["code_example"], "answer.code_example", nullable=True, empty=True)
             require(isinstance(item["sources"], list), "Answer sources must be array")
+            item = copy.deepcopy(item)
+            check_quotes(item, page_texts)
             privacy_check(dumps(item), config)
             evidence = item.get("evidence", [])
             if status == "source_backed":

@@ -217,6 +217,10 @@ def validate_record(table, row, taxonomy=None):
             parsed = urlparse(citation["url"])
             require(parsed.scheme in ("http", "https") and bool(parsed.netloc), f"{label}: invalid citation URL")
             partial_date(citation["accessed_at"], f"{label}.sources.accessed_at")
+            if "evidence_quote" in citation:
+                string(citation["evidence_quote"], f"{label}.sources.evidence_quote")
+                require(len(citation["evidence_quote"]) <= 300, f"{label}: evidence_quote is limited to 300 characters")
+                require(type(citation.get("quote_verified")) is bool, f"{label}: evidence_quote needs quote_verified")
     elif table == "relations":
         for field in ("from_question_id", "to_question_id"):
             string(row[field], f"{label}.{field}")

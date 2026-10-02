@@ -55,7 +55,8 @@ Return exactly one answer or explicit skip per task question. Example structure 
       "publisher": "发布者",
       "type": "official_doc",
       "accessed_at": "2026-09-05",
-      "evidence_note": "对支持该要点的原文进行简短概述"
+      "evidence_note": "对支持该要点的原文进行简短概述",
+      "evidence_quote": "页面中支持该要点的一句原文（可选，≤300 字）"
     }],
     "evidence": [{"key_point": 0, "source_urls": ["https://example.org/actual-page"]}]
   }]
@@ -63,6 +64,12 @@ Return exactly one answer or explicit skip per task question. Example structure 
 ```
 
 Citation type is a nonempty descriptive string (e.g. official_doc, standard, paper). accessed_at is the actual YYYY-MM-DD reading date and cannot be future. Every key_point (zero-based index) needs an evidence entry containing one or more supplied citation URLs. URLs must be HTTP(S) without embedded credentials; duplicate URLs fail. evidence_note is at most 2000 characters. Evidence mapping is retained in run audit; citation notes are retained on the Answer.
+
+## Quotes and link checks
+
+`evidence_quote` (optional, at most 300 characters) is a verbatim excerpt of the cited page. Save the text you actually read and pass `answer --input <file> --page-texts <pages.json>`, where pages.json maps each citation URL to that text file (`{"https://…": "redis-faq.txt"}`, paths relative to pages.json). The CLI checks that each quote occurs in its page (ignoring case, width and whitespace) and stores `quote_verified: true`; a quote without page text is kept with `quote_verified: false`; a quote missing from its page is refused. This turns "I read it" into something checkable; it still does not prove the page supports the claim.
+
+`verify-citations [--question <id>]… [--workflow <id>] [--limit 50]` is the only command that goes online, and only when the user asks: it sends HEAD (falling back to GET) to each cited URL of the current answers, follows up to 3 redirects with a 10 s timeout, refuses private and loopback addresses, and reports status, final URL and check time (also saved under logs/). It changes no data. Show broken links to the user, then research again or mark the answer stale.
 
 All displayed conclusions should be supported by the sources or clearly described as reasoning, example, or interview advice. Structural validation cannot establish truth or source entailment: that responsibility remains with the researching Agent.
 
