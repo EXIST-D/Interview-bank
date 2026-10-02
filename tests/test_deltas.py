@@ -90,8 +90,16 @@ class DeltaEngine(unittest.TestCase):
             deltas.validate_changes([{"table": "nope", "op": "update", "id": "x", "before": {}, "after": {}}])
 
 
+def pin_format_two(case):
+    """These tests are about format 2 itself, even when CI forces format 1 for the rest of the suite."""
+    patcher = mock.patch.dict(os.environ, {"INTERVIEW_BANK_RUN_FORMAT": "2"})
+    patcher.start()
+    case.addCleanup(patcher.stop)
+
+
 class RunFormat(unittest.TestCase):
     def setUp(self):
+        pin_format_two(self)
         self.bank = Bank()
         self.bank.add_questions("backend.cache", "Redis 为什么快？", "Redis 持久化有哪些方式？", "缓存穿透是什么？")
 
@@ -220,6 +228,7 @@ class SnapshotImportMergeUndo(BankFixture):
     """Undoing a merge replays a format-2 import stage onto the merge's before-image."""
 
     def test_merge_undo_keeps_a_snapshot_import(self):
+        pin_format_two(self)
         from ibank_core.dedupe import candidate_task, stage_decisions
         from ibank_core.normalize import normalize_question_text
         self.seed()
