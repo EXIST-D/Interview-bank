@@ -292,7 +292,6 @@ def _transcribe_media(bank, run, *, model, language, download_model, device):
     cache.mkdir(parents=True, exist_ok=True)
     try:
         from faster_whisper import WhisperModel
-        from importlib.metadata import version
     except ImportError as exc:
         raise ValueError("Local ASR is optional: install faster-whisper==1.2.1 in a workspace venv, or use media-attach with a provided transcript") from exc
     try:
@@ -300,6 +299,12 @@ def _transcribe_media(bank, run, *, model, language, download_model, device):
                               download_root=str(cache), local_files_only=not download_model)
     except Exception as exc:
         raise ValueError(f"Local model unavailable; use a cached model path or --download-model. {exc}") from exc
+    # Resolve once: a vendored or source build without package metadata must not fail every file.
+    try:
+        from importlib.metadata import PackageNotFoundError, version
+        engine_version = version("faster-whisper")
+    except PackageNotFoundError:
+        engine_version = None
     failures = []
     for original in pending:
         try:
@@ -315,7 +320,7 @@ def _transcribe_media(bank, run, *, model, language, download_model, device):
                          "uncertain": s.avg_logprob < -1 or s.no_speech_prob > 0.6}
                         for index, s in enumerate(s for s in generator if s.text.strip())]
             meta = transcript_metadata(segments, engine="faster-whisper", model=Path(model).name,
-                                       version=version("faster-whisper"), language=info.language, duration=info.duration)
+                                       version=engine_version, language=info.language, duration=info.duration)
             attach_segments(bank, run, item["source"]["id"], segments, meta, payload["digest"])
         except Exception as exc:
             failures.append({"source_id": original["source"]["id"], "error": str(exc)})
