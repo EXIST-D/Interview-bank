@@ -1,0 +1,49 @@
+name: Bug report / 问题反馈
+description: Something in the Skill or CLI does not work as documented.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please remove names, contact details, private screenshots and personal bank content before posting.
+        提交前请删除姓名、联系方式、私人截图和个人题库内容。
+  - type: input
+    id: version
+    attributes:
+      label: Interview Bank version
+      placeholder: "1.11.0 (python -B scripts/ibank.py --version)"
+    validations:
+      required: true
+  - type: input
+    id: host
+    attributes:
+      label: Agent / host and version
+      placeholder: "Claude Code 2.x, Codex …"
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: OS and Python version
+      placeholder: "macOS 15, Python 3.12"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: What you did
+      description: The request to the agent and/or the CLI command that failed.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened, and what you expected
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: doctor output
+      description: "`python -B <cli> doctor --bank <bank> --json` with local paths removed."
+      render: json
