@@ -1,6 +1,7 @@
 """Validated staging, durable commits and provenance-preserving undo."""
 import hashlib
 import re
+from contextlib import nullcontext
 
 from .errors import ValidationError, ReviewRequired
 from .catalog import normalize_labels
@@ -106,8 +107,9 @@ def stage_text(bank, input_path, *, run_id=None, company=None, roles=(), domains
         return _write_stage(bank, addition, run_id)
 
 
-def commit_run(bank, run_id):
-    with open_bank(bank) as (manifest, config, current):
+def commit_run(bank, run_id, loaded=None):
+    """Apply a staged run. Pass loaded=(manifest, config, data) only while already holding the bank lock."""
+    with (nullcontext(loaded) if loaded is not None else open_bank(bank)) as (manifest, config, current):
         path = run_path(bank, run_id)
         run = read_json(bank_file(bank, f"runs/{run_id}/run.json"))
         validate_run(run)
@@ -254,8 +256,8 @@ def undo_run(bank, run_id):
                               summary={"undo_scope": undo_scope}, next_config=previous_config)
 
 
-def abandon_run(bank, run_id):
-    with open_bank(bank):
+def abandon_run(bank, run_id, locked=False):
+    with (nullcontext() if locked else open_bank(bank)):
         path = run_path(bank, run_id) / "run.json"
         run = read_json(path)
         validate_run(run)

@@ -13,7 +13,7 @@ from urllib.parse import parse_qs, urlsplit
 
 from . import __version__
 from .catalog import display
-from .errors import BankError, LockConflict, ValidationError
+from .errors import BankError, LockConflict
 from .export import report_group
 from .runs import commit_run, stage_snapshot, abandon_run
 from .schema import require
@@ -145,7 +145,7 @@ class WebApp:
         # Do not accept a fabricated date, score or client-controlled interval.
         submitted = {k: v for k, v in payload.items() if k != 'revision'}
         with self.mutation_lock:
-            with open_bank(self.bank) as (_, config, data):
+            with open_bank(self.bank) as (manifest, config, data):
                 require('_state' in data, 'Saving practice requires an explicit V2 migration')
                 prior = next((e for e in data['_state']['events'].values() if e['request_id'] == submitted['request_id']), None)
                 if prior:
@@ -159,12 +159,12 @@ class WebApp:
                 final = copy.deepcopy(data)
                 value, _ = event(final, submitted)
                 staged = stage_snapshot(self.bank, data, final, config, operation='study', audit=[{'event': value, 'interface': 'local_web'}], summary={'event_id': value['id']})
-            try:
-                commit_run(self.bank, staged['run_id'])
-            except ValidationError:
-                # A concurrent CLI commit invalidates this snapshot; leave no stale pending work.
-                abandon_run(self.bank, staged['run_id'])
-                raise
+                # Commit under the same lock: no reader or CLI commit can slip between stage and commit.
+                try:
+                    commit_run(self.bank, staged['run_id'], loaded=(manifest, config, data))
+                except BankError:
+                    abandon_run(self.bank, staged['run_id'], locked=True)
+                    raise
             return {'saved': True, 'already_recorded': False, 'event': value}
 
 
