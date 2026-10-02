@@ -9,13 +9,17 @@ from .ids import new_answer_id, utc_now
 from .index import connect_index
 from .ingestion import privacy_check
 from .runs import stage_snapshot
-from .schema import require, string
+from .schema import require, string, strings
 from .search import select_questions
 from .storage import dumps, open_bank
 from .tasks import read_task, write_task
 
 ANSWER_CONTENT = {"short_answer", "spoken_answer", "key_points", "deep_dive", "interviewer_intent",
                   "common_mistakes", "follow_up_questions", "code_example", "sources"}
+# Only these must be written; the rest is optional practice depth, stored empty when omitted.
+ANSWER_REQUIRED = ("short_answer", "key_points", "sources")
+ANSWER_OPTIONAL = {"spoken_answer": "", "deep_dive": "", "interviewer_intent": "", "common_mistakes": [],
+                   "follow_up_questions": [], "code_example": None}
 OFFICIAL_DOMAINS = {"redis": "redis.io", "mysql": "dev.mysql.com", "postgresql": "postgresql.org",
                     "react": "react.dev", "javascript": "developer.mozilla.org", "typescript": "typescriptlang.org",
                     "python": "docs.python.org", "go": "go.dev", "kubernetes": "kubernetes.io", "docker": "docs.docker.com"}
@@ -70,12 +74,16 @@ def stage_answers(bank, response):
                 continue
             status = item.get("status")
             require(status in ("ai_draft", "source_backed"), "New answers must be ai_draft or source_backed; human review uses answer-review")
-            require(ANSWER_CONTENT <= item.keys(), "Answer is missing structured content fields")
+            require(set(ANSWER_REQUIRED) <= item.keys(), "Answer needs short_answer, key_points and sources")
             require(set(item) <= ANSWER_CONTENT | {"question_id", "status", "evidence", "checks", "version_scope"}, "Unknown answer response fields")
-            for field in ("short_answer", "spoken_answer", "deep_dive", "interviewer_intent"):
-                string(item[field], f"answer.{field}")
+            item = {**ANSWER_OPTIONAL, **item}
+            string(item["short_answer"], "answer.short_answer")
+            require(isinstance(item["key_points"], list) and bool(item["key_points"]), "answer.key_points needs at least one item")
+            for field in ("spoken_answer", "deep_dive", "interviewer_intent"):
+                string(item[field], f"answer.{field}", empty=True)
             for field in ("key_points", "common_mistakes", "follow_up_questions"):
-                require(isinstance(item[field], list) and bool(item[field]), f"answer.{field} needs at least one item")
+                strings(item[field], f"answer.{field}")
+            string(item["code_example"], "answer.code_example", nullable=True, empty=True)
             require(isinstance(item["sources"], list), "Answer sources must be array")
             privacy_check(dumps(item), config)
             evidence = item.get("evidence", [])

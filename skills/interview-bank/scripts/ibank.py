@@ -143,6 +143,7 @@ def parser():
             query.add_argument("--output", required=True)
             query.add_argument("--include-paths", action="store_true")
             query.add_argument("--answers", choices=("both", "with", "without"), default="both", help="Markdown reports: both editions (default), with answers, or questions only")
+            query.add_argument("--answer-extras", choices=("folded", "inline", "none"), default="folded", help="Spoken answer, follow-ups and pitfalls in the answer edition (default: folded <details>)")
             query.add_argument("--format", choices=("markdown", "json", "jsonl", "csv", "viewer"), default="markdown")
         else:
             query.add_argument("--limit", type=positive_int, default=50 if name == "search" else 10)
@@ -244,7 +245,8 @@ def dispatch(args):
                ("query", "company", "role", "domain", "technology", "industry", "interview_type", "difficulty", "date_from", "date_to", "recent_days", "as_of", "answer_status", "question_type", "company_type", "ownership", "business_model")}
     filters["round_name"] = args.round
     if args.command == "export":
-        return export_bank(bank, args.output, args.format, include_paths=args.include_paths, answer_mode=args.answers, **filters)
+        return export_bank(bank, args.output, args.format, include_paths=args.include_paths, answer_mode=args.answers,
+                           answer_extras_mode=args.answer_extras, **filters)
     if args.command == "search":
         return search(bank, limit=args.limit, offset=args.offset, **filters)
     return stats(bank, limit=args.limit, **filters)
