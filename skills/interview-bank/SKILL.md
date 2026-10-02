@@ -52,7 +52,7 @@ Route only to relevant references; do not load all protocols for a narrow reques
 
 State mutations return run_id and require commit just like existing workflows; inspect the response, then commit within the user's requested scope. migrate apply directly commits an explicit format upgrade. workflow next creates a task packet; it never browses or writes answers. Keep all IDs from returned records and use stable request IDs for retrying practice/session writes.
 
-For a V2 end-to-end intake, commit the final M3 run, create/commit a workflow scoped by from_run, repeatedly call workflow next → actual research → answer → commit, then workflow export and summary. For an existing topic use studyset_id or explicit question_ids. Default answers still cover the entire requested scope; budgets/blocked items remain visible. Legacy migrated answers need a coverage recheck rather than an automatic fresh timestamp.
+For a V2 end-to-end intake, commit the final M3 run, create/commit a workflow scoped by from_run, repeatedly call workflow next → actual research → answer → commit, then workflow export and summary. For an existing topic use studyset_id or explicit question_ids. Default answers still cover the entire requested scope; budgets/blocked items remain visible. Migration binds a legacy answer to its question only when the question was not edited after the answer was written; other legacy answers need a coverage recheck rather than an automatic fresh timestamp.
 
 ## Optional local Web reader and practice
 

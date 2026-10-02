@@ -298,14 +298,26 @@ class MaintenanceTests(BankFixture):
         self.assertIn('_state',load_data(self.bank))
         self.commit(undo_run(self.bank,final['run_id']))
 
-    def test_existing_answer_migration_marks_coverage_unknown(self):
+    def test_existing_answer_migration_binds_answers_of_unchanged_questions(self):
+        # The question was not edited after its answer was written, so the answer keeps covering it.
         self.seed()
         from ibank_core.answers import research_task
         self.commit(self.answer(research_task(self.bank,['q_demo1'])))
         self.assertEqual(search(self.bank,answer_status='source_backed')['total'],1)
-        migrate(self.bank,'apply')
-        self.assertEqual(search(self.bank,answer_status='stale')['total'],1)
+        result=migrate(self.bank,'apply')
+        self.assertEqual((result['answers_bound'],result['answers_need_recheck']),(1,0))
+        self.assertEqual(search(self.bank,answer_status='source_backed')['total'],1)
         self.assertEqual(len(load_data(self.bank)['answers']),1)
+
+    def test_existing_answer_migration_marks_edited_questions_for_recheck(self):
+        self.seed()
+        from ibank_core.answers import research_task
+        self.commit(self.answer(research_task(self.bank,['q_demo1'])))
+        change={'schema_version':1,'changes':[{'table':'questions','id':'q_demo1','set':{'canonical':'Redis 为什么快，有哪些边界？'},'reason':'Edited after answering'}]}
+        self.commit(stage_curate(self.bank,change))
+        result=migrate(self.bank,'apply')
+        self.assertEqual((result['answers_bound'],result['answers_need_recheck']),(0,1))
+        self.assertEqual(search(self.bank,answer_status='stale')['total'],1)
 
     def test_restore_tamper_and_state_corruption_rejected(self):
         result=self.ready()
