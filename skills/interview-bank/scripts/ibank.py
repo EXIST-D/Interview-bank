@@ -156,10 +156,11 @@ def parser():
             query.add_argument("--answer-extras", choices=("folded", "inline", "none"), default="folded", help="Spoken answer, follow-ups and pitfalls in the answer edition (default: folded <details>)")
             query.add_argument("--format", choices=("markdown", "json", "jsonl", "csv", "viewer"), default="markdown")
         else:
-            query.add_argument("--limit", type=positive_int, default=50 if name == "search" else 10)
+            query.add_argument("--limit", type=positive_int, default=20 if name == "search" else 10)
             query.add_argument("--format", choices=("human", "json", "jsonl"), default="human")
         if name == "search":
             query.add_argument("--offset", type=int, default=0)
+            query.add_argument("--detail", action="store_true", help="Full records with matching occurrences and answer history instead of cards")
     from ibank_core.advanced_cli import add_parsers
     add_parsers(sub, common)
     from ibank_core.media import add_parsers as add_media_parsers
@@ -268,7 +269,7 @@ def dispatch(args):
         return export_bank(bank, args.output, args.format, include_paths=args.include_paths, answer_mode=args.answers,
                            answer_extras_mode=args.answer_extras, **filters)
     if args.command == "search":
-        return search(bank, limit=args.limit, offset=args.offset, **filters)
+        return search(bank, limit=args.limit, offset=args.offset, cards=not args.detail, **filters)
     return stats(bank, limit=args.limit, **filters)
 
 

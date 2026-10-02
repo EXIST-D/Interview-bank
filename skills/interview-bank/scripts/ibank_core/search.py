@@ -91,11 +91,26 @@ def select_questions(data, *, query=None, company=None, role=None, technology=No
     return sorted(result, key=lambda q: (-q["frequency"], q["canonical"], q["id"]))
 
 
-def search(bank, *, limit=50, offset=0, **filters):
+CARD_FIELDS = ("id", "canonical", "question_type", "difficulty", "domains", "technologies",
+               "frequency", "total_frequency", "answer_status", "answer_stale_reason")
+
+
+def question_card(q):
+    """What a list needs to pick a question; `show <id>` returns the full record."""
+    card = {field: q[field] for field in CARD_FIELDS}
+    card["companies"] = [c["name"] for c in q["companies"][:3]]
+    card["answer_version"] = q["answer"]["version"] if q["answer"] else None
+    return card
+
+
+def search(bank, *, limit=50, offset=0, cards=False, **filters):
     require(type(limit) is int and limit > 0 and type(offset) is int and offset >= 0, "Invalid pagination")
     with open_bank(bank, shared=True) as (_, config, data):
         found = select_questions(data, stale_days=config.get("answer_stale_days", 180), **filters)
-        return {"total": len(found), "offset": offset, "questions": found[offset:offset + limit]}
+        page = found[offset:offset + limit]
+        return {"total": len(found), "offset": offset, "next_offset": offset + limit if offset + limit < len(found) else None,
+                "questions": [question_card(q) for q in page] if cards else page,
+                **({"detail_hint": "Cards only; use show <id> or search --detail for occurrences and answers."} if cards else {})}
 
 
 def detail(bank, question_id):

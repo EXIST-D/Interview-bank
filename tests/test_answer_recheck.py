@@ -33,7 +33,7 @@ class AnswerRecheck(unittest.TestCase):
         return self.bank.cli("answer-recheck", payload={"schema_version": 1, "rechecks": [item]}, check=False)
 
     def current(self):
-        return self.bank.result("search")["questions"][0]
+        return self.bank.result("search", "--detail")["questions"][0]
 
     def test_rewording_is_rechecked_without_refreshing_evidence(self):
         self.answer()
