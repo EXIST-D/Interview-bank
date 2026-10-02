@@ -47,6 +47,37 @@ class SkillPackage(unittest.TestCase):
                     self.assertTrue((doc.parent / target).exists())
 
 
+    def test_skill_body_is_short_and_scannable(self):
+        self.assertLessEqual(len(self.body), 9000, "SKILL.md body: keep detail in references")
+        self.assertEqual([len(l) for l in self.body.splitlines() if len(l) > 200], [])
+
+    def test_end_to_end_reading_set_stays_small(self):
+        """What an agent reads for screenshots -> answers -> report, beside SKILL.md."""
+        names = ("extraction", "report-policy", "dedupe", "answer-policy", "query-export")
+        total = len(self.body) + sum(len((SKILL / "references" / f"{n}.md").read_text(encoding="utf-8")) for n in names)
+        self.assertLessEqual(total, 30000)
+
+    def test_references_wrap_prose_and_carry_no_version_history(self):
+        for doc in sorted((SKILL / "references").glob("*.md")):
+            fence = False
+            for line in doc.read_text(encoding="utf-8").splitlines():
+                if line.lstrip().startswith("```"):
+                    fence = not fence
+                    continue
+                if not fence and not line.lstrip().startswith("|"):
+                    self.assertLessEqual(len(line), 200, (doc.name, line[:60]))
+            self.assertIsNone(re.search(r"^#.*\(1\.\d+\)", doc.read_text(encoding="utf-8"), re.M), doc.name)
+
+    def test_commands_named_in_skill_md_exist(self):
+        """Every command in the routing table's last column is a real CLI subcommand."""
+        import argparse
+        import ibank
+        sub = next(a for a in ibank.parser()._actions if isinstance(a, argparse._SubParsersAction))
+        rows = [line for line in self.body.splitlines() if line.startswith("| ") and "Main commands" not in line and "---" not in line]
+        named = {cell.split()[0] for row in rows for cell in re.findall(r"`([^`]+)`", row.rsplit("|", 2)[-2])}
+        self.assertGreater(len(named), 20)
+        self.assertEqual(sorted(named - set(sub.choices)), [])
+
     def test_sources_compile_without_warnings(self):
         """A SyntaxWarning goes to stderr and breaks every --json consumer reading it."""
         import warnings
