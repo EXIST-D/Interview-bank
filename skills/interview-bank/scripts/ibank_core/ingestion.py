@@ -7,7 +7,7 @@ from .editorial import is_self_introduction
 from .ids import new_run_id, new_source_id, utc_now
 from .catalog import PROFILE_FIELDS, normalize_label, normalize_labels
 from .normalize import normalize_company_alias, normalize_question_text, normalize_technology
-from .privacy import privacy_check  # re-exported: curation/answers/advanced_cli import it from here
+from .privacy import classified_findings, describe, privacy_check  # privacy_check is re-exported for curation/answers/advanced_cli
 from .runs import run_path, stage_snapshot
 from .schema import require, string, confidence, strings
 from .storage import atomic_bytes, atomic_write, bank_file, dumps, fingerprint, open_bank, read_json
@@ -169,7 +169,16 @@ def stage_extraction(bank, intake_id, extraction):
                 require(candidate["id"] not in {c["id"] for c in candidates}, "Duplicate candidate ID")
                 seq = candidate.get("sequence")
                 require(type(seq) is int and seq > 0, "Candidate sequence must be positive")
-                privacy_check(dumps(candidate), config)
+                pii = [] if config["privacy"]["persist_pii"] else classified_findings(dumps(row))
+                if pii:
+                    if candidate.get("pii_reviewed") is True:
+                        string(candidate.get("pii_reason"), "candidate.pii_reason")
+                        audit.append({"candidate_id": candidate["id"], "action": "PII_REVIEWED", "kinds": sorted({f["kind"] for f in pii}),
+                                      "reason": candidate["pii_reason"]})
+                    else:
+                        # Screenshots often contain example addresses inside a question; let the host decide instead of failing the batch.
+                        review.append({"candidate_id": candidate["id"], "reason": "Possible contact information: " + describe(pii)
+                                       + ". If it belongs to the question (an example), set pii_reviewed=true and pii_reason; otherwise remove it."})
                 string(candidate.get("canonical_suggestion", candidate["original_text"]), "canonical_suggestion")
                 require(not is_self_introduction(candidate["original_text"]) and
                         not is_self_introduction(candidate.get("canonical_suggestion", candidate["original_text"])),
@@ -240,7 +249,8 @@ def save_extraction(bank, intake_id, patch):
             sid = item["source_id"]
             require(sid in source_ids and sid not in seen, "Unknown/duplicate source in response")
             require(item.get("status") in ("extracted", "no_questions", "unreadable", "skip"), "Missing image disposition")
-            privacy_check(dumps(item), config)
+            # Candidate questions are screened at stage time as review items; everything else is checked now.
+            privacy_check(dumps({key: value for key, value in item.items() if key != "questions"}), config)
             seen.add(sid)
             results[sid] = item
         saved["sources"] = [results[sid] for sid in source_ids if sid in results]
