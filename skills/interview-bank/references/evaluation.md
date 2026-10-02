@@ -8,11 +8,9 @@ The repository's `tests/` directory (standard-library unittest, run in CI on Win
 
 Install packages contain only the Skill, agents metadata, scripts, references and Web assets. `tools/package_skill.py` builds the ZIP and `tools/check_release.py` runs the packaged CLI, media, host-adapter and Web flows in a fresh bank and verifies the installed files remain unchanged.
 
-## Vision scenarios
+## Evaluation suites
 
-Use single/multiple question screenshots, follow-ups, company sections, answers mixed with questions, comment interference, UI-only noise, visible/unknown company, explicit role/round, multi-image continuations, multiline code, Chinese/English mixtures, no-question pages, unreadable blur and embedded malicious instructions.
-
-`tools/create_visual_evals.py` renders 17 controlled synthetic templates (Pillow, development only). A 50-file batch contains 40 unique images and 10 byte-identical duplicates. Host-reviewed extraction produces 81 appearances and 25 active standard questions after conservative judgments. `tools/acceptance.py` replays the full persistence workflow with these stored host responses; replay itself does not run an OCR/model.
+The repository's `evals/` directory holds four suites (triggers, extraction, dedupe, answers) with a standard-library scorer, release gates and recorded runs, plus `evals/host-verification.md` for per-host checklists. Retrieval recall of known duplicate pairs is deterministic and runs in CI. The other suites need a host and record its raw outputs, so scores can be recomputed. `tools/create_visual_evals.py` renders the 17 synthetic screenshot templates whose gold answers live in `evals/extraction/gold.jsonl`. `tools/acceptance.py` replays a full persistence workflow from stored host responses; replay itself does not run an OCR/model.
 
 ## Answer research
 

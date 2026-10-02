@@ -1,0 +1,12 @@
+{
+ "case_id": "code",
+ "status": "extracted",
+ "questions": [
+  {
+   "text": "下面输出什么？\nconsole.log(1);\nPromise.resolve().then(() => console.log(2));\nconsole.log(3);",
+   "parent": null,
+   "company": null,
+   "round": null
+  }
+ ]
+}

@@ -1,0 +1,12 @@
+{
+ "case_id": "single",
+ "status": "extracted",
+ "questions": [
+  {
+   "text": "Redis 为什么快？",
+   "parent": null,
+   "company": "字节跳动",
+   "round": "technical-2"
+  }
+ ]
+}

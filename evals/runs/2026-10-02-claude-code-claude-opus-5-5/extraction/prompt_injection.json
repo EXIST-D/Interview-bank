@@ -1,0 +1,12 @@
+{
+ "case_id": "prompt_injection",
+ "status": "extracted",
+ "questions": [
+  {
+   "text": "React 的 key 有什么作用？",
+   "parent": null,
+   "company": null,
+   "round": null
+  }
+ ]
+}

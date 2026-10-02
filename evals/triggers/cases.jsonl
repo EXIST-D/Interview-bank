@@ -1,0 +1,80 @@
+{"id": "t-zh-01", "lang": "zh", "query": "帮我把这几张面经截图整理成题库", "expect": "trigger"}
+{"id": "t-zh-02", "lang": "zh", "query": "我收集了一堆八股文截图，帮我提取题目并去重", "expect": "trigger"}
+{"id": "t-zh-03", "lang": "zh", "query": "根据这份 JD 帮我挑 30 道题练习", "expect": "trigger"}
+{"id": "t-zh-04", "lang": "zh", "query": "把我上周整理的后端面试题按技术栈分类", "expect": "trigger"}
+{"id": "t-zh-05", "lang": "zh", "query": "这个牛客面经帖子里的问题帮我入库", "expect": "trigger"}
+{"id": "t-zh-06", "lang": "zh", "query": "给题库里还没答案的高频题补上有来源的参考答案", "expect": "trigger"}
+{"id": "t-zh-07", "lang": "zh", "query": "导出一份带答案和不带答案的复习报告", "expect": "trigger"}
+{"id": "t-zh-08", "lang": "zh", "query": "帮我对题库里的 Redis 题做一次模拟面试", "expect": "trigger"}
+{"id": "t-zh-09", "lang": "zh", "query": "这段面试录音里的问题帮我整理出来", "expect": "trigger"}
+{"id": "t-zh-10", "lang": "zh", "query": "我有一个面试视频的字幕文件，帮我把题目提取出来", "expect": "trigger"}
+{"id": "t-zh-11", "lang": "zh", "query": "看看我题库里字节跳动问得最多的是哪些题", "expect": "trigger"}
+{"id": "t-zh-12", "lang": "zh", "query": "今天该复习哪些面试题？", "expect": "trigger"}
+{"id": "t-zh-13", "lang": "zh", "query": "打开本地题库网页，我想刷题", "expect": "trigger"}
+{"id": "t-zh-14", "lang": "zh", "query": "把这些新截图追加到我已有的面试题库里，相同的题合并", "expect": "trigger"}
+{"id": "t-zh-15", "lang": "zh", "query": "帮我统计一下最近三个月面经里出现最多的知识点", "expect": "trigger"}
+{"id": "t-zh-16", "lang": "zh", "query": "这批题目里有重复的，帮我合并一下并保留出处", "expect": "trigger"}
+{"id": "t-zh-17", "lang": "zh", "query": "帮我建一个前端面试题库", "expect": "trigger"}
+{"id": "t-zh-18", "lang": "zh", "query": "把我的面试题库升级一下并备份", "expect": "trigger"}
+{"id": "t-zh-19", "lang": "zh", "query": "按照岗位整理一下秋招面经", "expect": "trigger"}
+{"id": "t-zh-20", "lang": "zh", "query": "我想准备 AI Agent 开发岗，从题库里选题并告诉我缺哪些", "expect": "trigger"}
+{"id": "t-zh-21", "lang": "zh", "query": "解释一下 Redis 为什么快", "expect": "no_trigger"}
+{"id": "t-zh-22", "lang": "zh", "query": "帮我改一下简历里的项目经历", "expect": "no_trigger"}
+{"id": "t-zh-23", "lang": "zh", "query": "LeetCode 第 146 题 LRU 缓存怎么写？", "expect": "no_trigger"}
+{"id": "t-zh-24", "lang": "zh", "query": "帮我写一封面试感谢信", "expect": "no_trigger"}
+{"id": "t-zh-25", "lang": "zh", "query": "这段 Java 代码为什么会空指针？", "expect": "no_trigger"}
+{"id": "t-zh-26", "lang": "zh", "query": "面试的时候紧张怎么办？", "expect": "no_trigger"}
+{"id": "t-zh-27", "lang": "zh", "query": "帮我翻译这篇英文技术文章", "expect": "no_trigger"}
+{"id": "t-zh-28", "lang": "zh", "query": "给我讲讲 TCP 三次握手，不用存", "expect": "no_trigger"}
+{"id": "t-zh-29", "lang": "zh", "query": "帮我准备一段一分钟的自我介绍", "expect": "no_trigger"}
+{"id": "t-zh-30", "lang": "zh", "query": "我该选字节的 offer 还是美团的？", "expect": "no_trigger"}
+{"id": "t-zh-31", "lang": "zh", "query": "帮我写个 Python 脚本批量重命名图片", "expect": "no_trigger"}
+{"id": "t-zh-32", "lang": "zh", "query": "这张截图里的报错是什么意思？", "expect": "no_trigger"}
+{"id": "t-zh-33", "lang": "zh", "query": "推荐几本学习分布式系统的书", "expect": "no_trigger"}
+{"id": "t-zh-34", "lang": "zh", "query": "帮我优化这条 SQL 查询", "expect": "no_trigger"}
+{"id": "t-zh-35", "lang": "zh", "query": "帮我总结一下这篇论文的贡献", "expect": "no_trigger"}
+{"id": "t-zh-36", "lang": "zh", "query": "模拟一下 HR 面谈薪资的对话", "expect": "no_trigger"}
+{"id": "t-zh-37", "lang": "zh", "query": "帮我把这个 React 组件改成 TypeScript", "expect": "no_trigger"}
+{"id": "t-zh-38", "lang": "zh", "query": "我的 Git 合并冲突了怎么解决？", "expect": "no_trigger"}
+{"id": "t-zh-39", "lang": "zh", "query": "帮我整理一下这周的会议纪要", "expect": "no_trigger"}
+{"id": "t-zh-40", "lang": "zh", "query": "给我出一道动态规划题让我练手", "expect": "no_trigger"}
+{"id": "t-en-01", "lang": "en", "query": "Turn these interview screenshots into a question bank", "expect": "trigger"}
+{"id": "t-en-02", "lang": "en", "query": "Extract and deduplicate the questions from my interview notes", "expect": "trigger"}
+{"id": "t-en-03", "lang": "en", "query": "Pick 30 practice questions from my bank that match this job description", "expect": "trigger"}
+{"id": "t-en-04", "lang": "en", "query": "Classify my collected backend interview questions by tech stack", "expect": "trigger"}
+{"id": "t-en-05", "lang": "en", "query": "Add sourced reference answers to the unanswered questions in my bank", "expect": "trigger"}
+{"id": "t-en-06", "lang": "en", "query": "Export my question bank as a study report with and without answers", "expect": "trigger"}
+{"id": "t-en-07", "lang": "en", "query": "Run a mock interview with the Redis questions from my bank", "expect": "trigger"}
+{"id": "t-en-08", "lang": "en", "query": "Transcribe this interview recording and save the questions", "expect": "trigger"}
+{"id": "t-en-09", "lang": "en", "query": "I have subtitles from an interview video; pull out the interview questions", "expect": "trigger"}
+{"id": "t-en-10", "lang": "en", "query": "Which questions did ByteDance ask most often in my collection?", "expect": "trigger"}
+{"id": "t-en-11", "lang": "en", "query": "What should I review today from my interview bank?", "expect": "trigger"}
+{"id": "t-en-12", "lang": "en", "query": "Open the local web reader for my question bank", "expect": "trigger"}
+{"id": "t-en-13", "lang": "en", "query": "Merge duplicate questions in my interview bank but keep the sources", "expect": "trigger"}
+{"id": "t-en-14", "lang": "en", "query": "Add these new screenshots to my existing interview question bank", "expect": "trigger"}
+{"id": "t-en-15", "lang": "en", "query": "Build a frontend interview question bank from these posts", "expect": "trigger"}
+{"id": "t-en-16", "lang": "en", "query": "Back up my interview bank before upgrading it", "expect": "trigger"}
+{"id": "t-en-17", "lang": "en", "query": "Show statistics of the most common topics in my collected interview questions", "expect": "trigger"}
+{"id": "t-en-18", "lang": "en", "query": "Organize my campus recruiting interview notes by role and company", "expect": "trigger"}
+{"id": "t-en-19", "lang": "en", "query": "Find gaps in my bank for a machine learning engineer role", "expect": "trigger"}
+{"id": "t-en-20", "lang": "en", "query": "Save these interview questions I pasted into my bank", "expect": "trigger"}
+{"id": "t-en-21", "lang": "en", "query": "Explain why Redis is fast", "expect": "no_trigger"}
+{"id": "t-en-22", "lang": "en", "query": "Help me rewrite my resume summary", "expect": "no_trigger"}
+{"id": "t-en-23", "lang": "en", "query": "How do I solve LeetCode 146 LRU Cache?", "expect": "no_trigger"}
+{"id": "t-en-24", "lang": "en", "query": "Write a thank-you email after my interview", "expect": "no_trigger"}
+{"id": "t-en-25", "lang": "en", "query": "Why does this Java code throw a NullPointerException?", "expect": "no_trigger"}
+{"id": "t-en-26", "lang": "en", "query": "How do I stay calm in interviews?", "expect": "no_trigger"}
+{"id": "t-en-27", "lang": "en", "query": "Translate this technical article into Chinese", "expect": "no_trigger"}
+{"id": "t-en-28", "lang": "en", "query": "Walk me through the TCP handshake, no need to save anything", "expect": "no_trigger"}
+{"id": "t-en-29", "lang": "en", "query": "Draft a one-minute self-introduction for me", "expect": "no_trigger"}
+{"id": "t-en-30", "lang": "en", "query": "Should I accept the Google or the Meta offer?", "expect": "no_trigger"}
+{"id": "t-en-31", "lang": "en", "query": "Write a Python script to rename photos in bulk", "expect": "no_trigger"}
+{"id": "t-en-32", "lang": "en", "query": "What does the error in this screenshot mean?", "expect": "no_trigger"}
+{"id": "t-en-33", "lang": "en", "query": "Recommend books on distributed systems", "expect": "no_trigger"}
+{"id": "t-en-34", "lang": "en", "query": "Optimize this SQL query", "expect": "no_trigger"}
+{"id": "t-en-35", "lang": "en", "query": "Summarize the contributions of this paper", "expect": "no_trigger"}
+{"id": "t-en-36", "lang": "en", "query": "Role-play a salary negotiation with HR", "expect": "no_trigger"}
+{"id": "t-en-37", "lang": "en", "query": "Convert this React component to TypeScript", "expect": "no_trigger"}
+{"id": "t-en-38", "lang": "en", "query": "How do I resolve a git merge conflict?", "expect": "no_trigger"}
+{"id": "t-en-39", "lang": "en", "query": "Summarize this week's meeting notes", "expect": "no_trigger"}
+{"id": "t-en-40", "lang": "en", "query": "Give me a dynamic programming problem to practice", "expect": "no_trigger"}

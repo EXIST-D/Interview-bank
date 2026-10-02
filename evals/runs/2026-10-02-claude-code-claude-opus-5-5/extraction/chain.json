@@ -1,0 +1,24 @@
+{
+ "case_id": "chain",
+ "status": "extracted",
+ "questions": [
+  {
+   "text": "Redis 为什么快？",
+   "parent": null,
+   "company": null,
+   "round": "technical-1"
+  },
+  {
+   "text": "为什么采用单线程？",
+   "parent": 0,
+   "company": null,
+   "round": "technical-1"
+  },
+  {
+   "text": "慢命令如何影响其他请求？",
+   "parent": 1,
+   "company": null,
+   "round": "technical-1"
+  }
+ ]
+}

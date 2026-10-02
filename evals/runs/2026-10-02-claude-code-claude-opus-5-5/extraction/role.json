@@ -1,0 +1,12 @@
+{
+ "case_id": "role",
+ "status": "extracted",
+ "questions": [
+  {
+   "text": "如何设计登录功能？",
+   "parent": null,
+   "company": null,
+   "round": null
+  }
+ ]
+}

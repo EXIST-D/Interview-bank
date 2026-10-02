@@ -1,0 +1,12 @@
+{
+ "case_id": "company",
+ "status": "extracted",
+ "questions": [
+  {
+   "text": "Redis 为什么性能高？",
+   "parent": null,
+   "company": "ByteDance",
+   "round": "technical-2"
+  }
+ ]
+}

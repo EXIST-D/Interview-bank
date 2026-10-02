@@ -1,0 +1,18 @@
+{
+ "case_id": "mixed",
+ "status": "extracted",
+ "questions": [
+  {
+   "text": "RAG 和 fine-tuning 有什么区别？",
+   "parent": null,
+   "company": null,
+   "round": "technical-1"
+  },
+  {
+   "text": "How do you evaluate tool calling?",
+   "parent": null,
+   "company": null,
+   "round": "technical-1"
+  }
+ ]
+}

@@ -1,0 +1,12 @@
+{
+ "case_id": "ui",
+ "status": "extracted",
+ "questions": [
+  {
+   "text": "闭包是什么？",
+   "parent": null,
+   "company": null,
+   "round": "technical-1"
+  }
+ ]
+}

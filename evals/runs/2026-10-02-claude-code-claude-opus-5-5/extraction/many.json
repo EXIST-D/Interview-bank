@@ -1,0 +1,72 @@
+{
+ "case_id": "many",
+ "status": "extracted",
+ "questions": [
+  {
+   "text": "TCP 三次握手的过程？",
+   "parent": null,
+   "company": null,
+   "round": "technical-1"
+  },
+  {
+   "text": "MySQL 索引是什么？",
+   "parent": null,
+   "company": null,
+   "round": "technical-1"
+  },
+  {
+   "text": "Redis 持久化有哪些方式？",
+   "parent": null,
+   "company": null,
+   "round": "technical-1"
+  },
+  {
+   "text": "线程和进程有什么区别？",
+   "parent": null,
+   "company": null,
+   "round": "technical-1"
+  },
+  {
+   "text": "HTTP 和 HTTPS 有什么区别？",
+   "parent": null,
+   "company": null,
+   "round": "technical-1"
+  },
+  {
+   "text": "什么是死锁？",
+   "parent": null,
+   "company": null,
+   "round": "technical-1"
+  },
+  {
+   "text": "如何排查慢 SQL？",
+   "parent": null,
+   "company": null,
+   "round": "technical-1"
+  },
+  {
+   "text": "什么是缓存穿透？",
+   "parent": null,
+   "company": null,
+   "round": "technical-1"
+  },
+  {
+   "text": "B+ 树和 B 树的区别？",
+   "parent": null,
+   "company": null,
+   "round": "technical-1"
+  },
+  {
+   "text": "为什么需要连接池？",
+   "parent": null,
+   "company": null,
+   "round": "technical-1"
+  },
+  {
+   "text": "项目里如何使用消息队列？",
+   "parent": null,
+   "company": null,
+   "round": "technical-1"
+  }
+ ]
+}

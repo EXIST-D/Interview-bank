@@ -1,0 +1,18 @@
+{
+ "case_id": "sections",
+ "status": "extracted",
+ "questions": [
+  {
+   "text": "MySQL 为什么使用 B+ 树？",
+   "parent": null,
+   "company": "美团",
+   "round": "technical-1"
+  },
+  {
+   "text": "React 的 key 有什么作用？",
+   "parent": null,
+   "company": "美团",
+   "round": "technical-2"
+  }
+ ]
+}
