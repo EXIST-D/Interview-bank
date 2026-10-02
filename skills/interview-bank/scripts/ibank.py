@@ -35,6 +35,7 @@ from ibank_core.answers import research_task, stage_answers, review_answer
 from ibank_core.schema import validate_data
 from ibank_core.search import search, detail
 from ibank_core.export import export_bank
+from ibank_core.output import encode, fit
 from ibank_core.stats import stats
 from ibank_core.storage import initialize, open_bank, read_json, resolve_bank
 
@@ -49,7 +50,8 @@ def positive_int(value):
 def parser():
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--bank", default=argparse.SUPPRESS, help="Explicit bank directory; overrides INTERVIEW_BANK_HOME")
-    common.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Machine-readable JSON envelope")
+    common.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Machine-readable JSON envelope (compact, size-bounded)")
+    common.add_argument("--pretty", action="store_true", default=argparse.SUPPRESS, help="Indent JSON output for reading")
     root = argparse.ArgumentParser(description=__doc__, parents=[common])
     root.add_argument("--version", action="version", version=__version__)
     sub = root.add_subparsers(dest="command", required=True)
@@ -95,8 +97,10 @@ def parser():
     save = sub.add_parser("extract-save", parents=[common], help="Save partial vision results and resume a batch")
     save.add_argument("--run", required=True)
     save.add_argument("--input", type=Path, required=True)
-    run = sub.add_parser("run-show", parents=[common])
+    run = sub.add_parser("run-show", parents=[common], help="Inspect runs; page task/intake items with --offset/--limit")
     run.add_argument("--run")
+    run.add_argument("--offset", type=int)
+    run.add_argument("--limit", type=positive_int)
     abandon = sub.add_parser("abandon", parents=[common])
     abandon.add_argument("--run", required=True)
     undo = sub.add_parser("undo", parents=[common], help="Stage an audited undo of the latest snapshot operation")
@@ -202,7 +206,7 @@ def dispatch(args):
     if args.command == "images":
         return intake_images(bank, args.paths, retention=args.retention, recursive=args.recursive, reprocess=args.reprocess)
     if args.command == "run-show":
-        return show_run(bank, args.run)
+        return show_run(bank, args.run, args.offset, args.limit)
     if args.command == "extract-save":
         return save_extraction(bank, args.run, read_json(args.input))
     if args.command == "abandon":
@@ -260,7 +264,13 @@ def main(argv=None):
         print(json.dumps(error, ensure_ascii=False) if machine else f"Error: {exc}", file=sys.stderr)
         return code
     if machine:
-        print(json.dumps({"ok": True, "command": args.command, "result": result}, ensure_ascii=False, indent=2))
+        # Agents read stdout into their context: compact and size-bounded unless --pretty is asked for.
+        try:
+            bank = resolve_bank(getattr(args, "bank", None))
+        except BankError:
+            bank = None
+        result = fit(args.command, result, bank)
+        print(encode({"ok": True, "command": args.command, "result": result}, pretty=getattr(args, "pretty", False)))
     elif getattr(args, "format", None) == "jsonl" and args.command != "export":
         for item in result.get("questions", []) if args.command == "search" else [result]:
             print(json.dumps(item, ensure_ascii=False))
