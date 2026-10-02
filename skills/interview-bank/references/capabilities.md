@@ -24,6 +24,8 @@ When the host lacks a capability, report the specific limitation and use selecte
 
 ## Supported today
 
+- Try it: `demo --bank <new dir> [--v2]` builds a sample bank of 20 synthetic questions, 8 with answers checked against the cited official pages, the rest pending.
+
 - Intake: images (files, directories, recursive), selected text lines, local audio/video speech, SRT/VTT/TXT/JSON transcripts and sidecars, host transcription results. Byte-identical sources never add frequency.
 - Organisation: hierarchical roles/domains/industries with Chinese labels and aliases, evidenced company profiles, conservative merges with audited canonical rewrites, reversible report exclusions.
 - Answers: source-backed versions with per-key-point evidence, age- and revision-based staleness, optional practice depth (spoken answer, follow-ups, pitfalls).

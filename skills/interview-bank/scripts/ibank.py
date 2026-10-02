@@ -58,6 +58,8 @@ def parser():
     web.add_argument("--port", type=int, default=0, help="Local port; 0 selects an available port")
     web.add_argument("--read-only", action="store_true", help="Disable saving practice ratings")
     web.add_argument("--open", action="store_true", help="Open the launch URL in the default browser")
+    demo = sub.add_parser("demo", parents=[common], help="Create a sample bank (20 synthetic questions, 8 sourced answers) in a new directory")
+    demo.add_argument("--v2", action="store_true", help="Also migrate it to V2 so Web practice can be saved")
     for name in ("init", "doctor", "validate", "rebuild-index"):
         sub.add_parser(name, parents=[common])
     taxonomy = sub.add_parser("taxonomy", parents=[common], help="Browse classification IDs, Chinese labels and aliases (no bank needed)")
@@ -227,6 +229,9 @@ def dispatch(args):
             return catalog_view(args.dimension, args.query, args.limit, args.offset, config.get("taxonomy_extensions"))
     if args.command == "companies":
         return list_companies(bank, **{k: getattr(args, k) for k in ("query", "industry", "company_type", "ownership", "business_model", "limit", "offset")})
+    if args.command == "demo":
+        from ibank_core.demo import build_demo
+        return build_demo(bank, v2=args.v2)
     if args.command == "init":
         return {"bank": str(bank), "created": initialize(bank)}
     if args.command == "doctor":
