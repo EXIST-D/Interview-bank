@@ -9,8 +9,9 @@ import time
 import unittest
 import uuid
 from datetime import datetime, timedelta, timezone
+from html.parser import HTMLParser
 
-from support import CLI, Bank
+from support import CLI, SKILL, Bank
 
 from ibank_core import web
 from ibank_core.doctor import doctor
@@ -131,6 +132,32 @@ class Locking(unittest.TestCase):
         self.assertEqual(doctor(self.bank.path)["pending_runs"], [])
         history = self.bank.result("study", "history")["events"]
         self.assertEqual([event["rating"] for event in history], ["again", "hard", "good"])
+
+
+class PracticeLimitOptions(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.inside, self.options = False, []
+
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if tag == "select":
+            self.inside = attrs.get("id") == "practice-limit"
+        elif tag == "option" and self.inside:
+            self.options.append((attrs.get("value"), "selected" in attrs))
+
+    def handle_endtag(self, tag):
+        if tag == "select":
+            self.inside = False
+
+
+class WebPracticeMarkup(unittest.TestCase):
+    """B3: a malformed </option> tag dropped the default 10-question option."""
+
+    def test_practice_limit_offers_5_10_20_with_10_selected(self):
+        parser = PracticeLimitOptions()
+        parser.feed((SKILL / "assets" / "web" / "index.html").read_text(encoding="utf-8"))
+        self.assertEqual(parser.options, [("5", False), ("10", True), ("20", False)])
 
 
 if __name__ == "__main__":
