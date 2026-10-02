@@ -294,7 +294,7 @@ def show_run(bank, run_id=None, offset=None, limit=None):
     """Inspect a run; offset/limit page the items of an intake or task packet."""
     require(offset is None or (type(offset) is int and offset >= 0), "offset must be >= 0")
     require(limit is None or (type(limit) is int and limit > 0), "limit must be positive")
-    with open_bank(bank):
+    with open_bank(bank, shared=True):
         if run_id:
             path = run_path(bank, run_id)
             for name in ("intake.json", "task.json"):

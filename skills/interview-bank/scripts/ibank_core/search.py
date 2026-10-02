@@ -93,13 +93,13 @@ def select_questions(data, *, query=None, company=None, role=None, technology=No
 
 def search(bank, *, limit=50, offset=0, **filters):
     require(type(limit) is int and limit > 0 and type(offset) is int and offset >= 0, "Invalid pagination")
-    with open_bank(bank) as (_, config, data):
+    with open_bank(bank, shared=True) as (_, config, data):
         found = select_questions(data, stale_days=config.get("answer_stale_days", 180), **filters)
         return {"total": len(found), "offset": offset, "questions": found[offset:offset + limit]}
 
 
 def detail(bank, question_id):
-    with open_bank(bank) as (_, config, data):
+    with open_bank(bank, shared=True) as (_, config, data):
         q = next((q for q in data["questions"] if q["id"] == question_id), None)
         require(q is not None, "Question not found")
         resolved_id = q["merged_into"] if q["status"] == "merged" else question_id

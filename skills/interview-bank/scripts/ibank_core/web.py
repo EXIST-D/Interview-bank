@@ -83,7 +83,7 @@ class WebApp:
         self.bank = guard_bank_path(bank)
         self.read_only = read_only
         self.mutation_lock = threading.Lock()
-        with open_bank(self.bank):
+        with open_bank(self.bank, shared=True):
             pass
 
     def library(self, params, practice=False):
@@ -91,7 +91,7 @@ class WebApp:
         limit = int(params.get('limit', 20 if not practice else 10))
         offset = int(params.get('offset', 0))
         require(1 <= limit <= 100 and offset >= 0, 'Invalid pagination (limit 1..100)')
-        with open_bank(self.bank) as (manifest, config, data):
+        with open_bank(self.bank, shared=True) as (manifest, config, data):
             rows = select(data, config, self.bank)
             states = progress(data, rows)
             found = filtered(rows, data['companies'], states, params)
@@ -122,7 +122,7 @@ class WebApp:
             }
 
     def question(self, qid):
-        with open_bank(self.bank) as (_, config, data):
+        with open_bank(self.bank, shared=True) as (_, config, data):
             rows = select(data, config, self.bank, ids=[qid])
             require(bool(rows), 'Question is no longer available; refresh the library')
             q = rows[0]

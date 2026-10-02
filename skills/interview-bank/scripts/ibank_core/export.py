@@ -162,7 +162,7 @@ def export_bank(bank, output, format="markdown", *, include_paths=False, answer_
     require(answer_extras_mode in ANSWER_EXTRAS, "answer extras must be folded, inline or none")
     require(answer_mode in ("both", "with", "without"), "Invalid answer mode")
     require(format == 'markdown' or answer_mode == 'both', "Answer mode only applies to Markdown")
-    with open_bank(bank) as (_, config, data):
+    with open_bank(bank, shared=True) as (_, config, data):
         target = Path(output)
         if not target.is_absolute():
             target = bank / target if target.parts and target.parts[0] == "exports" else bank / "exports" / target

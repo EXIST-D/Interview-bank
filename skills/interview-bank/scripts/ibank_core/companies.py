@@ -7,7 +7,7 @@ from .storage import open_bank
 
 def list_companies(bank, query=None, industry=None, company_type=None, ownership=None, business_model=None, limit=50, offset=0):
     require(type(limit) is int and limit > 0 and type(offset) is int and offset >= 0, "Invalid company pagination")
-    with open_bank(bank) as (_, _, data):
+    with open_bank(bank, shared=True) as (_, _, data):
         result = []
         for company in data["companies"]:
             searchable = normalize_company_alias(" ".join([company["id"], company["name"], *company["aliases"]]))

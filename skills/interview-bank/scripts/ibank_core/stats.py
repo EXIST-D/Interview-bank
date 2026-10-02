@@ -6,7 +6,7 @@ from .catalog import normalize_labels
 
 
 def stats(bank, *, limit=10, **filters):
-    with open_bank(bank) as (_, config, data):
+    with open_bank(bank, shared=True) as (_, config, data):
         found = select_questions(data, stale_days=config.get("answer_stale_days", 180), **filters)
         companies, roles, domains, technologies = (Counter() for _ in range(4))
         months, rounds, interviews, statuses = (Counter() for _ in range(4))

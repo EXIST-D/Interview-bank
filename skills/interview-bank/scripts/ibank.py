@@ -189,7 +189,7 @@ def dispatch(args):
     if args.command in COMMANDS:
         return advanced_dispatch(bank, args)
     if args.command == "taxonomy":
-        with open_bank(bank) as (_, config, _):
+        with open_bank(bank, shared=True) as (_, config, _):
             return catalog_view(args.dimension, args.query, args.limit, args.offset, config.get("taxonomy_extensions"))
     if args.command == "companies":
         return list_companies(bank, **{k: getattr(args, k) for k in ("query", "industry", "company_type", "ownership", "business_model", "limit", "offset")})
@@ -198,7 +198,7 @@ def dispatch(args):
     if args.command == "doctor":
         return doctor(bank)
     if args.command == "validate":
-        with open_bank(bank) as (_, config, data):
+        with open_bank(bank, shared=True) as (_, config, data):
             return {"valid": True, "counts": validate_data(data, config)}
     if args.command == "rebuild-index":
         return rebuild_index(bank)
