@@ -213,14 +213,22 @@ def stage_snapshot(bank, current, final, config, *, operation, audit=(), review=
     return result
 
 
-def show_run(bank, run_id=None):
+def show_run(bank, run_id=None, offset=None, limit=None):
+    """Inspect a run; offset/limit page the items of an intake or task packet."""
+    require(offset is None or (type(offset) is int and offset >= 0), "offset must be >= 0")
+    require(limit is None or (type(limit) is int and limit > 0), "limit must be positive")
     with open_bank(bank):
         if run_id:
             path = run_path(bank, run_id)
-            if (path / "intake.json").exists():
-                return read_json(path / "intake.json")
-            if (path / "task.json").exists():
-                return read_json(path / "task.json")
+            for name in ("intake.json", "task.json"):
+                if (path / name).exists():
+                    payload = read_json(path / name)
+                    if offset is None and limit is None:
+                        return payload
+                    start, items = offset or 0, payload.get("items", [])
+                    end = len(items) if limit is None else start + limit
+                    return {**payload, "items": items[start:end], "items_total": len(items),
+                            "offset": start, "next_offset": end if end < len(items) else None}
             run = read_json(path / "run.json")
             validate_run(run)
             return run
