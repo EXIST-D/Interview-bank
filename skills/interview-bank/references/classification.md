@@ -1,10 +1,13 @@
 # Semantic classification and curation
 
-The host classifies by meaning and source context. Scripts enforce schemas and vocabularies; there is no fake keyword-only semantic classifier. Read [taxonomy.md](taxonomy.md) and task taxonomy/extensions. Use taxonomy CLI search for Chinese labels, aliases and deeper categories. Roles/domains/technologies supplied through classify, extraction and curate are normalized; a justified leaf is enough because parent filters include it.
+The host classifies by meaning and source context. Scripts enforce schemas and vocabularies; there is no fake keyword-only semantic classifier.
+Read [taxonomy.md](taxonomy.md) and task taxonomy/extensions. Use taxonomy CLI search for Chinese labels, aliases and deeper categories.
+Roles/domains/technologies supplied through classify, extraction and curate are normalized; a justified leaf is enough because parent filters include it.
 
 ## Classification task response
 
-Run classify with selected --question IDs or all active questions. Use the returned task ID and occurrence IDs. Each task item must appear once; skip=true plus reason is allowed when there is nothing to change.
+Run classify with selected --question IDs or all active questions. Use the returned task ID and occurrence IDs. Each task item must appear once;
+skip=true plus reason is allowed when there is nothing to change.
 
 ```json
 {
@@ -28,7 +31,9 @@ Run classify with selected --question IDs or all active questions. Use the retur
 }
 ```
 
-Run classify --input <response>, then commit returned stage. Confidence below 0.80 requires review; reviewed=true only represents actual reinspection. Question labels describe the concept; occurrence labels describe where it appeared. A company alias is resolved to one company entity; ambiguous aliases fail. A company object may include name, aliases, industries and optional evidenced profile fields; see [company classification](company-classification.md).
+Run classify --input <response>, then commit returned stage. Confidence below 0.80 requires review; reviewed=true only represents actual reinspection.
+Question labels describe the concept; occurrence labels describe where it appeared. A company alias is resolved to one company entity; ambiguous aliases fail.
+A company object may include name, aliases, industries and optional evidenced profile fields; see [company classification](company-classification.md).
 
 ## Corrections
 
@@ -63,7 +68,8 @@ link a problem only when the statement really matches. Reports show it as 原题
 
 ## Configuration
 
-config displays current configuration. config --input reads a merge patch, stages it, and commit applies it transactionally. Allowed settings include source_retention, language, default_interview_type, dedupe, privacy, taxonomy_extensions, answer_stale_days.
+config displays current configuration. config --input reads a merge patch, stages it, and commit applies it transactionally.
+Allowed settings include source_retention, language, default_interview_type, dedupe, privacy, taxonomy_extensions, answer_stale_days.
 
 ```json
 {
@@ -72,6 +78,9 @@ config displays current configuration. config --input reads a merge patch, stage
 }
 ```
 
-Use configured extended labels only after committing the configuration. Taxonomy extensions are lists of strings; do not silently edit taxonomy.json. Changing config invalidates already issued cognitive tasks.
+Use configured extended labels only after committing the configuration. Taxonomy extensions are lists of strings; do not silently edit taxonomy.json.
+Changing config invalidates already issued cognitive tasks.
 
-For a legacy personal-only question, curate questions.report_exclusion to a nonempty reason, then commit. The question, occurrences and IDs remain in the bank for audit but are omitted from reader reports. Set null to remove an editorial exclusion (the automatic self-introduction guard still applies). Never delete provenance to clean presentation.
+For a legacy personal-only question, curate questions.report_exclusion to a nonempty reason, then commit.
+The question, occurrences and IDs remain in the bank for audit but are omitted from reader reports.
+Set null to remove an editorial exclusion (the automatic self-introduction guard still applies). Never delete provenance to clean presentation.

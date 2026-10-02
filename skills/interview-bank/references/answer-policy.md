@@ -1,38 +1,59 @@
 # Evidence-led reference answers
 
-Reference-answer research is the default after deduplication for an end-to-end question-organization request. Use research with question IDs or a filtered limit, then answer --input and commit; skip research only when the user explicitly requests questions only or a narrower operation such as exporting existing data. The CLI prepares task packets and validates submitted evidence; the host searches and actually reads pages. Search result snippets and invented links are insufficient. Prefer official docs, standards, original papers and first-party engineering writeups. Note version-sensitive behavior and disagreements. Paraphrase concisely; do not copy articles.
+Research answers after deduplication unless the user asked for questions only or another narrow operation
+(core rule 6). The CLI prepares task packets and validates evidence; you search and actually read the pages.
+Snippets, link titles and recollection are not verification (core rule 4).
 
-## Complete scope and verification
+## Commands
 
-By default enumerate report.question_ids for the current requested material/filter scope and cover the full set, unless the user has explicitly selected a smaller scope. Do not research hidden personal questions or unrelated existing banks. Keep a structured per-question research ledger outside the installed Skill: pending/researched/verified/blocked, supporting sources, version scope, checks performed and reasons for unresolved items. Work in batches; after each commit regenerate the next task because snapshots become stale. A research limit is not the total assignment. Do not claim completion from a few examples. Default unqualified research excludes report-hidden personal questions; explicit question IDs remain possible for a specifically requested scope.
+```text
+python -B <cli> research --question <id> [--question <id> …] --bank <bank> --json   # or a filter plus --limit
+python -B <cli> answer --input <answers.json> [--page-texts <pages.json>] --commit --bank <bank> --json
+```
 
-For EACH question:
+`research` packets omit occurrences and answer history (use `show` when you need them). A batch limit is a
+context size, not the assignment: commit, then request a fresh task for the remaining IDs. `--commit` commits a
+clean batch at once; a batch with review items stays staged.
 
-1. Break the final merged wording into required subquestions and constraints; identify which claims need evidence. Search using the subject, version and constraints, then actually open the supporting primary pages. Snippets, link availability and model recollection are not verification.
-2. Prefer official documentation, standards, original papers and first-party engineering explanations. Cross-check important, disputed or version-dependent claims against a second independent primary source when available; mirror copies do not count as independent. One directly applicable official specification can suffice for a narrow unambiguous fact; record why and identify uncovered claims. Do not add irrelevant citations to reach a quota.
-3. Check that the cited text entails the claim and matches the requested version and scenario. Resolve disagreements or state the exact boundary. For algorithms/code, verify complexity and run a minimal example plus relevant edge cases when executable examples are supplied and a runtime is available. Record actual commands/results; do not claim testing from inspection. If execution is unavailable, distinguish source/logic verification from executable validation.
-4. Re-read the condensed answer against every subquestion and its citations. Preserve negation, exceptions, tradeoffs, versions and complexity limits. Separate supported facts from design advice or source-based inference. Personal project questions use a general answer framework, never invented personal experience.
-5. Mark source_backed only when the content has supporting citations and the checks above have been performed. CLI validation enforces evidence structure, not factual correctness. Agent source verification does not authorize a reviewed/human-reviewed status. If necessary evidence is missing, leave the item pending with a reason rather than inventing a definitive answer.
+## Scope and ledger
 
-## Token use and resume
+- Cover every question in the agreed scope (normally `report.question_ids` of the requested filter).
+  Skip report-hidden personal questions unless named explicitly; never research unrelated banks.
+- Keep a ledger outside the Skill: per question pending / verified / blocked, sources, version scope,
+  checks done and why anything is unresolved. Resume from it instead of starting over.
+- Group 5–10 questions by topic. Read a shared primary page once and reuse it only where it supports each claim.
+- Reuse an existing answer only when it is current (source_backed or reviewed) and still covers the wording,
+  version and every constraint. Age alone does not prove applicability; never refresh dates without new reading.
+- With a user budget, honour it and report real coverage. Do not invent token or cost figures.
 
-- Deduplicate before research; never research each repeated occurrence or each output edition separately.
-- Inspect existing answer summaries. Reuse only current source-backed/reviewed answers whose sources and claims still cover the canonical wording, relevant version and all constraints. A changed/expanded merged question requires coverage review even if verified_at is recent. Cache age alone is not proof of applicability; do not refresh timestamps without new verification.
-- Group 5–10 questions by topic. Read a shared primary page once per relevant version and retain a concise source/evidence ledger, URL, actual access date and covered claims. Reuse the evidence only where it supports each question; do not mechanically attach the same citation to unrelated claims.
-- Research task packets intentionally omit occurrences and full answer histories. Use show only when provenance, old wording or deeper answer history is necessary. Avoid repeatedly pasting full webpages or the entire bank into context.
-- Commit each completed batch and record remaining IDs, blocked reasons and completion counts. Resume those IDs rather than starting over. Fresh task packets are required after commits. A batch size limits context, not the total assignment or a guaranteed token budget.
-- Required content is short_answer, key_points and sources (plus evidence when source_backed). spoken_answer, deep_dive, interviewer_intent, common_mistakes, follow_up_questions and code_example are optional: write them only when they add practice value, never as padding. Verify sufficiently before condensing.
-- After research, export both editions from the same data using the CLI. The question-only edition requires no second model generation. If a user supplies a budget, honor it and report actual remaining coverage rather than fabricating completion; when usage is unavailable, do not invent precise token or money estimates.
+## Verifying one question
 
-## Concise reader answers
+1. Split the merged wording into sub-questions and constraints; note which claims need evidence.
+2. Open primary pages: official docs, standards, original papers, first-party engineering write-ups.
+   Cross-check disputed or version-dependent claims against a second independent source (mirrors do not count).
+   One directly applicable specification is enough for a narrow fact; say so in the ledger.
+3. Check that each cited passage supports the claim for the asked version and scenario; state boundaries.
+   For algorithms or code, check complexity and run a minimal example plus edge cases when a runtime exists.
+   Record what you ran; never claim a test you did not run.
+4. Re-read the condensed answer against every sub-question. Keep negations, exceptions, trade-offs and versions.
+   Separate sourced facts from advice. Project questions get a general framework, never invented experience.
+5. Mark `source_backed` only after these checks. The CLI checks structure, not truth.
+   If evidence is missing, skip with a reason rather than guessing.
 
-Always label displayed content 答案（参考）. Write short_answer as one direct conclusion plus usually 3–5 short points, approximately 100–250 Chinese characters for ordinary conceptual questions; use fewer points for simple facts, or more space only to retain required constraints. Newline-separated points render as bullets. Do not repeat the question, add promotional introductions, dump retrieved text, or mechanically truncate an answer. Include the essential mechanism, choice/tradeoff and key boundary. Algorithm answers should state approach and complexity; requested runnable code belongs in code_example, with its concise result in short_answer.
+## Writing the answer
 
-Optional depth fields are rendered for the reader: the answer edition shows a folded 口述版 · 常见追问 · 易错点 block (`export --answer-extras folded|inline|none`) and the Web reader shows collapsible sections. Verification notes and full evidence stay in the structured records/ledger. Link the sources that support the reader answer. All substantive claims in short_answer must also be represented by the cited key_points. The reference label signals an aid to study, not permission to relax verification.
+- `short_answer`: one conclusion plus 3–5 short points, about 100–250 Chinese characters for a concept question.
+  Newlines render as bullets. No restating the question, no filler, no pasted page text.
+  Algorithm answers give the approach and complexity; runnable code goes in `code_example`.
+- Every claim in `short_answer` must also be a cited key point. Reports label the content 答案（参考）.
+- Required: `short_answer`, `key_points`, `sources` (and `evidence` when source_backed).
+  Optional, only when they help practice: `spoken_answer`, `follow_up_questions`, `common_mistakes`,
+  `deep_dive`, `interviewer_intent`, `code_example`. Reports fold them (`export --answer-extras`) and the Web
+  reader shows them as collapsible sections.
 
 ## Response shape
 
-Return exactly one answer or explicit skip per task question. Example structure below uses placeholder content/IDs/URLs solely to document fields; replace them with actual research, never persist placeholders. The example shows every field; spoken_answer, deep_dive, interviewer_intent, common_mistakes, follow_up_questions and code_example may be omitted.
+One answer or one skip per task question. Placeholders below document fields only; never store them.
 
 ```json
 {
@@ -42,13 +63,10 @@ Return exactly one answer or explicit skip per task question. Example structure 
     "question_id": "q_FROM_TASK",
     "status": "source_backed",
     "short_answer": "直接回应问题的简洁答案",
-    "spoken_answer": "适合面试口述的连贯回答",
     "key_points": ["一个有来源支持的要点"],
-    "deep_dive": "机制、适用条件、版本与边界",
-    "interviewer_intent": "这道题考察的能力",
-    "common_mistakes": ["容易混淆的说法及纠正"],
+    "spoken_answer": "适合面试口述的连贯回答",
     "follow_up_questions": ["进一步追问"],
-    "code_example": null,
+    "common_mistakes": ["容易混淆的说法及纠正"],
     "sources": [{
       "title": "实际读取的文档标题",
       "url": "https://example.org/actual-page",
@@ -63,37 +81,45 @@ Return exactly one answer or explicit skip per task question. Example structure 
 }
 ```
 
-Citation type is a nonempty descriptive string (e.g. official_doc, standard, paper). accessed_at is the actual YYYY-MM-DD reading date and cannot be future. Every key_point (zero-based index) needs an evidence entry containing one or more supplied citation URLs. URLs must be HTTP(S) without embedded credentials; duplicate URLs fail. evidence_note is at most 2000 characters. Evidence mapping is retained in run audit; citation notes are retained on the Answer.
-
-`answer --input <file> --commit` stages and commits a clean batch in one call; a batch with review items stays staged.
+- `type` is descriptive (official_doc, standard, paper …). `accessed_at` is the real reading date, never future.
+- Every key point index needs an evidence entry naming supplied citation URLs. URLs are http(s) without
+  credentials; duplicates fail. `evidence_note` ≤ 2000 characters.
+- Cannot finish? `{"question_id": "q_ID", "skip": true, "reason": "…"}`. An `ai_draft` (no sources) only when
+  the user accepts unverified drafts.
 
 ## Quotes and link checks
 
-`evidence_quote` (optional, at most 300 characters) is a verbatim excerpt of the cited page. Save the text you actually read and pass `answer --input <file> --page-texts <pages.json>`, where pages.json maps each citation URL to that text file (`{"https://…": "redis-faq.txt"}`, paths relative to pages.json). The CLI checks that each quote occurs in its page (ignoring case, width and whitespace) and stores `quote_verified: true`; a quote without page text is kept with `quote_verified: false`; a quote missing from its page is refused. This turns "I read it" into something checkable; it still does not prove the page supports the claim.
-
-`verify-citations [--question <id>]… [--workflow <id>] [--limit 50]` is the only command that goes online, and only when the user asks: it sends HEAD (falling back to GET) to each cited URL of the current answers, follows up to 3 redirects with a 10 s timeout, refuses private and loopback addresses, and reports status, final URL and check time (also saved under logs/). It changes no data. Show broken links to the user, then research again or mark the answer stale.
-
-All displayed conclusions should be supported by the sources or clearly described as reasoning, example, or interview advice. Structural validation cannot establish truth or source entailment: that responsibility remains with the researching Agent.
+- `evidence_quote` (≤ 300 characters) is a verbatim excerpt. Save the page text you read and pass
+  `--page-texts pages.json` (`{"https://…": "redis-faq.txt"}`, paths relative to the file). A quote found in its
+  page (case, width and whitespace folded) is stored with `quote_verified: true`; without page text it is kept
+  as `false`; a quote missing from its page is refused. This proves you read the page, not that it supports the claim.
+- `verify-citations [--question <id>]… [--workflow <id>] [--limit 50]` is the only online command, run only when
+  the user asks. HEAD (GET fallback), 3 redirects, 10 s timeout, private and loopback addresses refused.
+  It reports status, final URL and time, logs to logs/ and changes no data. A broken link means re-check, not wrong.
 
 ## States and versions
 
-- ai_draft: model-generated answer without web research; sources and evidence must be empty.
-- source_backed: researched answer with citations and complete key-point mapping. It does not mean a human has approved it.
-- reviewed: actual human review. Only the person can create it: the 人工审阅通过 button in the local Web reader, or `answer-review --status reviewed` typed by the user in an interactive terminal (it asks for a typed confirmation and refuses piped input). Agents cannot; `--human-reviewed` is ignored. Agents may still mark an answer stale with a reason.
-- stale: explicitly outdated, older than the configured age threshold, or (V2) written for different question wording. search and research report `answer_stale_reason`: `marked_stale`, `evidence_age` or `wording_changed`.
-- missing: no answer yet.
+| State | Meaning |
+|---|---|
+| ai_draft | Written without research; no sources or evidence |
+| source_backed | Researched, cited, every key point mapped; not human-approved |
+| reviewed | A person checked it: the Web 人工审阅通过 button, or `answer-review --status reviewed` typed by the user in an interactive terminal (piped input is refused) |
+| stale | Marked outdated, evidence older than `answer_stale_days`, or (V2) written for other wording |
+| missing | No answer yet |
 
-Each write appends a version. Existing answer content is not overwritten. Source-backed verified_at uses the oldest cited accessed_at; replaying old evidence does not refresh it. Human review appends a copy with review timestamp. Merging questions retains answers and audits any version renumbering.
+- Every write appends a version; content is never overwritten. `verified_at` is the oldest cited access date.
+- You may mark an answer stale: `answer-review --status stale --reason …`. You can never mark it reviewed.
+- `search` and `research` give `answer_stale_reason`: `marked_stale`, `evidence_age` or `wording_changed`.
 
 ## Recheck instead of research
 
-When `answer_stale_reason` is `wording_changed` (a curate edit, a merge rewrite or a V2 migration left the answer unbound) and the new wording asks nothing the answer does not already cover, a recheck is enough:
+When the reason is `wording_changed` and the new wording asks nothing the answer does not cover:
 
 ```json
-{"schema_version": 1, "rechecks": [{"question_id": "q_ID", "reason": "only the wording changed; sub-questions A and B are still covered",
+{"schema_version": 1, "rechecks": [{"question_id": "q_ID", "reason": "only the wording changed",
   "checks": ["compared sub-questions A and B with key_points 0-3"], "covers_current_wording": true}]}
 ```
 
-`answer-recheck --input <file>` stages a new version with the same content, sources and verified_at, bound to the current wording, with the checks appended. A reviewed answer comes back as source_backed: a human reviewed the old wording, not the new one. A recheck is refused for drafts, answers without citations, evidence older than answer_stale_days and V1 banks. If the new wording adds a sub-question, changes the version scope or asks for something else, research it instead.
-
-When research cannot be completed, return {"question_id":"q_ID","skip":true,"reason":"..."} for that item, or an honest ai_draft if useful and consistent with the user's request. Do not silently substitute unsourced answers when the user specifically requires verified sources.
+`answer-recheck --input <file>` stages a version with the same content, sources and `verified_at`, bound to the
+current wording, with your checks appended. A reviewed answer returns as source_backed. Refused for drafts,
+uncited answers, evidence older than `answer_stale_days` and V1 banks. New sub-question or scope: research it.

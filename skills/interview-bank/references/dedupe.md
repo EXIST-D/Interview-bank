@@ -1,53 +1,57 @@
 # Conservative deduplication
 
-Use dedupe-candidates --run <uncommitted-import-stage> for new material, or omit --run for the existing bank. --question can select incoming IDs. Candidates are retrieved from earlier active records in canonical order, avoiding cyclic plans. Selecting only an earlier question will not search later records: select the later ID or run the full-bank task.
+`dedupe-candidates --run <uncommitted import stage>` for new material (`ingest submit` does this), or without
+`--run` for the existing bank (`--question` selects incoming IDs). Candidates come from earlier active records,
+so selecting only an early question does not search later ones. Retrieval combines character bigrams (question
+boilerplate removed, common English terms mapped to Chinese), sequence similarity and shared labels; top-k is 10
+by default, up to 100. It is bounded recall: raise top-k or fix labels when a pair is missing.
 
-Retrieval uses normalized character bigrams, sequence similarity and shared semantic labels. Top-k defaults to 10, maximum 100. Cross-language equivalents are more likely to be retrieved after classification. This is bounded candidate recall, not exhaustive semantic equivalence; increase top-k or curate classification if a pair is missing.
-
-## Decision response
+## Decisions
 
 ```json
-{
-  "schema_version": 1,
-  "task_id": "run_FROM_TASK",
-  "decisions": [{
-    "question_id": "q_INCOMING",
-    "action": "MERGE_VARIANT",
-    "target_id": "q_CANDIDATE",
-    "confidence": 0.96,
-    "reason": "两题都要求解释 Redis 快的主要原因，完整答案可以共同覆盖"
-  }]
-}
+{"schema_version": 1, "task_id": "run_FROM_TASK", "decisions": [{
+  "question_id": "q_INCOMING", "action": "MERGE_VARIANT", "target_id": "q_CANDIDATE", "confidence": 0.96,
+  "reason": "两题都要求解释 Redis 快的主要原因，完整答案可以共同覆盖"}]}
 ```
 
-Every incoming ID must appear exactly once. For merge/related decisions, target_id must be one of its returned candidates.
+Every incoming ID appears exactly once; a merge or related target must be one of its returned candidates.
 
 | Action | Meaning |
-| --- | --- |
-| MERGE_EXACT | Same normalized text and question type; coding questions additionally require case-sensitive canonical text equality |
-| MERGE_VARIANT | Same core concept with synonymous wording or compatible explanatory subpoints; requires semantic judgment |
-| KEEP_RELATED | Shared topic but different required knowledge; keep both and add related relation |
-| KEEP_DISTINCT | Different question, or no viable candidate; target_id may be omitted |
-| REVIEW | Unresolved ambiguity; blocks the entire commit |
+|---|---|
+| MERGE_EXACT | Same normalized text and type (coding: identical canonical text, case-sensitive) |
+| MERGE_VARIANT | Same core concept, synonymous wording or compatible sub-points; may carry a new `canonical` |
+| KEEP_RELATED | Shared topic, different required knowledge; both stay, linked as related (confidence ≥ 0.80) |
+| KEEP_DISTINCT | Different question, or no viable candidate |
+| REVIEW | Unresolved; blocks the commit |
 
-Merges require confidence ≥0.90; lower merge confidence becomes REVIEW. A REVIEW item names its best candidate. When the user would rather decide, start `web` for this bank: they settle each item under 合并裁决, then `dedupe --resolve <stage-run>` re-stages with their decisions (confidence 1.0, reason quoting their note) and abandons the old stage; commit the new run. KEEP_RELATED requires ≥0.80. Exact deterministic automation via dedupe --task merges only exact pairs when auto_merge_exact is enabled, keeps no-candidate items, and marks other candidates REVIEW.
+- Merges need confidence ≥ 0.90, otherwise they become REVIEW. `dedupe --task <id>` decides only exact pairs.
+- A REVIEW item names its best candidate. The user can decide it in the Web reader (合并裁决); then
+  `dedupe --resolve <stage-run>` re-stages with their decisions and abandons the old stage. Commit the new run.
 
-Ask: can a complete correct answer cover both without adding a new core concept? “Redis 为什么快” and “Redis 单线程为什么能处理高并发” overlap but may demand different scope; do not equate on one keyword. “索引原理” and “索引失效条件” stay separate. Versions, languages, negation, operators and code case matter. Missing evidence means REVIEW or distinct, not guessed merging.
+## Judging a pair
 
-## Commit and audit
+Ask: can one complete, correct answer cover both without adding a core concept?
 
-dedupe --input stages the complete final state. For an input stage, its extraction review blockers carry forward. Correct those at the extraction response; do not erase them in a dedupe response. Commit only the returned final stage, which marks its predecessor superseded.
+- Merge synonymous wording, “简要/详细介绍” and “你项目中” without solution-changing context.
+- Keep apart: different algorithms, versions, constraints or concepts. LRU vs LFU, TCP handshake vs teardown,
+  cache penetration vs breakdown, 索引原理 vs 索引失效条件, different Redis versions, required languages or complexity.
+- A shared keyword is not a merge. Missing evidence means REVIEW or distinct.
+- Do not build chapter-sized clusters: one cluster supports one focused answer.
 
-All occurrences move to the active target; original text, sequence, parents and sources stay intact. The merged Question remains with status=merged and merged_into set directly to the active target. Prior aliases are redirected; an exact match through an already merged variant records via in audit. Answer content and IDs are retained, versions are appended after target versions. Relations are redirected and redundant/self-relations removed with audit.
+## Canonical wording for a merge
 
-Merges can be undone immediately if no later data/config change exists. For an import-plus-merge, undo verifies and restores the original import staging snapshot, keeping all imported questions/sources and reversing only deduplication. Its summary records dedupe_only_preserve_import. Existing-bank merge undo restores the prior complete state. Never delete canonical lines to reverse a merge.
+MERGE_VARIANT may include `canonical`: a concise question that keeps every meaningful sub-point of the cluster,
+for example “LangGraph 的核心概念有哪些？State、Node 与条件边如何实现状态流转、分支和循环？”. It is validated and
+audited in the same stage; occurrences and merged IDs are unchanged. When a cluster grows over several decisions,
+each new canonical must keep what earlier merges added. Questions with different `report_exclusion` cannot merge.
+A rewrite does not refresh answers: recheck them (answer-policy).
 
-## Consolidated canonical wording
+## Commit, audit and undo
 
-For MERGE_VARIANT the response may include `canonical`, a concise complete question replacing the active target after merging. It is validated and audited within the same stage. Original occurrences and merged IDs are unchanged. No second curate operation is required. Other actions cannot carry this field.
-
-Example: “介绍 LangGraph 的核心概念” and “LangGraph 中 State、Node、Edge 如何实现流程控制” may become “LangGraph 的核心概念有哪些？State、Node 与条件边如何实现状态流转、分支和循环？” when the actual source questions cover those concepts. A generic request for explanation and its concrete explanatory subpoints need not become separate study items. “项目里怎么用” alone is not proof of a distinct knowledge point. Compare the actual required technical answer; keep business-specific constraints that change the solution.
-
-Keep distinct algorithms, incompatible requirements and independent concepts separate: LRU vs LFU, TCP handshake vs disconnect, cache penetration vs breakdown, Redis versions, mandatory language and complexity constraints. Do not merge all LangGraph questions into a single huge topic. A cluster should support one focused answer and a concise canonical question. State which common concept and which retained subpoints justify each merge; similarity scores never make that decision.
-
-When merging a cluster over several decisions, each later canonical must include the already consolidated target's meaningful subpoints. Inspect the merged cluster, not just the original candidate pair. Increase candidate coverage up to 100 and perform a final thematic pass. Questions with different report_exclusion values cannot merge; settle inclusion first using curate. Rewriting the wording does not verify or refresh existing answers; recheck answer applicability when subpoints change.
+- The dedupe stage contains the whole final state; commit only it (its import stage becomes superseded).
+  Review items of the import carry forward: fix them in the extraction, not in the decisions.
+- Occurrences move to the target with original text, sequence, parents and sources intact. The merged question
+  stays (status merged, `merged_into` the active target); aliases are redirected; answers keep content and IDs and
+  get versions after the target's; relations are redirected and self-relations removed, all audited.
+- `undo --run <latest dedupe>` works while nothing changed afterwards. For an import plus merge it restores the
+  import (summary `dedupe_only_preserve_import`), keeping every imported question and source. Never delete lines.
