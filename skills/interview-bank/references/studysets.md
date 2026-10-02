@@ -57,3 +57,10 @@ Selection ranks by directly covered must requirements, then direct requirements,
 The reference and question-only reports retain per-domain frequency order and the same selected scope. The JSON sidecar keeps the interpreted expression and report context; studyset show retains full original mapping reasons and history. If refreshing a JD set invalidates old mappings, correct them using the fresh source evidence rather than forcing a stale mapping into the new selection.
 
 Optionally save `source_intent` as a concise statement of the actual user goal. Reports render readable filter conditions; exact AST and detailed requirement mappings remain in JSON. If a mapped question changes or is excluded, show downgrades its coverage to uncertain until the Agent rechecks the JD relationship; a saved direct match is not permanent proof.
+
+## Daily plan and calendar
+
+`studyset plan --id <set> --per-day 10 --start 2026-10-05 [--output plan.ics]` splits the topic into daily batches in
+its saved order and writes an all-day iCalendar file under bank/exports (one event per day listing that day's
+questions). It returns the schedule; it does not change the bank or the review queue. Import the .ics file into any
+calendar app.

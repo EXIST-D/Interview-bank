@@ -1,5 +1,6 @@
 """Saved selections and evidence-linked JD requirement mappings."""
 import copy
+from .errors import ValidationError
 from .schema import require, string
 from .state import require_v2, record, resolve, revision
 from .ids import new_id, utc_now
@@ -139,3 +140,56 @@ def export_set(bank, key, output, answers='both'):
                        'jd_coverage': item['jd_coverage'], 'expression': item['expression'],
                        'requirements':[{'quote':r['quote'], 'priority':r['priority'],
                                         'coverage':'直接覆盖' if any(m['coverage']=='direct' for m in r['matches']) else '部分相关/待判断' if r['matches'] else '当前题库未覆盖'} for r in item['requirements']]})
+
+
+def _ics_text(value):
+    """Escape TEXT values (RFC 5545 3.3.11)."""
+    return value.replace("\\", r"\\").replace(";", r"\;").replace(",", r"\,").replace("\n", r"\n")
+
+
+def _ics_fold(line):
+    """RFC 5545: lines over 75 octets continue on the next line after one space."""
+    raw, out = line.encode('utf-8'), []
+    while len(raw) > 75:
+        cut = 75
+        while cut and (raw[cut] & 0xC0) == 0x80:  # never split a UTF-8 character
+            cut -= 1
+        out.append(raw[:cut].decode('utf-8'))
+        raw = b' ' + raw[cut:]
+    out.append(raw.decode('utf-8'))
+    return '\r\n'.join(out)
+
+
+def plan_set(bank, key, per_day, start, output):
+    """Split a saved topic into daily batches and write an all-day .ics calendar under bank/exports."""
+    from datetime import date, timedelta
+    from pathlib import Path
+    from .storage import atomic_write, bank_file
+    require(type(per_day) is int and 1 <= per_day <= 100, 'per-day must be 1..100')
+    try:
+        first = date.fromisoformat(start)
+    except (TypeError, ValueError):
+        raise ValidationError('start must be YYYY-MM-DD') from None
+    string(output, 'output')
+    require(output.endswith('.ics'), 'Calendar output must end with .ics')
+    item = studyset(bank, 'show', key=key)
+    with open_bank(bank, shared=True) as (_, _, data):
+        names = {q['id']: q['canonical'] for q in data['questions']}
+    ids = item['resolved_question_ids']
+    days = [ids[i:i + per_day] for i in range(0, len(ids), per_day)]
+    target = bank_file(bank, 'exports') / Path(output).name
+    stamp = utc_now().replace('-', '').replace(':', '')[:15] + 'Z'
+    lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Interview Bank//study plan//ZH', 'CALSCALE:GREGORIAN']
+    schedule = []
+    for index, batch in enumerate(days):
+        day = first + timedelta(days=index)
+        titles = [names[qid].splitlines()[0] for qid in batch]
+        schedule.append({'date': day.isoformat(), 'question_ids': batch})
+        lines += ['BEGIN:VEVENT', f'UID:{key}-{index + 1}@interview-bank', f'DTSTAMP:{stamp}',
+                  f'DTSTART;VALUE=DATE:{day.strftime("%Y%m%d")}', f'DTEND;VALUE=DATE:{(day + timedelta(days=1)).strftime("%Y%m%d")}',
+                  'SUMMARY:' + _ics_text(f'{item["name"]}：第 {index + 1} 天，{len(batch)} 题'),
+                  'DESCRIPTION:' + _ics_text('\n'.join(f'{n}. {t}' for n, t in enumerate(titles, 1))), 'END:VEVENT']
+    lines.append('END:VCALENDAR')
+    atomic_write(target, '\r\n'.join(_ics_fold(line) for line in lines) + '\r\n')
+    return {'output': str(target), 'studyset_id': key, 'days': len(days), 'per_day': per_day,
+            'first_day': first.isoformat(), 'last_day': (first + timedelta(days=max(0, len(days) - 1))).isoformat(), 'schedule': schedule}

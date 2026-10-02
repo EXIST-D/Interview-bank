@@ -96,6 +96,12 @@ def validate_config(config):
     require(type(dedupe.get("top_k")) is int and 1 <= dedupe["top_k"] <= 100, "config: top_k must be 1..100")
     for field in ("auto_merge_exact", "semantic_merge_requires_agent"):
         require(type(dedupe.get(field)) is bool, f"config.dedupe.{field}: expected boolean")
+    review = config.get("review", {"scheduler": "simple"})
+    require(isinstance(review, dict) and set(review) <= {"scheduler", "desired_retention"}, "config.review: scheduler and desired_retention only")
+    require(review.get("scheduler", "simple") in ("simple", "fsrs"), "config.review.scheduler must be simple or fsrs")
+    if "desired_retention" in review:
+        require(type(review["desired_retention"]) in (int, float) and 0.7 <= review["desired_retention"] <= 0.97,
+                "config.review.desired_retention must be 0.70..0.97")
     extensions = config.get("taxonomy_extensions", {})
     require(isinstance(extensions, dict), "config: invalid taxonomy_extensions")
     for key, values in extensions.items():
@@ -118,7 +124,7 @@ def validate_record(table, row, taxonomy=None):
     label = f"{table}/{row.get('id', '?')}"
     required = {"schema_version", "id", *FIELDS[table].split()}
     require(required <= row.keys(), f"{label}: missing fields {sorted(required - row.keys())}")
-    optional = set(PROFILE_FIELDS) if table == "companies" else {"report_exclusion"} if table == "questions" else {"question_revision", "evidence", "checks", "version_scope"} if table == "answers" else set()
+    optional = set(PROFILE_FIELDS) if table == "companies" else {"report_exclusion", "problem_url"} if table == "questions" else {"question_revision", "evidence", "checks", "version_scope"} if table == "answers" else set()
     if table == "sources":
         optional = {"transcription"}
     elif table == "occurrences":
@@ -138,6 +144,12 @@ def validate_record(table, row, taxonomy=None):
     if table == "questions":
         if "report_exclusion" in row:
             string(row["report_exclusion"], f"{label}.report_exclusion", nullable=True)
+        if row.get("problem_url") is not None:
+            link = row["problem_url"]
+            require(isinstance(link, dict) and set(link) == {"url", "title", "evidence"}, f"{label}.problem_url: needs url, title and evidence")
+            require(urlparse(link["url"]).scheme in ("http", "https") and bool(urlparse(link["url"]).netloc), f"{label}.problem_url: invalid URL")
+            string(link["title"], f"{label}.problem_url.title")
+            string(link["evidence"], f"{label}.problem_url.evidence: say why this is the same problem")
         for field in ("canonical", "normalized", "language"):
             string(row[field], f"{label}.{field}")
         require(row["normalized"] == normalize_question_text(row["canonical"]), f"{label}: normalized key mismatch")

@@ -54,6 +54,13 @@ Editable fields:
 
 All changes record before/after and reason. Full-bank validation prevents broken aliases, invalid taxonomy and dangling references. Commit explicitly applies the stage.
 
+### Problem links
+
+A coding question can carry the original problem page: curate
+`{"table": "questions", "id": "q_…", "set": {"problem_url": {"url": "https://…", "title": "LeetCode 146. LRU 缓存",
+"evidence": "the screenshot's statement matches this problem"}}, "reason": "…"}`. All three fields are required:
+link a problem only when the statement really matches. Reports show it as 原题链接 and Anki cards include it.
+
 ## Configuration
 
 config displays current configuration. config --input reads a merge patch, stages it, and commit applies it transactionally. Allowed settings include source_retention, language, default_interview_type, dedupe, privacy, taxonomy_extensions, answer_stale_days.

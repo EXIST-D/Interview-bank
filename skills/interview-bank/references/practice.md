@@ -18,6 +18,13 @@ Events append and keep original timestamps, user timezone and question revision;
 
 This provides an on-demand review queue. It does not run a background scheduler. Create reminders only when the user requests them and the host supports authorized scheduling.
 
+### Scheduler
+
+The default schedule doubles the interval on good/easy (1, 3, 6, 12 … days). Set
+`config --input '{"review": {"scheduler": "fsrs", "desired_retention": 0.9}}'` (then commit) to use FSRS-4.5 with
+its published default parameters: each event then records `fsrs.stability` and `fsrs.difficulty`, and the interval
+is the time until predicted recall falls to the desired retention (0.70–0.97). A reworded question starts over.
+
 ## One-at-a-time interview
 
 Create a session from question_ids or studyset_id, optional limit (default 10), and name:

@@ -150,7 +150,7 @@ class WebApp:
                 require('_state' in data, 'Saving practice requires an explicit V2 migration')
                 prior = next((e for e in data['_state']['events'].values() if e['request_id'] == submitted['request_id']), None)
                 if prior:
-                    value, _ = event(copy.deepcopy(data), submitted, source='user_self_rating')
+                    value, _ = event(copy.deepcopy(data), submitted, source='user_self_rating', review=config.get('review'))
                     require(prior['question_revision'] == payload['revision'], 'Practice retry has a different revision')
                     return {'saved': True, 'already_recorded': True, 'event': value}
                 q = next((q for q in data['questions'] if q['id'] == submitted['question_id'] and q['status'] == 'active'), None)
@@ -158,7 +158,7 @@ class WebApp:
                 from .editorial import exclusion_reason
                 require(not exclusion_reason(q), 'This question is excluded from practice')
                 final = copy.deepcopy(data)
-                value, _ = event(final, submitted, source='user_self_rating')
+                value, _ = event(final, submitted, source='user_self_rating', review=config.get('review'))
                 staged = stage_snapshot(self.bank, data, final, config, operation='study', audit=[{'event': value, 'interface': 'local_web'}], summary={'event_id': value['id']})
                 # Commit under the same lock: no reader or CLI commit can slip between stage and commit.
                 try:

@@ -25,7 +25,7 @@ def user_zone(name):
 RATING_SOURCES = ('user_self_rating', 'agent_relayed')
 
 
-def event(data, payload, source='agent_relayed'):
+def event(data, payload, source='agent_relayed', review=None):
     """A practice event. The Web page records the user's own click (user_self_rating); the CLI can only
     relay a rating the user stated in chat (agent_relayed) and must keep the user's words."""
     require(source in RATING_SOURCES, 'Unknown rating source')
@@ -50,7 +50,16 @@ def event(data, payload, source='agent_relayed'):
         require(now >= parse_timestamp(history[-1]['occurred_at']), 'Backdated events would rewrite scheduling; submit in chronological order')
     revision_matches = history and history[-1]['question_revision'] == revision(q) and history[-1]['question_id'] == q['id']
     previous = history[-1]['interval_days'] if revision_matches else 0
-    days = {'again':1, 'hard':max(1,previous), 'good':3 if previous < 3 else min(90,previous*2), 'easy':7 if previous < 7 else min(180,previous*2)}[rating]
+    review = review or {}
+    fsrs_state = None
+    if review.get('scheduler') == 'fsrs':
+        from .scheduler import fsrs_step
+        prior_state = history[-1].get('fsrs') if revision_matches else None
+        elapsed = (now - parse_timestamp(history[-1]['occurred_at'])).total_seconds() / 86400 if revision_matches else 0
+        days, fsrs_state = fsrs_step(rating, prior_state, elapsed, review.get('desired_retention', 0.9))
+    else:
+        from .scheduler import simple_interval
+        days = simple_interval(rating, previous)
     custom = payload.get('interval_days')
     if custom is not None:
         require(type(custom) is int and 1 <= custom <= 3650, 'interval_days must be 1..3650')
@@ -63,7 +72,8 @@ def event(data, payload, source='agent_relayed'):
     value = {'id':new_id('event'), 'created_at':utc_now(), 'request_id':payload['request_id'], 'request_digest':fingerprint(payload), 'question_id':q['id'],
              'question_revision':revision(q), 'rating':rating, 'timezone':zone, 'occurred_at':now.astimezone(timezone.utc).isoformat(),
              'next_review_at':due.astimezone(timezone.utc).isoformat(), 'interval_days':days,
-             'session_id':payload.get('session_id'), 'note':payload.get('note',''), 'rating_source':source}
+             'session_id':payload.get('session_id'), 'note':payload.get('note',''), 'rating_source':source,
+             **({'fsrs': fsrs_state} if fsrs_state else {})}
     if source == 'agent_relayed':
         string(payload.get('user_quote'), "user_quote (the user's own words giving this rating)")
         value['user_quote'] = payload['user_quote']
@@ -111,7 +121,7 @@ def study(bank, action, payload=None):
             return {'questions':sorted(queue,key=lambda q:(not q['due'],q['next_review_at'] or '',q['canonical'])),'timezone':str(tz)}
         require(action == 'record','Unknown study action')
         final = copy.deepcopy(current)
-        value, repeated = event(final,payload)
+        value, repeated = event(final,payload,review=config.get('review'))
         if repeated:
             return {'already_recorded':True,'event':value}
         return stage_snapshot(bank,current,final,config,operation='study',audit=[{'event':value}],summary={'event_id':value['id']})
