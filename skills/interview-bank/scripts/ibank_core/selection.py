@@ -2,7 +2,6 @@
 from .schema import require, string
 from .catalog import matches, company_matches
 from .normalize import normalize_company_alias, normalize_technology
-from .dates import interval
 
 FIELDS = {'company', 'industry', 'role', 'domain', 'technology', 'query', 'round', 'interview_type',
           'difficulty', 'question_type', 'answer_status', 'year', 'company_type', 'ownership', 'business_model'}

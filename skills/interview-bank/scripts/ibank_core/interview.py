@@ -1,7 +1,7 @@
 """One-question-at-a-time interviews with durable user responses and sourced feedback."""
 import copy
 from .schema import require, string
-from .state import require_v2, record, resolve, revision, question
+from .state import require_v2, record, revision, question
 from .ids import new_id, utc_now
 from .storage import open_bank, fingerprint
 from .runs import stage_snapshot

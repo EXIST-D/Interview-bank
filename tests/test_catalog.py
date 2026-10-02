@@ -1,4 +1,3 @@
-import copy
 import csv
 import io
 import json
@@ -6,7 +5,7 @@ import subprocess
 import sys
 
 from test_foundation import BankFixture, CLI
-from ibank_core.catalog import catalog_view, normalize_label, matches
+from ibank_core.catalog import catalog_view, matches
 from ibank_core.companies import list_companies
 from ibank_core.curation import configure, stage_classification, stage_curate
 from ibank_core.errors import ValidationError
@@ -159,7 +158,6 @@ class CatalogTests(BankFixture):
         data = load_data(self.bank)
         companies = data["companies"]
         # Same canonical question can appear in two employers with different profiles.
-        q = data["questions"][0]
         from ibank_core.runs import stage_bundle
         extra = {**data["occurrences"][0], "id": "occ_extra", "sequence": 99, "company_id": companies[1]["id"]}
         commit_run(self.bank, stage_bundle(self.bank, {"schema_version": 1, "occurrences": [extra]})["run_id"])

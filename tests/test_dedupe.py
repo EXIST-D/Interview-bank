@@ -1,4 +1,3 @@
-import copy
 from test_foundation import BankFixture
 from ibank_core.dedupe import candidate_task, stage_decisions
 from ibank_core.runs import commit_run, stage_bundle, undo_run

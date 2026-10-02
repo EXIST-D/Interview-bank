@@ -1,5 +1,3 @@
-import copy
-import json
 import subprocess
 import sys
 from test_foundation import BankFixture, CLI
@@ -8,7 +6,7 @@ from ibank_core.curation import configure
 from ibank_core.ingestion import intake_images, stage_extraction, save_extraction
 from ibank_core.runs import commit_run, stage_bundle, undo_run, abandon_run, show_run
 from ibank_core.schema import validate_data
-from ibank_core.storage import load_data, open_bank, read_json, read_jsonl
+from ibank_core.storage import load_data, open_bank, read_json
 from ibank_core.errors import ValidationError
 from ibank_core.doctor import doctor
 

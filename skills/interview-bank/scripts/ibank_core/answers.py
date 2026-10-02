@@ -1,8 +1,7 @@
 """Lazy evidence-led answer enrichment and immutable answer versions."""
 import copy
 import unicodedata
-from datetime import datetime
-from urllib.parse import quote_plus, urlparse
+from urllib.parse import urlparse
 
 from .dates import effective_answer, latest_calendar_date, today
 from .editorial import exclusion_reason

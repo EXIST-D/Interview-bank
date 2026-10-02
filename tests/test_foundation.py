@@ -14,12 +14,12 @@ sys.path[:0] = [str(ROOT / "skills/interview-bank/scripts"), str(ROOT / "tools")
 from demo_data import make_bundle
 from ibank_core import ids, storage
 from ibank_core.doctor import doctor
-from ibank_core.errors import BankUnavailable, LockConflict, ValidationError
+from ibank_core.errors import ValidationError
 from ibank_core.index import rebuild_index
 from ibank_core.locking import bank_lock
 from ibank_core.normalize import normalize_company_alias, normalize_question_text, normalize_technology
 from ibank_core.runs import commit_run, stage_bundle, stage_text
-from ibank_core.schema import TABLES, validate_data, validate_manifest, validate_record, validate_run
+from ibank_core.schema import TABLES, validate_manifest, validate_record, validate_run
 from ibank_core.search import search
 from ibank_core.stats import stats
 

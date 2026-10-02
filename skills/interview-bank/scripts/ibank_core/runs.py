@@ -214,7 +214,6 @@ def commit_run(bank, run_id, loaded=None):
             for item in intake["items"]:
                 view = item.get("view_path")
                 if view:
-                    from pathlib import Path
                     from .media import file_hash
                     require(file_hash(view) == item["source"]["sha256"], "Source changed before commit; intake again")
         target_config = config
