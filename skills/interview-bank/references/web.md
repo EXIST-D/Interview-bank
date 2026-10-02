@@ -27,11 +27,15 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
 - Human review: below a stored answer, 人工审阅 lets the reader write what they checked and press 人工审阅通过 (or mark it 待重新核验). The server stages and commits under one lock and audits `actor: local_web`; it refuses if the answer changed since the page loaded. Read-only mode hides it. Works in V1 and V2.
 - V2 saves each submitted response and self-rating through the existing stage/commit machinery. Due dates use the existing review scheduler. Network retries carry the same request ID, so a successful but unacknowledged submission is not duplicated. Failed saves keep the response in the current page.
 - V1 and `--read-only` allow temporary practice without writing practice events. Explain this before the round; do not silently migrate. Saving practice requires an explicitly authorized verified V2 migration.
-- Saved events survive server/browser restarts and are shared with CLI review. The unfinished Web round and unsubmitted response are held in page memory, not a durable interview session; closing/reloading can lose them. Never describe the Web round as resumable across restarts. The Agent interview workflow remains available for durable guided sessions.
+- Saved events survive server/browser restarts and are shared with CLI review. An unfinished Web round is kept in the browser tab's session storage (question IDs and position only, never the written response): reloading the tab offers to resume it; closing the tab ends it. The Agent interview workflow remains the durable guided session.
+- Merge decisions: when a staged dedupe run has review items, the header shows 合并裁决. The person sees both questions and the agent's reason, chooses 是同一题 / 相关但不同 / 不同的题 with a required note, and the choice is saved next to the stage (`runs/<run>/human-decisions.json`, actor local_web). Nothing canonical changes until the agent runs `dedupe --resolve <run>`, which re-stages the run with those decisions, and commits it.
+- Language and theme: the page follows `config.language` (Chinese or English) and the operating system's light/dark setting.
 
 The page fetches bank data on navigation, refresh and after practice; it does not automatically poll, research answers or watch directories. The overview distinguishes stored answers (including draft/stale) from currently valid source-backed/reviewed coverage in its tooltip. Old migrated answers can be stale until coverage is rechecked. Frequencies count matching collected occurrences. Domain facet counts may overlap because a question can have multiple labels.
 
 `--read-only` disables practice writes. Opening a bank still uses the normal lock, recoverable-transaction handling and rebuildable cache; it is not a promise of zero filesystem activity. Do not open an unrelated or unauthorized bank.
+
+The server accepts both `http://127.0.0.1:<port>` and `http://localhost:<port>`; any other Host or Origin gets 403 (DNS-rebinding protection).
 
 ## Service boundary and validation
 

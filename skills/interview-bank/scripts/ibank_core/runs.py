@@ -264,7 +264,8 @@ def commit_run(bank, run_id, loaded=None):
         return result
 
 
-def stage_snapshot(bank, current, final, config, *, operation, audit=(), review=(), summary=None, intake_id=None, supersedes=(), next_config=None):
+def stage_snapshot(bank, current, final, config, *, operation, audit=(), review=(), summary=None, intake_id=None, supersedes=(), next_config=None,
+                   extra=None):
     """Caller holds open_bank lock; retain an immutable before-image for undo."""
     from .state import enforce_policies
     enforce_policies(current, final, operation)
@@ -273,6 +274,7 @@ def stage_snapshot(bank, current, final, config, *, operation, audit=(), review=
                 "config_digest": fingerprint(config), "audit": list(audit), "review": list(review), "summary": summary or {}, "supersedes": list(supersedes)}
     if intake_id:
         metadata["intake_id"] = intake_id
+    metadata.update(extra or {})
     if next_config is not None:
         metadata["new_config_digest"] = fingerprint(next_config)
     changes = diff(current, final) if run_format() == 2 else None

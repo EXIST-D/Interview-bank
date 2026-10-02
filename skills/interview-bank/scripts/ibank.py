@@ -145,6 +145,7 @@ def parser():
     decision_source = judge.add_mutually_exclusive_group(required=True)
     decision_source.add_argument("--input", type=Path)
     decision_source.add_argument("--task", help="Apply exact matches; non-exact candidates become REVIEW")
+    decision_source.add_argument("--resolve", metavar="RUN", help="Re-stage a dedupe run with the user's Web decisions on its review items")
     show = sub.add_parser("show", parents=[common])
     show.add_argument("question_id")
     research = sub.add_parser("research", parents=[common], help="Prepare host web-research tasks; no automatic bulk answering")
@@ -295,6 +296,9 @@ def dispatch(args):
     if args.command == "dedupe-candidates":
         return candidate_task(bank, args.run, args.top_k, args.question)
     if args.command == "dedupe":
+        if args.resolve:
+            from ibank_core.dedupe import resolve_with_human_decisions
+            return resolve_with_human_decisions(bank, args.resolve)
         return stage_decisions(bank, read_json(args.input) if args.input else None, args.task)
     if args.command == "research":
         return research_task(bank, args.question, args.limit, **{k: getattr(args, k) for k in ("query", "company", "role", "technology", "answer_status")})
