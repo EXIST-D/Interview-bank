@@ -1,0 +1,48 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }}, Python ${{ matrix.python }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Unit, regression and smoke tests (standard library only)
+        run: python -B -X utf8 -m unittest discover -s tests -v
+      - name: Installed skill stays read-only
+        shell: bash
+        run: |
+          test -z "$(find skills -name __pycache__ -print -quit)"
+          test -z "$(git status --porcelain -- skills)"
+
+  package:
+    name: package (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build the installable Skill ZIP
+        run: python -B -X utf8 tools/package_skill.py
+      - name: Install from the ZIP and exercise every subsystem read-only
+        run: python -B -X utf8 tools/check_release.py
