@@ -21,13 +21,22 @@ def tree_hashes(root):
             for p in root.rglob("*") if p.is_file()}
 
 
+def tracked(paths):
+    """Only check documents that belong to the repository, not untracked local notes."""
+    listing = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT, capture_output=True)
+    if listing.returncode:
+        return list(paths)
+    names = {name.decode("utf-8") for name in listing.stdout.split(b"\0") if name}
+    return [p for p in paths if p.relative_to(ROOT).as_posix() in names]
+
+
 def main():
     count = 0
     for directory in (SKILL, ROOT / "tools", ROOT / "tests"):
         for path in directory.rglob("*.py"):
             ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
             count += 1
-    for path in [ROOT / "README.md", ROOT / "README.en.md", *SKILL.rglob("*.md"), *ROOT.glob("docs/*.md")]:
+    for path in [ROOT / "README.md", ROOT / "README.en.md", *SKILL.rglob("*.md"), *tracked(ROOT.glob("*.md")), *tracked(ROOT.glob("docs/*.md"))]:
         body = path.read_text(encoding="utf-8")
         for target in re.findall(r"\[[^\]]*\]\(([^)]+)\)", body):
             if "://" not in target and not target.startswith("#"):
