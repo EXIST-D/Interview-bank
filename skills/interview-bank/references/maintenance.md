@@ -78,3 +78,14 @@ When the user explicitly changes a protected value, curate input may include `ov
 Existing undo remains restricted to the latest unchanged snapshot; arbitrary historical unmerge is not supported. Explain the affected records and preserve later changes instead of rolling back the whole bank. Review [schema.md](schema.md) for durable recovery and invariants.
 
 `workflow next` and `workflow list` return compact progress cards, not the entire scope ledger. Read only `task` items for each research batch. `workflow show` explicitly returns full details; for large banks prefer `workflow summary` and the saved JSON unless item-level diagnosis is needed. This keeps ordinary batch tool output proportional to batch size.
+
+## Disk housekeeping
+
+Every snapshot operation keeps a full before-image and the staged tables under runs/, so runs/ grows by about twice the bank per write. doctor reports `runs_bytes` and `data_bytes` and sets `runs_hint` when runs/ exceeds five times the data.
+
+```text
+python -B <cli> gc --bank <bank> --json
+python -B <cli> gc --bank <bank> --apply --keep-days 30 --keep-last 20 --json
+```
+
+The first form is a dry-run: show the user what it would compact and how many bytes it would reclaim, and run `--apply` only after they agree. Apply works under the bank lock and logs to logs/gc-*.json. It removes table snapshots and before-images from committed, superseded or abandoned runs older than `--keep-days` and outside the newest `--keep-last`; their run.json audit, commit.json and report.md stay. Expired task packets and spilled outputs under cache/outputs are deleted. It always keeps pending stages, the latest undo point (and the import stage a merge undo restores) and every intake, because media intakes hold the only full transcripts. A compacted run can no longer seed `workflow create --from_run`; scope by question_ids instead.
