@@ -5,7 +5,7 @@ from .storage import bank_file, open_bank, read_json
 
 
 def doctor(bank):
-    with open_bank(bank) as (manifest, _, data):
+    with open_bank(bank, shared=True) as (manifest, _, data):
         missing = []
         for source in data["sources"]:
             if source["retention"] != "none" and source["path"]:
@@ -37,7 +37,7 @@ def doctor(bank):
                     incomplete.append(path.name)
         return {"bank": str(bank), "python": platform.python_version(), "schema_version": manifest["schema_version"],
                 "legacy_index_cache": bank_file(bank, "cache/bank.sqlite").is_file(),
-                "lock": "acquired (free before this command)", "counts": {t: len(v) for t, v in data.items() if t != '_state'},
+                "lock": "acquired shared (no writer held it)", "counts": {t: len(v) for t, v in data.items() if t != '_state'},
                 "runs_bytes": runs_bytes, "data_bytes": data_bytes,
                 "runs_hint": "runs/ holds over 5x the canonical data; gc (dry-run) shows what compaction would reclaim" if runs_bytes > 5 * max(data_bytes, 1) else None,
                 "state_counts": {k:len(v) for k,v in data.get('_state',{}).items() if k != 'version'},

@@ -58,7 +58,7 @@ python -B <cli> init --bank <new-bank> --json
 
 All command results support --json. ID fields returned by commands are authoritative; never invent task, source or question IDs.
 
-Output is compact and bounded (32 KB, INTERVIEW_BANK_MAX_OUTPUT). When a result carries `_page`, stdout holds only the first part of `_page.field`: read the rest with `run-show --run <task-id> --offset <next_offset> --limit 20` for task packets, or narrow the query; `_page.full_output` is the complete result on disk. Task files themselves are never trimmed, so still return one decision per task item. Commands wait up to 10 s for another command's lock. When doctor reports a large runs/ directory, run `gc` (a dry-run), show the user what it would reclaim, and only then `gc --apply`.
+Output is compact and bounded (32 KB, INTERVIEW_BANK_MAX_OUTPUT). When a result carries `_page`, stdout holds only the first part of `_page.field`: read the rest with `run-show --run <task-id> --offset <next_offset> --limit 20` for task packets, or narrow the query; `_page.full_output` is the complete result on disk. Task files themselves are never trimmed, so still return one decision per task item. Reads (search, show, stats, export, doctor, validate, Web pages) share the bank lock; a write waits up to 10 s for readers and other writers. When doctor reports a large runs/ directory, run `gc` (a dry-run), show the user what it would reclaim, and only then `gc --apply`.
 
 ## Personal-bank modes (V2)
 

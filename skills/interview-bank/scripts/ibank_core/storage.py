@@ -210,11 +210,21 @@ def transaction(bank, files):
 
 
 @contextmanager
-def open_bank(bank):
+def open_bank(bank, shared=False):
+    """Load the bank under its lock. shared=True is for pure reads: readers run side by side.
+
+    A reader that finds an unfinished transaction journal (a writer crashed) falls back to the
+    exclusive lock so it can replay the journal before reading.
+    """
     bank = guard_bank_path(bank)
     if not bank.is_dir():
         raise BankUnavailable(f"Bank does not exist: {bank}; run init")
     bank_file(bank, ".bank.lock")
+    if shared:
+        with bank_lock(bank, shared=True):
+            if not bank_file(bank, ".transaction.json").exists():
+                yield load_bank(bank)
+                return
     with bank_lock(bank):
         recover(bank)
         yield load_bank(bank)
