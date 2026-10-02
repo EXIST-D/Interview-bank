@@ -2,18 +2,19 @@
 
 [English](README.en.md) | 简体中文
 
-`interview-bank` 是一个面向 Codex 等 Agent 的面试题整理 Skill。它可以帮助用户从碎片化搜集的面试题目截图、已选好的文字、音视频中的语音或字幕转写稿中提取面试题，按岗位、技术领域、技术栈、公司和行业分类，合并同义问法，研究有来源支持的参考答案，并生成适合阅读和自测的两份报告，帮助用户将碎片化的面试题目积累成个人的面试题目参考库。
+`interview-bank` 是一个面向 Claude Code、Codex 等支持 Agent Skills 的 Agent 的面试题整理 Skill。它可以帮助用户从碎片化搜集的面试题目截图、已选好的文字、音视频中的语音或字幕转写稿中提取面试题，按岗位、技术领域、技术栈、公司和行业分类，合并同义问法，研究有来源支持的参考答案，并生成适合阅读和自测的两份报告，帮助用户将碎片化的面试题目积累成个人的面试题目参考库。
 
-适用于校招、实习、秋招和社招。当前版本为 **1.10.0**。详见 [v1.10.0 更新说明](https://github.com/EXIST-D/Interview-bank/releases/tag/v1.10.0)。
+适用于校招、实习、秋招和社招。当前版本为 **1.11.0**。详见 [更新记录](CHANGELOG.md) 与 [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases)。
 
-## 本次更新：1.10 可选本地 Web 界面
+## 本次更新：1.11 稳定性与更轻的 Agent 工作流
 
-- **可视化题库**：简洁浅色界面，支持搜索、岗位/领域/技术栈/公司/行业/答案状态筛选，以及频次、更新日期和名称排序。
-- **阅读与追溯**：查看题目、参考答案、资料链接、原始问法和练习记录；区分待补写、草稿和待重新核验答案。
-- **专注练习**：按当前筛选选题或练习单题，先作答再揭示答案，提交自评后安排复习日期。
-- **可选启动**：复用现有 Python 环境，无需 npm 或模型服务；V1 支持浏览和临时练习，V2 支持持久保存自评及作答。
+- **公开测试与 CI**：测试套件（196 项）、夹具和发布工具已放入仓库；CI 在 Windows、macOS、Linux 与 Python 3.10–3.13 上运行，并以只读方式安装打包后的 Skill 做检查。
+- **输出有上限**：`--json` 默认紧凑，单条结果不超过 32 KB；大任务分页返回（`_page`、`run-show --offset/--limit`），不再一次把几 MB 内容塞进 Agent 上下文。
+- **磁盘清理**：新增 `gc`，压缩旧的运行快照并保留审计记录和撤销能力（一个 289 题的真实题库 runs/ 从 53.9 MB 降到 10.8 MB）。
+- **答案**：只要求简答、要点和来源；写了口述版、常见追问和易错点时，会在报告和 Web 中折叠展示。
+- **修复**：Web 与 CLI 锁冲突、练习缺少“10 题”选项、18 个顶级领域的报告分组、隐私检查的漏检与误拦、UTC+8 凌晨的引用日期、Python 版本检查、部分环境 Web 启动缓慢，以及 V2 迁移会保留未改动题目的已核验答案。
 
-使用方法见 [本地 Web 说明](skills/interview-bank/references/web.md)。本版 159 项自动化测试及独立安装包 Web 启动检查通过。完整版本记录见 [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases)。
+详见 [更新记录](CHANGELOG.md)。本地 Web 用法见 [本地 Web 说明](skills/interview-bank/references/web.md)。
 
 ## 界面示例
 
@@ -25,17 +26,22 @@
 
 ```text
 Interview-bank/
-├── README.md
-├── README.en.md
+├── README.md / README.en.md
+├── CHANGELOG.md                  # 版本记录
+├── CONTRIBUTING.md / SECURITY.md
 ├── LICENSE
+├── .github/workflows/ci.yml      # Windows/macOS/Linux × Python 3.10–3.13 测试与安装包检查
+├── tests/                        # 标准库 unittest 测试（不随 Skill 安装）
+├── tools/                        # 打包、发布检查、合成夹具与度量
+├── examples/                     # 结构化答案样例
 ├── assets/readme/                # 主页示意图，不随 Skill 安装
 └── skills/
-    └── interview-bank/
+    └── interview-bank/           # 可安装的 Skill 本体
         ├── SKILL.md
         ├── LICENSE.txt
         ├── agents/
         │   └── openai.yaml
-        ├── assets/web/             # 本地界面资源
+        ├── assets/web/
         ├── references/
         └── scripts/
             ├── ibank.py
@@ -88,7 +94,20 @@ npx skills add EXIST-D/Interview-bank --skill interview-bank --agent codex --yes
 npx skills add EXIST-D/Interview-bank --list
 ```
 
-上述参数与项目路径遵循 [skills CLI 文档](https://github.com/vercel-labs/skills)。仓库使用标准的 `skills/interview-bank/SKILL.md` 结构，入口包含 `name`、`description`、许可证及作者信息。
+其他 Agent 使用同一命令，替换 `--agent` 即可（路径来自 [skills CLI](https://github.com/vercel-labs/skills)，加 `-g` 为全局安装）：
+
+| Agent | `--agent` | 项目目录 | 全局目录 | 调用方式 |
+|---|---|---|---|---|
+| Claude Code | `claude-code` | `.claude/skills/` | `~/.claude/skills/` | 自然语言，按 Skill 描述自动匹配 |
+| Codex | `codex` | `.agents/skills/` | `~/.codex/skills/` | `$interview-bank …` 或自然语言 |
+| Cursor | `cursor` | `.agents/skills/` | `~/.cursor/skills/` | 自然语言 |
+| Trae / Trae CN | `trae` / `trae-cn` | `.trae/skills/` | `~/.trae/skills/` / `~/.trae-cn/skills/` | 自然语言 |
+| Qwen Code | `qwen-code` | `.qwen/skills/` | `~/.qwen/skills/` | 自然语言 |
+| Gemini CLI | `gemini-cli` | `.agents/skills/` | `~/.gemini/skills/` | 自然语言 |
+
+完整的实际使用验证目前在 Windows + Codex 上完成；其他 Agent 依赖同样的文件、命令、看图和联网能力，Python 引擎由 CI 在 Windows、macOS、Linux 上测试。
+
+其他参数见 [skills CLI 文档](https://github.com/vercel-labs/skills)。仓库使用标准的 `skills/interview-bank/SKILL.md` 结构，入口包含 `name`、`description`、许可证及作者信息。
 
 也可以把 `skills/interview-bank` 整个目录复制到所用 Agent 支持的技能目录，或直接让 Agent 阅读本仓库的 [SKILL.md](skills/interview-bank/SKILL.md)。若客户端没有刷新技能列表，请重新加载项目或重启客户端。
 
@@ -207,7 +226,7 @@ V1 的六张 JSONL 表，以及 V2 新增的 `data/state.json`，共同构成事
 
 ## 当前状态与计划开发功能
 
-**v1.10.0** 已支持从素材整理、题库持续维护到岗位备考的完整流程。以下功能均已实现，由 Agent 根据用户需求调用：
+**v1.11.0** 已支持从素材整理、题库持续维护到岗位备考的完整流程。以下功能均已实现，由 Agent 根据用户需求调用：
 
 | 已实现功能 | 当前可以做到 |
 |---|---|
@@ -222,6 +241,7 @@ V1 的六张 JSONL 表，以及 V2 新增的 `data/state.json`，共同构成事
 | 复习与模拟面试 | 保存自评与复习日期，按需生成复习队列；逐题提问、记录真实回答、反馈追问及中断恢复 |
 | 本地 Web 查阅与练习 | 浏览现有题库、多维筛选、答案显隐、原始问法、自评练习与 V2 记录保存 |
 | 宿主适配 | 区分环境实测与工具声明，规划转写路线，统一接入实际宿主工具的转写结果 |
+| 面向 Agent 的输出与维护 | 紧凑且有上限的 JSON 输出与分页；`gc` 压缩旧运行快照，保留审计与撤销 |
 
 使用时需要 Agent 能读取 Skill、访问授权文件并执行 Python；截图识别需要看图能力，来源答案需要实际联网检索。原始音视频可选择宿主转写工具或本地语音模型；云端转写由宿主按用户授权调用。具体要求见 [跨 Agent 使用协议](skills/interview-bank/references/portability.md) 与 [音视频使用说明](skills/interview-bank/references/media.md)。
 
@@ -238,15 +258,15 @@ V1 的六张 JSONL 表，以及 V2 新增的 `data/state.json`，共同构成事
 
 **其他当前边界：**复习队列按需生成，没有后台提醒；精确 Token 和费用统计依赖宿主；任意历史合并的拆分恢复尚不支持，仅支持满足条件的最近操作撤销。这些能力未列入本次已实现范围。
 
-v1.10.0 通过 159 项自动化测试和独立安装包检查；本地 Web 已完成实际题库副本的浏览、筛选、作答自评与保存验证。截图、实际语音转写与报告流程已在 Windows 环境验证；宿主接入通过协议测试，未对所有 Agent、系统和真实云服务逐一实测。识别结果与参考答案仍需结合原文、来源和适用条件核对。
+v1.11.0 在 CI 中通过 196 项自动化测试（Windows、macOS、Linux；Python 3.10–3.13）和安装包检查，可用 `python -B -m unittest discover -s tests` 自行运行；本地 Web 已完成实际题库副本的浏览、筛选、作答自评与保存验证。截图、实际语音转写与报告流程已在 Windows 环境验证；宿主接入通过协议测试，未对所有 Agent、系统和真实云服务逐一实测。识别结果与参考答案仍需结合原文、来源和适用条件核对。
 
-公开仓库包含 Skill、介绍、许可证及本页示意图。个人素材、题库、答案研究记录、开发方案、测试工程和本地依赖环境不随仓库发布。
+仓库包含 Skill、测试与开发工具、介绍、许可证及本页示意图。个人素材、题库、答案研究记录和本地依赖环境不随仓库发布；测试夹具均为合成数据。
 
 ## 作者与维护
 
 本项目由 [EXIST-D](https://github.com/EXIST-D) 创建并维护。
 
-欢迎通过 [GitHub Issues](https://github.com/EXIST-D/Interview-bank/issues) 提交问题、使用反馈或改进建议。如果你基于本 Skill 扩展了分类、工作流或工具，也欢迎提交 Pull Request。提交示例时请先移除个人信息、私有截图和敏感题库内容。
+欢迎通过 [GitHub Issues](https://github.com/EXIST-D/Interview-bank/issues) 提交问题、使用反馈或改进建议。如果你基于本 Skill 扩展了分类、工作流或工具，也欢迎提交 Pull Request，流程见 [CONTRIBUTING](CONTRIBUTING.md)。提交示例时请先移除个人信息、私有截图和敏感题库内容。
 
 ## 许可证
 
