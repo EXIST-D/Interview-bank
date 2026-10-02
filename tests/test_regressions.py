@@ -216,6 +216,13 @@ class PrivacyGuard(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertTrue(contact_findings(text))
 
+    def test_generated_identifiers_are_not_phone_numbers(self):
+        # 1 in ~700 uuid4 hex IDs contains an 11-digit run starting 13-19; CI hit one at random.
+        self.assertEqual(contact_findings('{"source_id": "src_dead13812345678fffffffffffffffff"}'), [])
+        self.assertEqual(contact_findings("sha256 " + "13812345678".ljust(64, "a")), [])
+        self.assertEqual([text for text in (f"q_{uuid.uuid4().hex}" for _ in range(20000)) if contact_findings(text)], [])
+        self.assertTrue(contact_findings("src_dead 13812345678 is my number"))
+
     def test_text_stage_applies_the_same_guard(self):
         bank = Bank()
         try:
