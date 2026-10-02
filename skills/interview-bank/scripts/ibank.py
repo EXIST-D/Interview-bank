@@ -137,6 +137,8 @@ def parser():
         research.add_argument(f"--{field}")
     answer = sub.add_parser("answer", parents=[common], help="Stage evidence-backed answer versions")
     answer.add_argument("--input", type=Path, required=True)
+    recheck = sub.add_parser("answer-recheck", parents=[common], help="Rebind source-backed answers to reworded questions after a coverage check")
+    recheck.add_argument("--input", type=Path, required=True)
     review = sub.add_parser("answer-review", parents=[common])
     review.add_argument("--question", required=True)
     review.add_argument("--status", choices=("reviewed", "stale"), required=True)
@@ -250,6 +252,9 @@ def dispatch(args):
         return research_task(bank, args.question, args.limit, **{k: getattr(args, k) for k in ("query", "company", "role", "technology", "answer_status")})
     if args.command == "answer":
         return stage_answers(bank, read_json(args.input))
+    if args.command == "answer-recheck":
+        from ibank_core.answers import recheck_answers
+        return recheck_answers(bank, read_json(args.input))
     if args.command == "answer-review":
         return review_answer(bank, args.question, args.status, args.reason, args.human_reviewed)
     if args.command == "commit":
