@@ -151,7 +151,7 @@ Answers append versions and become effectively stale after answer_stale_days (de
 
 ## Recovery and completion
 
-run-show inspects intakes, tasks, stages and receipts; without --run it lists runs. Tasks are bound to bank/config digests: regenerate after either changes. commit is idempotent; interrupted transactions recover under an OS lock. doctor reports broken sources, incomplete runs, cache issues and runs/ size; rebuild-index recreates SQLite; gc compacts old run snapshots (dry-run unless --apply, keeps audit records and the latest undo point).
+run-show inspects intakes, tasks, stages and receipts; without --run it lists runs. Tasks are bound to bank/config digests: regenerate after either changes. commit is idempotent; interrupted transactions recover under an OS lock. doctor reports broken sources, incomplete runs and runs/ size; gc compacts old run snapshots (dry-run unless --apply, keeps audit records and the latest undo point).
 
 abandon closes an uncommitted stage. undo stages the previous state of the latest snapshot mutation, provided no later data/config changes exist; commit the undo stage to apply. For an import-plus-dedupe operation, undo restores the pre-merge import state, retaining every imported Question and Source. Existing-bank merges, corrections and answer/config changes can also be undone. A plain import cannot be undone by physically deleting Question IDs.
 

@@ -12,7 +12,6 @@ from ibank_core.ingestion import stage_extraction, save_extraction
 from ibank_core.runs import commit_run
 from ibank_core.storage import load_data, read_json, dumps, fingerprint
 from ibank_core.errors import ValidationError, ReviewRequired
-from ibank_core.index import rebuild_index
 from ibank_core.export import export_bank
 from ibank_core.schema import validate_data
 
@@ -71,7 +70,6 @@ class MediaTests(BankFixture):
         data = load_data(self.bank)
         self.assertEqual(data["occurrences"][0]["locator"]["end"], 3.5)
         self.assertEqual(intake_media(self.bank, [path])["items"], [])
-        rebuild_index(self.bank)
         result = export_bank(self.bank, "media.md", "markdown")
         self.assertTrue(result)
         self.assertIn('"locator"', "\n".join(p.read_text(encoding="utf-8") for p in (self.bank / "exports").glob("*.json")))

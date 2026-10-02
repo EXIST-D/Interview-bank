@@ -17,7 +17,6 @@ if sys.version_info < (3, 10):
 
 import argparse
 import json
-import sqlite3
 from pathlib import Path
 
 from ibank_core.doctor import doctor
@@ -188,8 +187,7 @@ def dispatch(args):
     if args.command == "companies":
         return list_companies(bank, **{k: getattr(args, k) for k in ("query", "industry", "company_type", "ownership", "business_model", "limit", "offset")})
     if args.command == "init":
-        created = initialize(bank)
-        return {"bank": str(bank), "created": created, **rebuild_index(bank)}
+        return {"bank": str(bank), "created": initialize(bank)}
     if args.command == "doctor":
         return doctor(bank)
     if args.command == "validate":
@@ -238,14 +236,7 @@ def dispatch(args):
     if args.command == "answer-review":
         return review_answer(bank, args.question, args.status, args.reason, args.human_reviewed)
     if args.command == "commit":
-        result = commit_run(bank, args.run)
-        # Canonical commit remains successful even if a disposable cache fails.
-        try:
-            result["index"] = rebuild_index(bank)["index"]
-        except (BankError, OSError, sqlite3.Error) as exc:
-            result["index"] = "rebuild_required"
-            result["warning"] = str(exc)
-        return result
+        return commit_run(bank, args.run)
     if args.command == "show":
         return detail(bank, args.question_id)
     filters = {key: getattr(args, key) for key in
@@ -267,7 +258,7 @@ def main(argv=None):
     machine = getattr(args, "json", False) or getattr(args, "format", None) == "json"
     try:
         result = dispatch(args)
-    except (BankError, OSError, ValueError, sqlite3.Error) as exc:
+    except (BankError, OSError, ValueError) as exc:
         code = exc.code if isinstance(exc, BankError) else 1
         error = {"ok": False, "command": args.command, "error": str(exc), "code": code}
         print(json.dumps(error, ensure_ascii=False) if machine else f"Error: {exc}", file=sys.stderr)
