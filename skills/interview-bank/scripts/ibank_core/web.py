@@ -22,6 +22,7 @@ from .storage import open_bank, guard_bank_path
 from .study import event
 from .studysets import select
 from .selection import apply_expression
+from .timestamps import parse_timestamp
 
 ASSETS = Path(__file__).resolve().parents[2] / 'assets' / 'web'
 FILTERS = {'query', 'domain', 'role', 'technology', 'company', 'industry', 'answer_status'}
@@ -41,7 +42,7 @@ def progress(data, rows):
         changed = bool(last and (last['question_revision'] != revision(q) or last['question_id'] != q['id']))
         result[q['id']] = {
             'state': 'unseen' if not last else 'changed' if changed else 'weak' if last['rating'] in ('again', 'hard') else 'familiar',
-            'due': not last or changed or datetime.fromisoformat(last['next_review_at']) <= now,
+            'due': not last or changed or parse_timestamp(last['next_review_at']) <= now,
             'next_review_at': last['next_review_at'] if last else None,
             'rating': last['rating'] if last else None,
         }

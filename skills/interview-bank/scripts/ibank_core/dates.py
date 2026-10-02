@@ -2,6 +2,7 @@ import calendar
 from datetime import date, datetime, timedelta, timezone
 
 from .schema import partial_date, require
+from .timestamps import parse_timestamp
 
 
 def interval(value):
@@ -45,5 +46,5 @@ def effective_answer(answer, as_of=None, stale_days=180):
     if answer["status"] == "stale":
         return "stale"
     timestamp = answer["verified_at"] or answer["created_at"]
-    checked = datetime.fromisoformat(timestamp).date()
+    checked = parse_timestamp(timestamp).date()
     return "stale" if (today(as_of) - checked).days > stale_days else answer["status"]
