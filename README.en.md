@@ -2,18 +2,19 @@
 
 English | [简体中文](README.md)
 
-`interview-bank` is an interview-question organization Skill for Codex and other capable agents. It helps users extract questions from screenshots, selected text, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
+`interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.10.0**. See the [v1.10.0 release notes](https://github.com/EXIST-D/Interview-bank/releases/tag/v1.10.0).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.11.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## What's new: 1.10 optional local Web interface
+## What's new: 1.11 reliability and lighter agent workflows
 
-- **Visual library:** a clean light interface with text search, role/domain/technology/company/industry/answer filters, pagination and frequency/date/title sorting.
-- **Reading and provenance:** reference answers, source links, original wording and practice history, with missing/draft/stale answers clearly distinguished.
-- **Focused practice:** select a filtered round or a single question, write a response, reveal the answer and self-rate for later review.
-- **Optional startup:** reuse Python without npm or a model service. V1 supports browsing and temporary practice; V2 persists self-ratings and written responses.
+- **Public tests and CI:** the test suite (196 tests), fixtures and release tools are now in the repository; CI runs them on Windows, macOS and Linux with Python 3.10–3.13 and installs the packaged Skill read-only.
+- **Bounded output:** `--json` is compact and capped at 32 KB per result; large tasks are paged (`_page`, `run-show --offset/--limit`) instead of flooding the agent's context.
+- **Disk cleanup:** `gc` compacts old run snapshots while keeping audit records and undo (a real 289-question bank went from 53.9 MB to 10.8 MB of runs/).
+- **Answers:** only short answer, key points and sources are required; spoken version, follow-ups and pitfalls are shown folded in the report and the Web reader when written.
+- **Fixes:** Web/CLI lock conflicts, the missing 10-question practice option, report grouping for all 18 top-level domains, privacy-check gaps and false alarms, UTC+8 reading dates, Python version checks, slow Web startup on some hosts, and V2 migration now keeps verified answers of unchanged questions.
 
-See [local Web usage](skills/interview-bank/references/web.md). The 159-test suite and independent packaged Web startup check passed. Published versions are listed in [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Details are in the [CHANGELOG](CHANGELOG.md). The local Web interface is described in [local Web usage](skills/interview-bank/references/web.md).
 
 ## Interface preview
 
@@ -25,12 +26,17 @@ This screenshot shows an actual local bank preview with filters, occurrence coun
 
 ```text
 Interview-bank/
-├── README.md
-├── README.en.md
+├── README.md / README.en.md
+├── CHANGELOG.md                  # version history
+├── CONTRIBUTING.md / SECURITY.md
 ├── LICENSE
+├── .github/workflows/ci.yml      # tests on Windows/macOS/Linux × Python 3.10–3.13, package check
+├── tests/                        # standard-library unittest suite (not installed with the Skill)
+├── tools/                        # packaging, release checks, synthetic fixtures, measurements
+├── examples/                     # sample structured answer
 ├── assets/readme/                # README images, excluded from Skill installation
 └── skills/
-    └── interview-bank/
+    └── interview-bank/           # the installable Skill
         ├── SKILL.md
         ├── LICENSE.txt
         ├── agents/
@@ -88,7 +94,20 @@ Without `--global`, the Codex project installation path is `.agents/skills/inter
 npx skills add EXIST-D/Interview-bank --list
 ```
 
-See the [skills CLI documentation](https://github.com/vercel-labs/skills) for options and agent paths. This repository uses `skills/interview-bank/SKILL.md` with standard name, description, license and author metadata.
+Other agents use the same command with their `--agent` value (paths from the [skills CLI](https://github.com/vercel-labs/skills); add `-g` for a user-wide install):
+
+| Agent | `--agent` | Project path | Global path | How to invoke |
+|---|---|---|---|---|
+| Claude Code | `claude-code` | `.claude/skills/` | `~/.claude/skills/` | Natural language; matched by the Skill description |
+| Codex | `codex` | `.agents/skills/` | `~/.codex/skills/` | `$interview-bank …` or natural language |
+| Cursor | `cursor` | `.agents/skills/` | `~/.cursor/skills/` | Natural language |
+| Trae / Trae CN | `trae` / `trae-cn` | `.trae/skills/` | `~/.trae/skills/` / `~/.trae-cn/skills/` | Natural language |
+| Qwen Code | `qwen-code` | `.qwen/skills/` | `~/.qwen/skills/` | Natural language |
+| Gemini CLI | `gemini-cli` | `.agents/skills/` | `~/.gemini/skills/` | Natural language |
+
+Live end-to-end use has been verified with Codex on Windows; on other agents the Skill relies on the same file, command, image and web capabilities, and CI exercises the Python engine on Windows, macOS and Linux.
+
+See the [skills CLI documentation](https://github.com/vercel-labs/skills) for other options. This repository uses `skills/interview-bank/SKILL.md` with standard name, description, license and author metadata.
 
 Alternatively, copy the complete `skills/interview-bank` folder to a supported skill directory, or ask your agent to read [SKILL.md](skills/interview-bank/SKILL.md) directly. Reload the project or restart the client if its skill list has not refreshed.
 
@@ -199,7 +218,7 @@ The six JSONL tables plus V2 data/state.json are canonical; SQLite is rebuildabl
 
 ## Current status and planned features
 
-Version **1.10.0** supports material intake, ongoing bank maintenance and interview preparation. The following capabilities are implemented and invoked by the Agent as needed:
+Version **1.11.0** supports material intake, ongoing bank maintenance and interview preparation. The following capabilities are implemented and invoked by the Agent as needed:
 
 | Implemented capability | What it does today |
 |---|---|
@@ -214,6 +233,7 @@ Version **1.10.0** supports material intake, ongoing bank maintenance and interv
 | Review and mock interviews | Save self-ratings and review dates, build queues on request, ask one question at a time, record real responses and resume sessions |
 | Local Web browsing and practice | Browse and filter existing questions, reveal answers, inspect original wording and save self-ratings/responses on V2 |
 | Host adaptation | Separate measured capabilities from tool declarations, plan transcription routes and import actual host tool results |
+| Agent-friendly output and housekeeping | Compact, size-bounded JSON with paging; `gc` compacts old run snapshots while keeping audit and undo |
 
 The Agent needs Skill access, authorized file access and Python execution. Screenshots require image viewing; sourced answers require actual web research. Raw media can use host transcription tools or an optional local speech model; remote calls are performed by the host within user authorization. See [host portability](skills/interview-bank/references/portability.md) and the [media protocol](skills/interview-bank/references/media.md).
 
@@ -230,15 +250,15 @@ Existing V1 banks retain extraction, classification, deduplication, research and
 
 **Other current limits:** review queues have no background reminders; exact token and cost metering depends on the host; arbitrary historical unmerge is unavailable, with undo limited to eligible recent operations. These are not included in the implemented scope.
 
-Version 1.10.0 passed 159 automated tests and independent installation checks. Local Web browsing, filters, written responses, self-ratings and persistence were also verified against an isolated copy of a real bank. Screenshots, real speech transcription and reports were exercised on Windows. Host integration was contract-tested, not tested against every Agent, operating system or live cloud service. Extracted content and reference answers still require attention to original material, evidence and applicability.
+Version 1.11.0 passes 196 automated tests in CI (Windows, macOS and Linux; Python 3.10–3.13) plus a packaged-install check; run them yourself with `python -B -m unittest discover -s tests`. Local Web browsing, filters, written responses, self-ratings and persistence were also verified against an isolated copy of a real bank. Screenshots, real speech transcription and reports were exercised on Windows. Host integration was contract-tested, not tested against every Agent, operating system or live cloud service. Extracted content and reference answers still require attention to original material, evidence and applicability.
 
-This public repository contains the Skill, introductions, licenses and the README example image. Personal material, banks, research records, development plans, test projects and local environments are not published.
+This repository contains the Skill, its tests and development tools, introductions, licenses and the README example image. Personal material, banks, research records and local environments are not published; test fixtures are synthetic.
 
 ## Author and maintenance
 
 Created and maintained by [EXIST-D](https://github.com/EXIST-D).
 
-Use [GitHub Issues](https://github.com/EXIST-D/Interview-bank/issues) for bugs, feedback and suggestions. Pull requests for taxonomy, workflow or tooling improvements are welcome. Remove personal information, private screenshots and sensitive bank content before sharing examples.
+Use [GitHub Issues](https://github.com/EXIST-D/Interview-bank/issues) for bugs, feedback and suggestions. Pull requests for taxonomy, workflow or tooling improvements are welcome; see [CONTRIBUTING](CONTRIBUTING.md). Remove personal information, private screenshots and sensitive bank content before sharing examples.
 
 ## License
 
