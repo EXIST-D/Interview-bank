@@ -10,7 +10,7 @@ from .storage import dumps, open_bank
 from .tasks import read_task
 
 EDITABLE = {
-    "questions": {"canonical", "language", "question_type", "role_tracks", "domains", "technologies", "difficulty", "report_exclusion"},
+    "questions": {"canonical", "language", "question_type", "role_tracks", "domains", "technologies", "difficulty", "report_exclusion", "problem_url"},
     "occurrences": {"company_id", "role_tracks", "interview_type", "round", "event_date", "classification_confidence"},
     "companies": {"name", "aliases", "industries", *PROFILE_FIELDS},
     "sources": {"platform", "source_url", "source_date"},
@@ -113,7 +113,7 @@ def configure(bank, patch=None):
         if patch is None:
             return config
         require(isinstance(patch, dict) and bool(patch), "Configuration patch must be nonempty object")
-        allowed = {"source_retention", "language", "default_interview_type", "dedupe", "privacy", "taxonomy_extensions", "answer_stale_days"}
+        allowed = {"source_retention", "language", "default_interview_type", "dedupe", "privacy", "taxonomy_extensions", "answer_stale_days", "review"}
         require(set(patch) <= allowed, "Unknown or immutable configuration field")
         final = copy.deepcopy(config)
         for key, value in patch.items():

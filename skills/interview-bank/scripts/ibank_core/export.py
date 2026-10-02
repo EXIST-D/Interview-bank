@@ -97,6 +97,35 @@ def answer_section(question, extras='folded'):
     return out + answer_extras(answer, extras)
 
 
+def _tag(value):
+    return re.sub(r"\s+", "_", value.strip())
+
+
+def anki(payload):
+    """Tab-separated notes Anki imports directly: front, back (HTML), tags.
+
+    Only currently valid sourced answers go on the back; other questions keep an empty back and the tag 待核验.
+    """
+    selected = set(payload['report']['question_ids'])
+    lines = ["#separator:Tab", "#html:true", "#tags column:3"]
+    for q in payload['questions']:
+        if q['id'] not in selected:
+            continue
+        front = html.escape(q['canonical'].strip()).replace("\n", "<br>")
+        answer = q['answer']
+        valid = bool(answer and answer['sources'] and q['answer_status'] in ('source_backed', 'reviewed'))
+        back = ""
+        if valid:
+            back = "<p>" + html.escape(answer['short_answer']).replace("\n", "<br>") + "</p>"
+            back += "<p>" + " · ".join(f'<a href="{html.escape(s["url"])}">{html.escape(s.get("title") or s["url"])}</a>'
+                                       for s in answer['sources']) + "</p>"
+        if q.get('problem_url'):
+            back += f'<p>原题：<a href="{html.escape(q["problem_url"]["url"])}">{html.escape(q["problem_url"]["title"])}</a></p>'
+        tags = [_tag(t) for t in (*q['domains'], *q['technologies'])] + ([] if valid else ["待核验"])
+        lines.append("\t".join(field.replace("\t", " ") for field in (front, back, " ".join(dict.fromkeys(tags)))))
+    return "\n".join(lines) + "\n"
+
+
 def markdown(payload, *, include_answers=True, extras='folded'):
     """Navigable study report with topic totals and frequency-ordered questions."""
     selected = set(payload['report']['question_ids'])
@@ -138,6 +167,9 @@ def markdown(payload, *, include_answers=True, extras='folded'):
                 out.append(fenced(text))
             else:
                 out.append(f'### {number}. ' + md(text))
+            link = q.get('problem_url')
+            if link:
+                out.append('原题链接：' + f"[{md(link['title'])}](<{link['url']}>)")
             if include_answers:
                 out.extend(answer_section(q, extras))
             company_names = sorted({companies[o['company_id']] for o in q['occurrences'] if o['company_id'] in companies})
@@ -158,7 +190,7 @@ def markdown(payload, *, include_answers=True, extras='folded'):
 
 
 def export_bank(bank, output, format="markdown", *, include_paths=False, answer_mode="both", report_context=None, answer_extras_mode="folded", **filters):
-    require(format in ("markdown", "json", "jsonl", "csv", "viewer"), "Unsupported export format")
+    require(format in ("markdown", "json", "jsonl", "csv", "viewer", "anki"), "Unsupported export format")
     require(answer_extras_mode in ANSWER_EXTRAS, "answer extras must be folded, inline or none")
     require(answer_mode in ("both", "with", "without"), "Invalid answer mode")
     require(format == 'markdown' or answer_mode == 'both', "Answer mode only applies to Markdown")
@@ -207,6 +239,8 @@ def export_bank(bank, output, format="markdown", *, include_paths=False, answer_
                 atomic_write(question_target, question_content)
         elif format in ("json", "viewer"):
             content = dumps(payload) + "\n"
+        elif format == "anki":
+            content = anki(payload)
         elif format == "jsonl":
             content = jsonl_text({"schema_version": 1, "question": q,
                 "sources": [s for s in sources if s["id"] in {o["source_id"] for o in q["occurrences"]}],

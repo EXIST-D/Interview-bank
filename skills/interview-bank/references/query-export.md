@@ -31,3 +31,10 @@ The reader report excludes obvious self-introductions and questions with a nonem
 Markdown defaults to `--answers both`: `<output>` is the reference-answer edition, `<stem>（题目版）<suffix>` is the question-only edition, and `<output>.details.json` is their shared full attachment. `--answers with` or `--answers without` writes only the selected edition at `<output>`. `--answer-extras folded` (default), `inline` or `none` controls the 口述版 · 常见追问 · 易错点 block that follows a current sourced answer when those optional fields were written; the question-only edition never shows it. These options apply only to Markdown; structured exports always retain full data.
 
 Both editions use exactly the same question selection, domain totals, frequency order and numbering. The question-only Markdown has no answer text, pending slots, answer progress or answer citations; its shared structured attachment may still contain answers and history. Result fields answer_output/question_output identify the files; answered_questions/pending_answers distinguish actual coverage from empty slots. The exporter never calls a model or a website. The default Skill workflow researches and commits answers before final export; an explicit export-only request renders existing data without starting research.
+
+## Anki
+
+`export --format anki --output cards.txt` writes tab-separated notes for Anki's File → Import (`#separator:Tab`,
+`#html:true`, tags in column 3). Front: the question. Back: the current sourced short answer with its source links
+(and the problem link when set). Questions without a current sourced answer get an empty back and the tag 待核验.
+Tags are the domain and technology IDs. Report-excluded questions are left out.

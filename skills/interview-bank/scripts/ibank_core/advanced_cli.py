@@ -6,7 +6,7 @@ COMMANDS = {
     'migrate': ('plan','apply','restore'),
     'policy': ('list','add','disable'),
     'workflow': ('list','create','show','next','pause','resume','cancel','block','reconcile','revise','summary','export'),
-    'studyset': ('list','create','show','refresh','export'),
+    'studyset': ('list','create','show','refresh','export','plan'),
     'study': ('record','queue','history'),
     'interview': ('list','start','next','answer','feedback','follow-up','end','show','summary','turn','review'),
     'evidence': ('list',),
@@ -28,6 +28,9 @@ def add_parsers(sub, common):
         p.add_argument('--answers', choices=('both','with','without'), default='both')
         if name in COMMIT_ALLOWED:
             p.add_argument('--commit', action='store_true', help='Commit at once when the stage has no review items')
+        if name == 'studyset':
+            p.add_argument('--per-day', type=int, default=10, help='plan: questions per day (default 10)')
+            p.add_argument('--start', help='plan: first day, YYYY-MM-DD')
         if name == 'migrate':
             p.add_argument('--archive')
             p.add_argument('--destination')
@@ -69,7 +72,10 @@ def _dispatch(bank, args):
             return export_bank(bank,args.output,answer_mode=args.answers,question_ids=list(view['items']), occurrence_ids=view['occurrence_ids'])
         return workflow(bank,args.action,payload,args.id)
     if args.command == 'studyset':
-        from .studysets import studyset, export_set
+        from .studysets import studyset, export_set, plan_set
+        if args.action == 'plan':
+            require(bool(args.start), 'plan needs --start YYYY-MM-DD')
+            return plan_set(bank, args.id, args.per_day, args.start, args.output or 'study-plan.ics')
         if args.action == 'export':
             require(bool(args.output), 'export requires --output')
             return export_set(bank,args.id,args.output,args.answers)

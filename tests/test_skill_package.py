@@ -47,5 +47,14 @@ class SkillPackage(unittest.TestCase):
                     self.assertTrue((doc.parent / target).exists())
 
 
+    def test_sources_compile_without_warnings(self):
+        """A SyntaxWarning goes to stderr and breaks every --json consumer reading it."""
+        import warnings
+        for path in sorted((SKILL / "scripts").rglob("*.py")):
+            with warnings.catch_warnings():
+                warnings.simplefilter("error")
+                compile(path.read_text(encoding="utf-8"), str(path), "exec")
+
+
 if __name__ == "__main__":
     unittest.main()

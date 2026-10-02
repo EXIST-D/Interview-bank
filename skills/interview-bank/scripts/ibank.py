@@ -177,7 +177,8 @@ def parser():
             query.add_argument("--include-paths", action="store_true")
             query.add_argument("--answers", choices=("both", "with", "without"), default="both", help="Markdown reports: both editions (default), with answers, or questions only")
             query.add_argument("--answer-extras", choices=("folded", "inline", "none"), default="folded", help="Spoken answer, follow-ups and pitfalls in the answer edition (default: folded <details>)")
-            query.add_argument("--format", choices=("markdown", "json", "jsonl", "csv", "viewer"), default="markdown")
+            query.add_argument("--format", choices=("markdown", "json", "jsonl", "csv", "viewer", "anki"), default="markdown",
+                               help="anki: tab-separated notes for File > Import in Anki")
         else:
             query.add_argument("--limit", type=positive_int, default=20 if name == "search" else 10)
             query.add_argument("--format", choices=("human", "json", "jsonl"), default="human")
