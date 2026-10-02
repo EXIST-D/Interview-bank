@@ -50,6 +50,10 @@ def report_group(question):
         for prefix, title in groups:
             if domain == prefix or domain.startswith(prefix + '.'):
                 return title
+        # Every built-in top-level domain has a catalog label (移动技术, 信息安全, 数据技术 ...).
+        top = domain.split('.')[0]
+        if display('domains', top) != top:
+            return display('domains', top)
     return '其他知识题'
 
 
