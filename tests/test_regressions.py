@@ -19,6 +19,7 @@ from ibank_core.doctor import doctor
 from ibank_core.errors import LockConflict
 from ibank_core.export import report_group
 from ibank_core.locking import bank_lock
+from ibank_core.privacy import contact_findings
 from ibank_core.timestamps import parse_timestamp
 
 
@@ -193,6 +194,33 @@ class ReportGrouping(unittest.TestCase):
             self.assertTrue(any("移动技术" in line for line in headings))
             self.assertTrue(any("信息安全" in line for line in headings))
             self.assertFalse(any("其他知识题" in line for line in headings))
+        finally:
+            bank.close()
+
+
+class PrivacyGuard(unittest.TestCase):
+    """B5: stage --text skipped the guard while other paths rejected technical examples."""
+
+    def test_technical_examples_are_not_contact_details(self):
+        for text in ("微信：朋友圈的 Feed 流如何设计？", "如何用正则校验形如 test@example.com 的邮箱？",
+                     "npm install react@18.2.0 有什么影响？", "@Autowired 与 @Resource 的区别？"):
+            with self.subTest(text=text):
+                self.assertEqual(contact_findings(text), [])
+
+    def test_real_contact_details_are_found(self):
+        for text in ("联系我 微信：abc123", "手机 13800138000", "邮箱 zhangsan@qq.com的", "QQ群：123456789",
+                     "微信号：　wxid_abc123"):
+            with self.subTest(text=text):
+                self.assertTrue(contact_findings(text))
+
+    def test_text_stage_applies_the_same_guard(self):
+        bank = Bank()
+        try:
+            source = bank.root / "pii.txt"
+            source.write_text("联系我 微信：abc123 或 13800138000\n", encoding="utf-8")
+            proc = bank.cli("stage", "--text", str(source), check=False)
+            self.assertEqual(proc.returncode, 2, proc.stdout + proc.stderr)
+            self.assertIn("personal contact information", proc.stderr)
         finally:
             bank.close()
 

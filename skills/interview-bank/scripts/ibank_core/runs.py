@@ -7,6 +7,7 @@ from .errors import ValidationError, ReviewRequired
 from .catalog import normalize_labels
 from .ids import new_company_id, new_occurrence_id, new_question_id, new_run_id, new_source_id, utc_now
 from .normalize import normalize_company_alias, normalize_question_text, normalize_technology
+from .privacy import privacy_check
 from .schema import TABLES, require, validate_data, validate_run
 from .storage import (atomic_write, bank_file, dumps, empty_data, fingerprint, jsonl_text,
                       open_bank, read_json, read_jsonl, transaction)
@@ -72,6 +73,8 @@ def stage_text(bank, input_path, *, run_id=None, company=None, roles=(), domains
         addition = empty_data()
         if any(s["sha256"] == digest for s in current["sources"]):
             return _write_stage(bank, addition, run_id, duplicate_sources=1)
+        # Same guard as image extraction: selected text must not smuggle in contact details.
+        privacy_check("\n".join([*lines, company or ""]), config)
         retention = retention or config["source_retention"]
         require(retention in ("reference", "none"), "Selected-text adapter supports reference/none retention; image intake also supports copy")
         company_id = None
