@@ -38,3 +38,7 @@ Both editions use exactly the same question selection, domain totals, frequency 
 `#html:true`, tags in column 3). Front: the question. Back: the current sourced short answer with its source links
 (and the problem link when set). Questions without a current sourced answer get an empty back and the tag 待核验.
 Tags are the domain and technology IDs. Report-excluded questions are left out.
+
+## Report language
+
+Reports follow `config.language`: `zh-CN` (default) or `en` (`config --input '{"language": "en"}'`, then commit). Headings, answer states, the folded practice block, topic names, tags and Anki cards switch language; question wording is never translated. The Web reader follows the same setting.

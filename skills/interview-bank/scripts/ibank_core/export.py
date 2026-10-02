@@ -13,6 +13,7 @@ from .schema import require
 from .storage import atomic_write, bank_file, dumps, jsonl_text, open_bank
 from .catalog import display
 from .editorial import exclusion_reason
+from .messages import group_title, label, language, text
 
 
 def safe_cell(value):
@@ -59,49 +60,50 @@ def report_group(question):
 ANSWER_EXTRAS = ('folded', 'inline', 'none')
 
 
-def answer_extras(answer, mode='folded'):
+def answer_extras(answer, mode='folded', lang='zh-CN'):
     """Spoken version, follow-ups and pitfalls are interview practice material; show them when written."""
-    parts = []
+    parts, colon = [], text(lang, 'colon')
     if answer.get('spoken_answer', '').strip():
-        parts.append(('口述版', '**口述版**：' + md(answer['spoken_answer'].strip())))
-    for field, title in (('follow_up_questions', '常见追问'), ('common_mistakes', '易错点')):
+        title = text(lang, 'spoken')
+        parts.append((title, f'**{title}**{colon}' + md(answer['spoken_answer'].strip())))
+    for field, key in (('follow_up_questions', 'follow_ups'), ('common_mistakes', 'mistakes')):
         if answer.get(field):
+            title = text(lang, key)
             parts.append((title, f'**{title}**\n' + '\n'.join('- ' + md(item) for item in answer[field])))
     if mode == 'none' or not parts:
         return []
-    body = '\n\n'.join(text for _, text in parts)
+    body = '\n\n'.join(part for _, part in parts)
     if mode == 'inline':
         return [body]
     return ['<details><summary>' + ' · '.join(title for title, _ in parts) + '</summary>\n\n' + body + '\n\n</details>']
 
 
-def answer_section(question, extras='folded'):
+def answer_section(question, extras='folded', lang='zh-CN'):
     """Publish concise sourced answers; retain unverified/history content in JSON."""
     answer, status = question['answer'], question['answer_status']
+    heading, colon = text(lang, 'answer'), text(lang, 'colon')
     if not answer or status == 'missing':
-        return ['答案（参考）：待检索与核验。']
+        return [heading + colon + text(lang, 'pending')]
     if status not in ('source_backed', 'reviewed'):
-        note = '待重新核验；历史答案见结构化附件。' if status == 'stale' else '待检索与核验；已有草稿见结构化附件。'
-        return ['答案（参考）：' + note]
+        return [heading + colon + text(lang, 'stale' if status == 'stale' else 'draft')]
     if not answer['sources']:
-        return ['答案（参考）：待补充来源核验；已有内容见结构化附件。']
-    state = '已人工审阅' if status == 'reviewed' else '已核验来源'
-    out = [f'答案（参考） · {state}']
+        return [heading + colon + text(lang, 'uncited')]
+    out = [f"{heading} · {text(lang, 'reviewed' if status == 'reviewed' else 'sourced')}"]
     lines = [line.strip() for line in answer['short_answer'].splitlines() if line.strip()]
     if len(lines) > 1:
         out.append('\n'.join('- ' + md(re.sub(r'^(?:[-*•]|\d+[.)、])\s*', '', line)) for line in lines))
     else:
         out.append(md(answer['short_answer']))
     links = ['[' + md(s['title']) + '](' + quote(s['url'], safe=':/?&=%+#@!$,;~') + ')' for s in answer['sources']]
-    out.append('参考资料：' + '；'.join(links))
-    return out + answer_extras(answer, extras)
+    out.append(text(lang, 'sources') + text(lang, 'source_sep').join(links))
+    return out + answer_extras(answer, extras, lang)
 
 
 def _tag(value):
     return re.sub(r"\s+", "_", value.strip())
 
 
-def anki(payload):
+def anki(payload, lang='zh-CN'):
     """Tab-separated notes Anki imports directly: front, back (HTML), tags.
 
     Only currently valid sourced answers go on the back; other questions keep an empty back and the tag 待核验.
@@ -120,72 +122,80 @@ def anki(payload):
             back += "<p>" + " · ".join(f'<a href="{html.escape(s["url"])}">{html.escape(s.get("title") or s["url"])}</a>'
                                        for s in answer['sources']) + "</p>"
         if q.get('problem_url'):
-            back += f'<p>原题：<a href="{html.escape(q["problem_url"]["url"])}">{html.escape(q["problem_url"]["title"])}</a></p>'
-        tags = [_tag(t) for t in (*q['domains'], *q['technologies'])] + ([] if valid else ["待核验"])
+            back += (f'<p>{text(lang, "anki_problem")}{text(lang, "colon")}<a href="{html.escape(q["problem_url"]["url"])}">'
+                     f'{html.escape(q["problem_url"]["title"])}</a></p>')
+        tags = [_tag(t) for t in (*q['domains'], *q['technologies'])] + ([] if valid else [text(lang, "unverified_tag")])
         lines.append("\t".join(field.replace("\t", " ") for field in (front, back, " ".join(dict.fromkeys(tags)))))
     return "\n".join(lines) + "\n"
 
 
-def markdown(payload, *, include_answers=True, extras='folded'):
+def _group_name(lang, title, question):
+    return group_title(lang, title, question['domains'][0].split('.')[0] if question['domains'] else None)
+
+
+def markdown(payload, *, include_answers=True, extras='folded', lang='zh-CN'):
     """Navigable study report with topic totals and frequency-ordered questions."""
     selected = set(payload['report']['question_ids'])
     questions = [q for q in payload['questions'] if q['id'] in selected]
     companies = {c['id']: c['name'] for c in payload['companies']}
     sources = {s['id']: s for s in payload['sources']}
-    out = ['# 面试题整理报告', f"共 {len(questions)} 道题；出现次数按收集记录统计。各领域内按出现次数降序排列、从 1 编号，同次数按题干排序。"]
+    sep, colon = text(lang, 'list_sep'), text(lang, 'colon')
+    out = ['# ' + text(lang, 'title'), text(lang, 'intro', count=len(questions))]
     if payload.get("context"):
         context = payload["context"]
-        out.append("专题：" + md(context.get("name", "")) + " · 选择修订：" + str(context.get("selection_revision", 1)))
+        out.append(text(lang, 'topic', name=md(context.get("name", "")), revision=context.get("selection_revision", 1)))
         if 'expression' in context:
             from .selection import describe
-            out.append('筛选条件：' + md(describe(context['expression'])) + '；来源条件由同一条收集记录满足。')
+            out.append(text(lang, 'filters', expression=md(describe(context['expression']))))
         if context.get('source_intent'):
-            out.append('备考目标：' + md(context['source_intent']))
+            out.append(text(lang, 'goal', goal=md(context['source_intent'])))
         if context.get('changed_questions'):
-            out.append(f"其中 {len(context['changed_questions'])} 道题自专题保存后发生变化，相关 JD 映射待重新核验。")
+            out.append(text(lang, 'changed', count=len(context['changed_questions'])))
         coverage = context.get("jd_coverage", {})
         if coverage.get("requirements"):
-            out.append(f"JD 知识要求 {coverage['requirements']} 项，直接覆盖 {coverage['directly_covered']} 项；这只是当前题库的知识覆盖，不代表岗位能力或面试命中率。")
+            out.append(text(lang, 'jd', requirements=coverage['requirements'], covered=coverage['directly_covered']))
         if context.get('requirements'):
-            out.append('\n'.join('- '+md(r['quote'])+'：'+md(r['coverage']) for r in context['requirements']))
-    groups = {}
+            out.append('\n'.join('- ' + md(r['quote']) + colon + md(r['coverage']) for r in context['requirements']))
+    groups, names = {}, {}
     for q in questions:
-        groups.setdefault(report_group(q), []).append(q)
+        title = report_group(q)
+        groups.setdefault(title, []).append(q)
+        names.setdefault(title, _group_name(lang, title, q))
     if groups:
-        out.append('## 领域概览')
-        out.append('| 领域 | 题目数 |\n|---|---:|\n' + '\n'.join(f'| {title} | {len(rows)} |' for title, rows in groups.items()))
+        out.append('## ' + text(lang, 'overview'))
+        out.append(text(lang, 'overview_head') + '\n|---|---:|\n' + '\n'.join(f'| {names[title]} | {len(rows)} |' for title, rows in groups.items()))
     verified = sum(bool(q['answer'] and q['answer']['sources'] and q['answer_status'] in ('source_backed', 'reviewed')) for q in questions)
     if include_answers:
-        out.append(f'答案进度：已核验来源 {verified} 道，待检索或重新核验 {len(questions) - verified} 道。答案均仅供参考。')
+        out.append(text(lang, 'progress', verified=verified, pending=len(questions) - verified))
     for title, rows in groups.items():
-        out.append(f'## {title}（{len(rows)} 题）')
+        out.append('## ' + text(lang, 'group', title=names[title], count=len(rows)))
         for number, q in enumerate(sorted(rows, key=lambda row: (-row['frequency'], row['canonical'])), 1):
-            text = q['canonical'].strip()
+            wording = q['canonical'].strip()
             # Keep code/line-sensitive prompts out of the heading and preserve them verbatim.
-            if '\n' in text:
-                out.append(f'### {number}. ' + md(text.splitlines()[0]))
-                out.append(fenced(text))
+            if '\n' in wording:
+                out.append(f'### {number}. ' + md(wording.splitlines()[0]))
+                out.append(fenced(wording))
             else:
-                out.append(f'### {number}. ' + md(text))
+                out.append(f'### {number}. ' + md(wording))
             link = q.get('problem_url')
             if link:
-                out.append('原题链接：' + f"[{md(link['title'])}](<{link['url']}>)")
+                out.append(text(lang, 'problem') + f"[{md(link['title'])}](<{link['url']}>)")
             if include_answers:
-                out.extend(answer_section(q, extras))
+                out.extend(answer_section(q, extras, lang))
             company_names = sorted({companies[o['company_id']] for o in q['occurrences'] if o['company_id'] in companies})
-            tags = list(dict.fromkeys(display(d, v) for d in ('domains', 'technologies') for v in q[d]))
-            meta = [f"出现 {q['frequency']} 次"]
-            if company_names: meta.append('公司：' + '、'.join(md(n) for n in company_names))
-            if tags: meta.append('标签：' + ' / '.join(md(t) for t in tags[:6]) + (' 等' if len(tags) > 6 else ''))
+            tags = list(dict.fromkeys(label(lang, d, v, display(d, v)) for d in ('domains', 'technologies') for v in q[d]))
+            meta = [text(lang, 'seen', count=q['frequency'])]
+            if company_names: meta.append(text(lang, 'companies') + sep.join(md(n) for n in company_names))
+            if tags: meta.append(text(lang, 'tags') + ' / '.join(md(t) for t in tags[:6]) + (text(lang, 'more') if len(tags) > 6 else ''))
             years = sorted({o['event_date'][:4] for o in q['occurrences'] if o['event_date']})
             if years:
-                meta.append('面试年份：' + '、'.join(years))
+                meta.append(text(lang, 'event_years') + sep.join(years))
             else:
                 source_years = sorted({sources[o['source_id']]['source_date'][:4] for o in q['occurrences']
                                        if o['source_id'] in sources and sources[o['source_id']]['source_date']})
-                if source_years: meta.append('资料年份：' + '、'.join(source_years))
+                if source_years: meta.append(text(lang, 'source_years') + sep.join(source_years))
             out.append(' · '.join(meta))
-    if not questions: out.append('当前筛选下没有可复用的知识题。')
+    if not questions: out.append(text(lang, 'empty'))
     return '\n\n'.join(out) + '\n'
 
 
@@ -232,15 +242,16 @@ def export_bank(bank, output, format="markdown", *, include_paths=False, answer_
             payload['report']['answer_mode'] = answer_mode
             payload['report']['answered_questions'] = answered
             payload['report']['pending_answers'] = len(visible) - answered
-            content = markdown(payload, include_answers=answer_mode != 'without', extras=answer_extras_mode)
-            question_content = markdown(payload, include_answers=False) if question_target else None
+            lang = language(config)
+            content = markdown(payload, include_answers=answer_mode != 'without', extras=answer_extras_mode, lang=lang)
+            question_content = markdown(payload, include_answers=False, lang=lang) if question_target else None
             atomic_write(companion, dumps(payload) + "\n")
             if question_target:
                 atomic_write(question_target, question_content)
         elif format in ("json", "viewer"):
             content = dumps(payload) + "\n"
         elif format == "anki":
-            content = anki(payload)
+            content = anki(payload, language(config))
         elif format == "jsonl":
             content = jsonl_text({"schema_version": 1, "question": q,
                 "sources": [s for s in sources if s["id"] in {o["source_id"] for o in q["occurrences"]}],
