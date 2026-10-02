@@ -1,5 +1,6 @@
 """Conservative lexical retrieval, host semantic judgments and audited merges."""
 import copy
+import re
 from collections import Counter, defaultdict
 from difflib import SequenceMatcher
 
@@ -22,6 +23,33 @@ def exact_equivalent(a, b):
     return a["normalized"] == b["normalized"]
 
 
+# Retrieval-only text: question boilerplate carries no topic, and common English terms are mapped to the
+# Chinese term most banks use, so "什么是闭包" finds "JavaScript 中闭包是什么" and "event loop" finds "事件循环".
+# The glossary only widens candidate retrieval; the host still judges every merge.
+GLOSSARY = {
+    "three-way handshake": "三次握手", "four-way handshake": "四次挥手", "handshake": "握手", "event loop": "事件循环",
+    "closure": "闭包", "process": "进程", "thread": "线程", "coroutine": "协程", "deadlock": "死锁", "lock": "锁",
+    "garbage collection": "垃圾回收", "virtual memory": "虚拟内存", "index": "索引", "transaction": "事务",
+    "isolation level": "隔离级别", "cache": "缓存", "message queue": "消息队列", "distributed lock": "分布式锁",
+    "idempotent": "幂等", "idempotency": "幂等", "consistency": "一致性", "url shortener": "短链接", "short link": "短链接",
+    "rate limit": "限流", "load balancing": "负载均衡", "retrieval-augmented generation": "检索增强生成",
+    "tool calling": "工具调用", "tool call": "工具调用", "fine-tuning": "微调", "self-attention": "自注意力",
+    "attention": "注意力", "evaluate": "评估", "evaluation": "评估", "design": "设计", "difference": "区别",
+    "container": "容器", "virtual machine": "虚拟机", "cross-origin": "跨域", "rendering": "渲染",
+}
+FILLERS = re.compile(r"什么是|是什么意思|是什么|是怎样的|是怎么样的|怎么样|有哪些|有什么|是如何|如何|怎么|讲一下|说一下|说说|"
+                     r"介绍一下|请问|一下|的|了|吗|呢|(?<![a-z])(?:what|is|are|the|a|an|how|do|does|you|would|explain|of|in|and)(?![a-z])")
+
+
+def retrieval_text(normalized):
+    text = normalized
+    for english, chinese in sorted(GLOSSARY.items(), key=lambda item: -len(item[0])):
+        # ASCII boundaries, not \b: Chinese characters count as word characters ("的event loop").
+        text = re.sub(rf"(?<![a-z]){re.escape(english)}s?(?![a-z])", chinese, text)
+    text = FILLERS.sub("", text)
+    return re.sub(r"[\s.,;:!?，。；：！？、（）()]+", "", text) or normalized
+
+
 def grams(text):
     return {text[i:i + 2] for i in range(max(1, len(text) - 1))}
 
@@ -29,9 +57,10 @@ def grams(text):
 def similarity(a, b):
     if exact_equivalent(a, b):
         return 1.0
-    left, right = grams(a["normalized"]), grams(b["normalized"])
+    ta, tb = retrieval_text(a["normalized"]), retrieval_text(b["normalized"])
+    left, right = grams(ta), grams(tb)
     lexical = len(left & right) / max(1, len(left | right))
-    sequence = SequenceMatcher(None, a["normalized"], b["normalized"], autojunk=False).ratio()
+    sequence = SequenceMatcher(None, ta, tb, autojunk=False).ratio()
     tags = sum(bool(set(a[k]) & set(b[k])) for k in ("technologies", "domains")) / 2
     return round(0.5 * lexical + 0.4 * sequence + 0.1 * tags, 6)
 
@@ -57,7 +86,7 @@ def candidate_task(bank, run_id=None, top_k=None, question_ids=None):
             selected = (not run_id or q["id"] not in current_ids) and (not question_ids or q["id"] in question_ids)
             if selected:
                 hits = Counter()
-                for token in grams(q["normalized"]):
+                for token in grams(retrieval_text(q["normalized"])):
                     hits.update(postings[token])
                 # Semantic bilingual pairs may share no characters but share a domain.
                 for tag in [*q["domains"], *q["technologies"]]:
@@ -70,7 +99,7 @@ def candidate_task(bank, run_id=None, top_k=None, question_ids=None):
                            "exact": exact_equivalent(q, p)} for p in pool.values()]
                 matches = sorted((m for m in scored if m["score"] >= 0.18), key=lambda m: (-m["score"], m["question"]["id"]))[:top_k]
                 items.append({"incoming": q, "matches": matches})
-            for token in grams(q["normalized"]):
+            for token in grams(retrieval_text(q["normalized"])):
                 postings[token].add(len(prior))
             for tag in [*q["domains"], *q["technologies"]]:
                 tag_postings[tag].add(len(prior))
