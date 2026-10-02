@@ -2,6 +2,43 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.13.0] - 2026-10-02
+
+Stages 3 and 4 of the improvement plan: the Skill text, evaluations, human-only actions, composite commands,
+new sources, the learning loop and the Web reader. Data stays V1/V2; no migration is needed.
+
+### Added
+- Composite commands: `ingest images|media`, `ingest submit` (extract-save + stage + dedupe candidates), `ingest finalize`
+  (dedupe + commit, optional `--workflow`), `answer --commit`, `--commit` on workflow/studyset/study/interview actions,
+  `interview turn` and `interview review`. Calls: screenshot batch 6 → 3, interview question 6 → 2, practice rating 2 → 1.
+- Human-only actions: `answer-review --status reviewed` needs an interactive terminal and a typed confirmation
+  (`--human-reviewed` is ignored); the Web reader's 人工审阅 box (`POST /api/review`, actor local_web); CLI practice ratings need
+  `user_quote` and are stored as `agent_relayed`; policies keep `user_quote`; interview answers record `captured_via`;
+  remote transcription consent records `granted_via`.
+- Merge decisions in the Web reader (`GET /api/dedupe-reviews`, `POST /api/dedupe-decision`) and `dedupe --resolve <run>`.
+- Citations: `evidence_quote` checked against `answer --page-texts`; `verify-citations` link check (only online command).
+- Evaluations under `evals/`: 80 trigger queries, gold for 17 screenshot templates, 121 + 24 held-out dedupe pairs,
+  10 answer cases, `evals/score.py` with release gates, recorded runs and `evals/host-verification.md`;
+  `tools/run_trigger_eval.py` for Claude Code. Retrieval recall runs in CI.
+- `web-intake --url --text` for page bodies the host read, with paragraph provenance; Bilibili subtitle JSON;
+  rolling auto-captions merged with `source_cues`.
+- `export --format anki`; optional FSRS scheduler (`config.review`); `questions.problem_url`; `studyset plan` (.ics).
+- `demo --bank <new dir> [--v2]`: 20 synthetic questions, 8 answers checked against the cited official pages.
+- English reports and Web UI from `config.language`; Web dark mode, resumable practice rounds, `localhost` access,
+  `#question=` deep links.
+- CI: ruff lint (pyflakes rules).
+
+### Changed
+- SKILL.md rewritten: 6.9K characters (was 19.5K) around eight core rules and a routing table; the end-to-end reading set
+  (SKILL.md plus five references) is 29.4K characters; references wrapped to 200-character lines without version history.
+- Dedupe retrieval ignores question boilerplate and maps common English terms to Chinese: recall@10 0.948 → 1.00
+  (held-out pairs 0.917 → 1.00). Automatic REVIEW items name their best candidate; dedupe stages record their decisions.
+- `app.js` rewritten as readable, sectioned code; `app.css` reformatted with a derived dark palette.
+- `tools/acceptance.py` no longer submits a self-introduction candidate (refused by policy since it was added).
+
+### Fixed
+- A SyntaxWarning in new code would have broken `--json` consumers; a test now compiles every source with warnings as errors.
+
 ## [1.12.0] - 2026-10-02
 
 ### Added

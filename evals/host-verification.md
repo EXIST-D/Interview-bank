@@ -16,7 +16,7 @@ Checklist:
 
 | Date | Host and version | Model | OS | Verdict | Notes |
 |---|---|---|---|---|---|
-| 2026-10-02 | Claude Code 2.1.263 (desktop app, Code tab) | claude-opus-5-5 | macOS 26 (Darwin 25.6.0) | partial: 1, 2, 4, 5, 6 | 1: a headless `claude -p` session listed `interview-bank` among its skills, but could not authenticate, so the trigger suite is not run. 6: extraction suite scored 1.00 (not blind, see the run's meta.json). 3 waits for the demo command; 7 not run in this session. |
+| 2026-10-02 | Claude Code 2.1.263 (desktop app, Code tab) | claude-opus-5-5 | macOS 26 (Darwin 25.6.0) | partial: 2–7 | 1: with the Skill copied into a project's .claude/skills/ (not installed through npx), a headless `claude -p` session listed `interview-bank` among its skills but could not authenticate, so discovery by description (the trigger suite) is unverified. 3–5: demo bank searched, exported and served; Web review, merge decision, resume and dark mode checked in the browser pane. 6: extraction suite 1.00, not blind (see the run's meta.json). 7: the demo's eight answers were written after reading the cited official pages with the host's web tool. |
 | — | Codex | — | — | not verified | — |
 | — | Cursor | — | — | not verified | — |
 | — | Trae / Trae CN | — | — | not verified | — |
