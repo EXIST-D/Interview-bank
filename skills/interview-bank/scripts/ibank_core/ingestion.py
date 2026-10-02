@@ -1,13 +1,13 @@
 """Vision-first image intake and validated host extraction. No OCR/LLM dependency."""
 import copy
 import hashlib
-import re
 from pathlib import Path
 
 from .editorial import is_self_introduction
 from .ids import new_run_id, new_source_id, utc_now
 from .catalog import PROFILE_FIELDS, normalize_label, normalize_labels
 from .normalize import normalize_company_alias, normalize_question_text, normalize_technology
+from .privacy import privacy_check  # re-exported: curation/answers/advanced_cli import it from here
 from .runs import run_path, stage_snapshot
 from .schema import require, string, confidence, strings
 from .storage import atomic_bytes, atomic_write, bank_file, dumps, fingerprint, open_bank, read_json
@@ -17,15 +17,6 @@ IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".gif", ".bmp", ".tif", ".ti
 
 def stable_id(prefix, *parts):
     return prefix + "_" + hashlib.sha256(dumps(parts).encode()).hexdigest()[:32]
-
-
-def privacy_check(text, config):
-    if config["privacy"]["persist_pii"]:
-        return
-    patterns = (r"[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}", r"(?<!\d)1[3-9]\d{9}(?!\d)",
-                r"(?:微信|手机号|QQ群|群号|wechat)\s*[:：]\s*\S+")
-    require(not any(re.search(p, text, re.I) for p in patterns),
-            "Possible personal contact information; remove irrelevant PII before staging")
 
 
 def intake_images(bank, paths, *, retention=None, recursive=False, reprocess=False):

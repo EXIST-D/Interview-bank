@@ -87,7 +87,8 @@ class ImageTests(BankFixture):
     def test_pii_and_changed_images_rejected(self):
         intake = self.intake()
         extraction = self.extraction(intake)
-        extraction["sources"][0]["questions"][0]["original_text"] = "联系 me@example.com"
+        # example.com is a documentation domain (RFC 2606) and is allowed; a real mailbox is not.
+        extraction["sources"][0]["questions"][0]["original_text"] = "联系 me@qq.com"
         with self.assertRaisesRegex(ValidationError, "contact information"):
             stage_extraction(self.bank, intake["id"], extraction)
         (self.base / "screen-0.png").write_bytes(b"changed")
