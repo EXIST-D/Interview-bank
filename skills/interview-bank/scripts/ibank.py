@@ -137,6 +137,11 @@ def parser():
         research.add_argument(f"--{field}")
     answer = sub.add_parser("answer", parents=[common], help="Stage evidence-backed answer versions")
     answer.add_argument("--input", type=Path, required=True)
+    answer.add_argument("--page-texts", type=Path, help="JSON object mapping citation URL -> text file of the page you read; checks evidence_quote")
+    citations = sub.add_parser("verify-citations", parents=[common], help="Optional online check that cited URLs still respond (only on request)")
+    citations.add_argument("--question", action="append", default=[])
+    citations.add_argument("--workflow")
+    citations.add_argument("--limit", type=positive_int, default=50)
     recheck = sub.add_parser("answer-recheck", parents=[common], help="Rebind source-backed answers to reworded questions after a coverage check")
     recheck.add_argument("--input", type=Path, required=True)
     review = sub.add_parser("answer-review", parents=[common])
@@ -264,7 +269,17 @@ def dispatch(args):
     if args.command == "research":
         return research_task(bank, args.question, args.limit, **{k: getattr(args, k) for k in ("query", "company", "role", "technology", "answer_status")})
     if args.command == "answer":
-        return stage_answers(bank, read_json(args.input))
+        pages = {}
+        if args.page_texts:
+            mapping = read_json(args.page_texts)
+            require(isinstance(mapping, dict) and all(isinstance(k, str) and isinstance(v, str) for k, v in mapping.items()),
+                    "--page-texts expects {\"<citation url>\": \"<path to page text>\"}")
+            base = args.page_texts.resolve().parent
+            pages = {url: (base / path).read_text(encoding="utf-8-sig") for url, path in mapping.items()}
+        return stage_answers(bank, read_json(args.input), page_texts=pages)
+    if args.command == "verify-citations":
+        from ibank_core.citations import verify_citations
+        return verify_citations(bank, args.question, args.workflow, args.limit)
     if args.command == "answer-recheck":
         from ibank_core.answers import recheck_answers
         return recheck_answers(bank, read_json(args.input))

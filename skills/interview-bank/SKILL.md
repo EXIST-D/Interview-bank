@@ -34,7 +34,7 @@ A local, provenance-preserving interview question bank. You read screenshots, re
 | organize recordings, videos or subtitles | [media](references/media.md) ([portability](references/portability.md) on a new host) | `media`, `media-transcribe` or `media-attach`, `media-task` |
 | classify or correct labels and companies | [classification](references/classification.md), [taxonomy](references/taxonomy.md) | `classify`, `taxonomy`, `curate` |
 | merge duplicates in an existing bank | [dedupe](references/dedupe.md) | `dedupe-candidates`, `dedupe`, `commit` |
-| add or refresh reference answers | [answer policy](references/answer-policy.md) | `research`, `answer`, `answer-recheck`, `commit` (V2: `workflow`) |
+| add or refresh reference answers | [answer policy](references/answer-policy.md) | `research`, `answer`, `answer-recheck`, `verify-citations`, `commit` (V2: `workflow`) |
 | search, count or export | [query/export](references/query-export.md) | `search`, `stats`, `show`, `export` |
 | keep a bank over time, protect edits, recover, free space | [maintenance](references/maintenance.md) | `migrate`, `backup`, `policy`, `workflow`, `undo`, `gc` |
 | prepare for a role or a JD | [study sets](references/studysets.md) | `studyset` |
