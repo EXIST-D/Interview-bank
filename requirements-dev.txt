@@ -1,0 +1,4 @@
+# Optional development tools. CLI and unittest use only the standard library.
+# PyYAML: skill-creator validation. Pillow: render synthetic screenshot fixtures.
+PyYAML==6.0.3
+Pillow==12.3.0

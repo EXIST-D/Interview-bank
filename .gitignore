@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Local test output, synthetic fixtures and build artifacts (all reproducible)
+.work/
+dist/
+/examples/demo-bank/
+/examples/acceptance-bank/
+
+# A bank created by running the CLI from the repository root; personal data never belongs in git
+/interview-bank/
+
+# OS noise
+.DS_Store

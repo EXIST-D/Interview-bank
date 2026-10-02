@@ -1,0 +1,27 @@
+{
+  "status": "source_backed",
+  "short_answer": "Redis 的常见读写以内存中的数据结构为基础，简单命令处理成本低；事件驱动的非阻塞网络处理也有助于减少等待。实际延迟仍取决于命令复杂度、网络和持久化等因素，不能把所有操作都说成 O(1)。",
+  "spoken_answer": "我会从数据、命令和请求处理三个方面解释。Redis 把数据作为内存数据结构管理，并为字符串、集合等提供对应操作。以 GET 为例，官方给出的时间复杂度是 O(1)，但这不是所有命令的共同性质。网络请求通过复用和非阻塞处理减少等待，常见短命令能够快速完成。如果执行长时间运行的命令，其他请求仍可能受到影响。所以我不会简单地说它快就是因为单线程。排查慢请求时，我会分别看客户端往返、慢命令、系统环境和持久化开销；具体线程与 I/O 行为还需要结合部署版本确认。",
+  "key_points": [
+    "Redis 是内存数据存储，提供多种原生数据结构。",
+    "GET 的复杂度为 O(1)；其他命令应分别查询复杂度。",
+    "非阻塞网络处理与复用有助于减少等待，慢命令仍可能拖延其他请求。",
+    "网络往返、系统环境及持久化策略也会影响延迟。"
+  ],
+  "deep_dive": "这里需要区分命令执行时间与客户端端到端延迟。后者还包含传输和调度等待。选型与优化时应先测量具体工作负载，避免从单条命令的复杂度推出整体性能保证。",
+  "interviewer_intent": "考察候选人能否把内存访问、数据结构、命令复杂度和端到端延迟分开解释。",
+  "common_mistakes": ["把所有命令都描述成 O(1)。", "把整个进程描述为绝对单线程，忽略版本差异和后台工作。", "只讨论服务端处理时间，忽略网络与系统环境。"],
+  "follow_up_questions": ["为什么慢命令会影响其他客户端？", "如何区分网络延迟与命令执行耗时？"],
+  "code_example": "# 查询字符串值；GET 的命令复杂度为 O(1)\nGET interview:sample",
+  "sources": [
+    {"title": "Redis Open Source — Get started", "url": "https://redis.io/docs/latest/get-started/", "publisher": "Redis", "type": "official", "accessed_at": "2026-09-05", "evidence_note": "说明 Redis 是内存数据存储，提供原生数据类型和磁盘持久化。"},
+    {"title": "GET command", "url": "https://redis.io/docs/latest/commands/get/", "publisher": "Redis", "type": "official", "accessed_at": "2026-09-05", "evidence_note": "命令页面给出 GET key 语法和 O(1) 复杂度。"},
+    {"title": "Diagnosing latency issues", "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/optimization/latency/", "publisher": "Redis", "type": "official", "accessed_at": "2026-09-05", "evidence_note": "讨论非阻塞复用、慢命令阻塞、网络往返和持久化导致的延迟；线程细节需结合版本阅读。"}
+  ],
+  "evidence": [
+    {"key_point": 0, "source_urls": ["https://redis.io/docs/latest/get-started/"]},
+    {"key_point": 1, "source_urls": ["https://redis.io/docs/latest/commands/get/", "https://redis.io/docs/latest/operate/oss_and_stack/management/optimization/latency/"]},
+    {"key_point": 2, "source_urls": ["https://redis.io/docs/latest/operate/oss_and_stack/management/optimization/latency/"]},
+    {"key_point": 3, "source_urls": ["https://redis.io/docs/latest/operate/oss_and_stack/management/optimization/latency/"]}
+  ]
+}
