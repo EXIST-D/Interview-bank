@@ -176,7 +176,7 @@ Practice uses user self-ratings, not automatic AI grading. Submitted events pers
 - [SKILL.md](skills/interview-bank/SKILL.md): triggers, full workflow, operating boundaries and protocol links.
 - `references/`: extraction, taxonomy, company metadata, merging, report layout, answer research and schemas.
 - `scripts/ibank.py`: CLI entry point for intake, staging, validation, commits, queries, exports and maintenance.
-- `scripts/ibank_core/`: JSONL storage, SQLite cache, recovery, audit and report implementation.
+- `scripts/ibank_core/`: JSONL storage, change-set runs, recovery, audit and report implementation.
 - `agents/openai.yaml`: Codex UI metadata and default invocation prompt.
 - `LICENSE.txt`: the MIT license included with installed copies of the Skill.
 
@@ -214,7 +214,7 @@ The main bank layout is shown below. Report names can be customized; these are e
 - **Question-only report:** the same questions and order without answers, citations or answer progress.
 - **Structured attachment:** IDs, original wording, precise dates, source relationships, classifications and answer history.
 
-The six JSONL tables plus V2 data/state.json are canonical; SQLite is rebuildable. Mutations use staged validation and commits with history and audits. Reimporting identical image bytes does not increase frequency. Counts describe collected occurrences, not interview participants or market probabilities.
+The six JSONL tables plus V2 data/state.json are canonical and queried directly (no derived database). Mutations use staged validation and commits with history and audits. Reimporting identical image bytes does not increase frequency. Counts describe collected occurrences, not interview participants or market probabilities.
 
 ## Current status and planned features
 

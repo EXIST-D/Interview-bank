@@ -1,8 +1,6 @@
 import platform
-import sqlite3
 from pathlib import Path
 
-from .index import fts5_available, index_status
 from .storage import bank_file, open_bank, read_json
 
 
@@ -38,7 +36,7 @@ def doctor(bank):
                 elif not (path / "task.json").is_file():
                     incomplete.append(path.name)
         return {"bank": str(bank), "python": platform.python_version(), "schema_version": manifest["schema_version"],
-                "sqlite": sqlite3.sqlite_version, "fts5_available": fts5_available(), "index": index_status(bank, data),
+                "legacy_index_cache": bank_file(bank, "cache/bank.sqlite").is_file(),
                 "lock": "acquired (free before this command)", "counts": {t: len(v) for t, v in data.items() if t != '_state'},
                 "runs_bytes": runs_bytes, "data_bytes": data_bytes,
                 "runs_hint": "runs/ holds over 5x the canonical data; gc (dry-run) shows what compaction would reclaim" if runs_bytes > 5 * max(data_bytes, 1) else None,

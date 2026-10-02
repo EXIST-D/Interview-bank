@@ -11,12 +11,7 @@ from .editorial import exclusion_reason
 
 def select(data, config, bank, expr=None, ids=None, limit=None, occurrence_ids=None):
     from .search import select_questions
-    from .index import connect_index
-    conn = connect_index(bank, data)
-    try:
-        rows = select_questions(conn, stale_days=config.get('answer_stale_days', 180), occurrence_ids=occurrence_ids)
-    finally:
-        conn.close()
+    rows = select_questions(data, stale_days=config.get('answer_stale_days', 180), occurrence_ids=occurrence_ids)
     rows = [q for q in rows if not exclusion_reason(q)]
     if expr is not None:
         rows = apply_expression(rows, data['companies'], expr)

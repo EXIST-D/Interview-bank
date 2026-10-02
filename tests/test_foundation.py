@@ -2,7 +2,6 @@ import copy
 import hashlib
 import json
 import os
-import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -16,7 +15,7 @@ from demo_data import make_bundle
 from ibank_core import ids, storage
 from ibank_core.doctor import doctor
 from ibank_core.errors import BankUnavailable, LockConflict, ValidationError
-from ibank_core.index import build_index, index_status, rebuild_index
+from ibank_core.index import rebuild_index
 from ibank_core.locking import bank_lock
 from ibank_core.normalize import normalize_company_alias, normalize_question_text, normalize_technology
 from ibank_core.runs import commit_run, stage_bundle, stage_text
@@ -269,26 +268,18 @@ class BankCase(BankFixture):
                 pass
         self.assertFalse((self.base / "escaped.txt").exists())
 
-    def test_index_rebuild_and_stale_or_corrupt_cache(self):
+    def test_queries_need_no_cache_and_rebuild_index_is_retired(self):
         self.seed()
-        self.assertEqual(doctor(self.bank)["index"], "missing")
-        self.assertEqual(search(self.bank, query="Redis")["total"], 1)
-        self.assertEqual(doctor(self.bank)["index"], "current")
         cache = self.bank / "cache/bank.sqlite"
-        cache.write_bytes(b"broken cache")
-        self.assertEqual(doctor(self.bank)["index"], "corrupt")
+        self.assertEqual(search(self.bank, query="Redis")["total"], 1)
+        self.assertFalse(cache.exists())
+        cache.write_bytes(b"leftover cache from an older version")
+        self.assertTrue(doctor(self.bank)["legacy_index_cache"])
         self.assertEqual(search(self.bank)["total"], 3)
-        cache.unlink()
-        rebuild_index(self.bank)
-        conn = sqlite3.connect(cache)
-        try:
-            self.assertTrue(set(TABLES) <= {r[0] for r in conn.execute("SELECT name FROM sqlite_master")})
-            conn.execute("UPDATE metadata SET value='old' WHERE key='fingerprint'")
-            conn.commit()
-        finally:
-            conn.close()
-        self.assertEqual(doctor(self.bank)["index"], "stale")
-        self.assertEqual(search(self.bank)["total"], 3)
+        result = rebuild_index(self.bank)
+        self.assertEqual((result["index"], result["deprecated"], result["legacy_cache_removed"]), ("not_used", True, True))
+        self.assertFalse(cache.exists())
+        self.assertFalse(doctor(self.bank)["legacy_index_cache"])
 
     def test_alias_keyword_and_same_occurrence_filters(self):
         self.seed()
@@ -311,7 +302,6 @@ class BankCase(BankFixture):
         bundle = make_bundle(self.base, count=1000)
         self.seed(bundle)
         self.assertEqual(doctor(self.bank)["counts"]["questions"], 1000)
-        rebuild_index(self.bank)
         self.assertEqual(search(self.bank, query="示例题 1000")["total"], 1)
         self.assertEqual(stats(self.bank)["occurrences"], 1001)
 

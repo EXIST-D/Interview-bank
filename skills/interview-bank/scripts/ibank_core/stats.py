@@ -1,6 +1,5 @@
 from collections import Counter
 
-from .index import connect_index
 from .search import select_questions
 from .storage import open_bank
 from .catalog import normalize_labels
@@ -8,11 +7,7 @@ from .catalog import normalize_labels
 
 def stats(bank, *, limit=10, **filters):
     with open_bank(bank) as (_, config, data):
-        conn = connect_index(bank, data)
-        try:
-            found = select_questions(conn, stale_days=config.get("answer_stale_days", 180), **filters)
-        finally:
-            conn.close()
+        found = select_questions(data, stale_days=config.get("answer_stale_days", 180), **filters)
         companies, roles, domains, technologies = (Counter() for _ in range(4))
         months, rounds, interviews, statuses = (Counter() for _ in range(4))
         unique_sources, imprecise_dates, unknown_dates = set(), 0, 0

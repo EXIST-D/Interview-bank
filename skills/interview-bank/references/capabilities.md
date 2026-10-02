@@ -18,7 +18,7 @@ When the host lacks a capability, report the specific limitation and use selecte
 ## Runtime
 
 - Python 3.10+ standard library; the CLI refuses older interpreters. No model SDK, embeddings, API key, database server or OCR installation.
-- A writable bank outside the installed skill. SQLite under cache/ is disposable and rebuilt from JSONL.
+- A writable bank outside the installed skill. Queries read the JSONL tables directly; cache/ only holds spilled outputs.
 - Optional: `faster-whisper==1.2.1` in a workspace virtual environment for raw audio/video.
 
 ## Supported today

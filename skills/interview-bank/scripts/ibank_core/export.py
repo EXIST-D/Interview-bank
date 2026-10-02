@@ -8,7 +8,6 @@ from pathlib import Path
 from urllib.parse import quote
 
 from .ids import utc_now
-from .index import connect_index
 from .search import select_questions
 from .schema import require
 from .storage import atomic_write, bank_file, dumps, jsonl_text, open_bank
@@ -169,11 +168,7 @@ def export_bank(bank, output, format="markdown", *, include_paths=False, answer_
             target = bank / target if target.parts and target.parts[0] == "exports" else bank / "exports" / target
         exports = bank_file(bank, "exports").resolve()
         require(target.resolve().is_relative_to(exports) and target.resolve() != exports, "Export output must stay inside bank/exports")
-        conn = connect_index(bank, data)
-        try:
-            questions = select_questions(conn, stale_days=config.get("answer_stale_days", 180), **filters)
-        finally:
-            conn.close()
+        questions = select_questions(data, stale_days=config.get("answer_stale_days", 180), **filters)
         qids = {q["id"] for q in questions}
         sids = {o["source_id"] for q in questions for o in q["occurrences"]}
         sources = copy.deepcopy([s for s in data["sources"] if s["id"] in sids])

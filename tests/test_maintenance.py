@@ -381,9 +381,3 @@ class MaintenanceTests(BankFixture):
         self.assertEqual(read_json(self.bank/'manifest.json')['schema_version'],1)
         self.assertEqual(fingerprint(load_data(self.bank)),before)
 
-    def test_practice_does_not_invalidate_question_projection(self):
-        self.ready()
-        from ibank_core.index import index_status
-        search(self.bank)
-        self.commit(study(self.bank,'record',{'request_id':'cache-once','question_id':'q_demo1','rating':'good'}))
-        self.assertEqual(index_status(self.bank,load_data(self.bank)), 'current')

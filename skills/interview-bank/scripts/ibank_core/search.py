@@ -1,6 +1,5 @@
 from collections import Counter, defaultdict
 
-from .index import connect_index, rows
 from .normalize import normalize_company_alias, normalize_question_text, normalize_technology
 from .storage import open_bank
 from .dates import bounds, interval, effective_answer
@@ -8,25 +7,28 @@ from .schema import require
 from .catalog import matches, company_matches
 
 
-def select_questions(conn, *, query=None, company=None, role=None, technology=None, domain=None,
+def select_questions(data, *, query=None, company=None, role=None, technology=None, domain=None,
                      round_name=None, industry=None, interview_type=None, difficulty=None,
                      date_from=None, date_to=None, recent_days=None, as_of=None, answer_status=None,
                      question_type=None, stale_days=180, company_type=None, ownership=None, business_model=None,
                      question_ids=None, expression=None, occurrence_ids=None):
-    """Context filters must match ONE occurrence, never independent joins."""
-    companies = {c["id"]: c for c in rows(conn, "companies")}
+    """Filter the in-memory canonical data (already loaded and validated by open_bank).
+
+    Context filters must match ONE occurrence, never independent joins.
+    """
+    companies = {c["id"]: c for c in data["companies"]}
     start, end = bounds(date_from, date_to, recent_days, as_of)
     require(answer_status in (None, "missing", "ai_draft", "source_backed", "reviewed", "stale"), "Invalid answer status filter")
     answers = defaultdict(list)
-    for answer in rows(conn, "answers"):
+    for answer in data["answers"]:
         answers[answer["question_id"]].append(answer)
     by_question = defaultdict(list)
-    for occ in rows(conn, "occurrences"):
+    for occ in data["occurrences"]:
         by_question[occ["question_id"]].append(occ)
     company_key = normalize_company_alias(company) if company else None
     terms = [normalize_question_text(term) for term in (query or "").split()]
     result = []
-    for question in rows(conn, "questions"):
+    for question in data["questions"]:
         if question_ids is not None and question["id"] not in question_ids:
             continue
         if question["status"] != "active":
@@ -87,12 +89,8 @@ def select_questions(conn, *, query=None, company=None, role=None, technology=No
 def search(bank, *, limit=50, offset=0, **filters):
     require(type(limit) is int and limit > 0 and type(offset) is int and offset >= 0, "Invalid pagination")
     with open_bank(bank) as (_, config, data):
-        conn = connect_index(bank, data)
-        try:
-            found = select_questions(conn, stale_days=config.get("answer_stale_days", 180), **filters)
-            return {"total": len(found), "offset": offset, "questions": found[offset:offset + limit]}
-        finally:
-            conn.close()
+        found = select_questions(data, stale_days=config.get("answer_stale_days", 180), **filters)
+        return {"total": len(found), "offset": offset, "questions": found[offset:offset + limit]}
 
 
 def detail(bank, question_id):
@@ -100,11 +98,8 @@ def detail(bank, question_id):
         q = next((q for q in data["questions"] if q["id"] == question_id), None)
         require(q is not None, "Question not found")
         resolved_id = q["merged_into"] if q["status"] == "merged" else question_id
-        conn = connect_index(bank, data)
-        try:
-            selected = next(q for q in select_questions(conn, stale_days=config.get("answer_stale_days", 180)) if q["id"] == resolved_id)
-        finally:
-            conn.close()
+        selected = next(q for q in select_questions(data, stale_days=config.get("answer_stale_days", 180),
+                                                    question_ids={resolved_id}) if q["id"] == resolved_id)
         source_ids = {o["source_id"] for o in selected["occurrences"]}
         return {"requested_id": question_id, "resolved_id": resolved_id, "question": selected,
                 "sources": [s for s in data["sources"] if s["id"] in source_ids],

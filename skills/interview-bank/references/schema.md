@@ -42,7 +42,7 @@ stage --input appends a canonical bundle and does not edit existing records. Oth
 
 Readers/writers acquire an OS lock. Files are flushed and fsynced before same-directory os.replace. A durable .transaction.json journal records multi-file commit intent; the next CLI operation replays it after interruption. Do not manually alter the journal. External readers are not coordinated and should avoid reading during commit.
 
-SQLite includes all six tables and a canonical-data fingerprint; rebuild-index can always regenerate it. No model/provider information is embedded in the data contract. Managed output paths reject traversal and symlink escapes.
+Queries filter the loaded JSONL tables in memory; there is no derived database (`rebuild-index` is a deprecated no-op that removes a leftover cache/bank.sqlite). No model/provider information is embedded in the data contract. Managed output paths reject traversal and symlink escapes.
 
 Question optional field (1.2): report_exclusion, null or a nonempty string explaining editorial exclusion from reader reports. It does not change active/merged status or delete occurrences. Old banks without this field remain valid.
 
@@ -50,7 +50,7 @@ Question optional field (1.2): report_exclusion, null or a nonempty string expla
 
 manifest.schema_version and manifest/config.bank_version are 2. The six table records remain schema_version=1; new V2 answers optionally retain question_revision, evidence, checks and version_scope. Migrated answers get the current question_revision when the question's updated_at is not later than the answer's created_at; otherwise question_revision stays null until an actual new coverage/source check is submitted. Effective staleness includes content revision mismatch, independent of metadata frequency changes.
 
-`data/state.json` is a version=2 object containing policies, workflows, studysets, events, sessions and evidence, each an ID-keyed object. All are loaded and validated under the same lock as the six tables, included in bank/task digests, staged snapshots, before-images, undo and transaction journal. SQLite indexes the six tables; it is still reconstructible. State and private study data are not automatically published by report export.
+`data/state.json` is a version=2 object containing policies, workflows, studysets, events, sessions and evidence, each an ID-keyed object. All are loaded and validated under the same lock as the six tables, included in bank/task digests, staged change sets, undo and transaction journal. State and private study data are not automatically published by report export.
 
 Workflows bind original scope, occurrence IDs, question revisions and initial answer IDs. Studysets keep selection revisions and matching occurrence IDs; refresh is explicit. Practice uses append-only request-id-deduplicated events; interview responses bind actual prompts, user text and reference-answer versions. Agent tools cannot infer a user's response or self-rating.
 

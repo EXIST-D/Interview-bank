@@ -6,7 +6,6 @@ from urllib.parse import quote_plus, urlparse
 from .dates import effective_answer, latest_calendar_date, today
 from .editorial import exclusion_reason
 from .ids import new_answer_id, utc_now
-from .index import connect_index
 from .ingestion import privacy_check
 from .runs import stage_snapshot
 from .schema import require, string, strings
@@ -28,11 +27,7 @@ OFFICIAL_DOMAINS = {"redis": "redis.io", "mysql": "dev.mysql.com", "postgresql":
 def research_task(bank, question_ids=None, limit=10, **filters):
     require(type(limit) is int and limit > 0, "Research limit must be positive")
     with open_bank(bank) as (_, config, current):
-        conn = connect_index(bank, current)
-        try:
-            questions = select_questions(conn, stale_days=config.get("answer_stale_days", 180), **filters)
-        finally:
-            conn.close()
+        questions = select_questions(current, stale_days=config.get("answer_stale_days", 180), **filters)
         if question_ids:
             questions = [q for q in questions if q["id"] in question_ids]
             require({q["id"] for q in questions} == set(question_ids), "Unknown/filtered research question ID")

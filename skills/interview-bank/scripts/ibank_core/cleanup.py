@@ -1,10 +1,10 @@
 """Reclaim runs/ space without losing history.
 
-Every snapshot operation stores a full before-image plus the full staged tables, so runs/ grows by
-about twice the bank per write. Once a run is committed and can no longer be undone, those copies
-are dead weight: compaction removes them and keeps run.json (audit), commit.json and report.md.
-Expired task packets and spilled outputs are deleted. Intakes and unknown directories are never
-touched: media intakes hold the only full transcripts.
+Snapshot runs written before 1.12 (format 1) store a full before-image plus the full staged tables;
+newer runs store a change set. Once a run is committed and can no longer be undone, either is dead
+weight: compaction removes it and keeps run.json (audit), commit.json and report.md. Expired task
+packets, spilled outputs and the retired SQLite cache are deleted. Intakes and unknown directories
+are never touched: media intakes hold the only full transcripts.
 """
 import shutil
 from datetime import datetime, timedelta, timezone
@@ -88,14 +88,18 @@ def plan(bank, current, keep_days=30, keep_last=20, now=None):
             delete.append({"run_id": entry["id"], "operation": entry["meta"].get("operation"), "bytes": _tree_bytes(entry["path"])})
     outputs = bank_file(bank, "cache/outputs")
     stale_outputs = [p for p in outputs.glob("*.json") if datetime.fromtimestamp(p.stat().st_mtime, tz=timezone.utc) < cutoff] if outputs.is_dir() else []
+    legacy = bank_file(bank, "cache/bank.sqlite")
+    legacy_bytes = legacy.stat().st_size if legacy.is_file() else 0
     kept = {}
     for run_id, reason in reasons.items():
         if run_id in by_id:
             kept[reason] = kept.get(reason, 0) + 1
     return {"compact": compact, "delete_tasks": delete, "stale_outputs": [str(p) for p in stale_outputs],
+            "legacy_index_bytes": legacy_bytes,
             "kept": kept, "never_touched": {"intakes": sum(e["kind"] == "intake" for e in entries),
                                             "unknown": sum(e["kind"] == "unknown" for e in entries)},
-            "reclaim_bytes": sum(i["bytes"] for i in compact) + sum(i["bytes"] for i in delete) + sum(p.stat().st_size for p in stale_outputs)}
+            "reclaim_bytes": sum(i["bytes"] for i in compact) + sum(i["bytes"] for i in delete)
+                             + sum(p.stat().st_size for p in stale_outputs) + legacy_bytes}
 
 
 def gc(bank, apply=False, keep_days=30, keep_last=20):
@@ -115,6 +119,8 @@ def gc(bank, apply=False, keep_days=30, keep_last=20):
             shutil.rmtree(bank_file(bank, f"runs/{item['run_id']}"))
         for path in result["stale_outputs"]:
             bank_file(bank, "cache/outputs/" + path.replace("\\", "/").rsplit("/", 1)[-1]).unlink()
+        if result["legacy_index_bytes"]:
+            bank_file(bank, "cache/bank.sqlite").unlink()
         result["runs_bytes_after"] = _tree_bytes(bank_file(bank, "runs"))
         log = bank_file(bank, f"logs/gc-{utc_now().replace(':', '').replace('+', 'Z')}.json")
         atomic_write(log, dumps(result) + "\n")
