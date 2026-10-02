@@ -151,6 +151,10 @@ def main():
         assert run("taxonomy", "--dimension", "domains", "--query", "向量")["items"][0]["id"] == "backend.database.vector"
         assert run("validate")["valid"]
         assert not run("doctor")["incomplete_runs"]
+        backup = run("backup", "create")
+        assert run("backup", "verify", "--archive", backup["archive"])["valid"]
+        restored = run("backup", "restore", "--archive", backup["archive"], "--destination", str(directory / "restored-bank"))
+        assert Path(restored["restored_bank"]).joinpath("manifest.json").is_file()
         # Launch the unpacked optional UI, verify its bundled assets and actual API.
         import urllib.request
         process = subprocess.Popen([sys.executable, "-B", str(cli), "web", "--bank", str(bank), "--read-only", "--json"],
@@ -177,7 +181,7 @@ def main():
             process.terminate()
             process.communicate(timeout=10)
         assert before == tree_hashes(installed), "Installed skill was modified"
-    print(json.dumps({"python_files_parsed": count, "markdown_links_and_json": "passed", "packaged_cli_smoke": "passed", "packaged_media_smoke": "passed", "packaged_host_adapter": "passed", "packaged_web": "passed", "readonly_install": "passed"}))
+    print(json.dumps({"python_files_parsed": count, "markdown_links_and_json": "passed", "packaged_cli_smoke": "passed", "packaged_media_smoke": "passed", "packaged_host_adapter": "passed", "packaged_web": "passed", "packaged_backup": "passed", "readonly_install": "passed"}))
 
 
 if __name__ == "__main__":
