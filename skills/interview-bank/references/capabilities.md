@@ -1,25 +1,35 @@
 # Capabilities and requirements
 
-Version 1.10.0 retains M1 image intake/extraction workflow, M2 semantic classification, M3 conservative deduplication, M4 query/analysis/export and M5 evidence-led answers. The expanded taxonomy adds Chinese/alias lookup, hierarchical roles/domains/industries, evidenced employer profiles, company discovery and profile-aware filtering/export. See [taxonomy](taxonomy.md).
+Who does what. Version history lives in the repository CHANGELOG, not here.
 
-The host needs image viewing for M1, reasoning for M2/M3, and actual browsing for researched M5 answers. The Python CLI alone does not see pixels, understand semantics or fetch websites. It validates host responses and persists data with recoverable transactions. When a host lacks a capability, report the specific limitation and use selected text or an explicitly labeled draft if appropriate.
+## Division of work
 
-Runtime: Python 3.10+ standard library; writable bank separate from the installed skill. No model SDK, embeddings, API key, database server or OCR installation is required. SQLite is disposable and rebuilt from JSONL; keyword search has a fallback when FTS5 is unavailable.
+| Capability | Host agent | Python CLI |
+|---|---|---|
+| See screenshots (M1) | Required: actual image viewing | Hashes, deduplicates and stores sources; never reads pixels |
+| Understand meaning (M2/M3, JD mapping, feedback) | Required: reasoning | Validates labels, decisions and confidence gates; no semantic inference |
+| Research answers (M5) | Required: actual search and page reading | Validates citations and key-point evidence; never browses |
+| Transcribe audio/video | Optional host tool, or local faster-whisper | `media-transcribe` runs the optional local model; supplied SRT/VTT/TXT/JSON need nothing |
+| Store, query, export, recover | — | Transactions, audit, undo, search, statistics, reports, `gc` |
+| Local Web reader and practice | User's browser | Loopback-only server; self-ratings are saved only in V2 banks |
 
-M1 supports individual files, directories and recursive intake, SHA256 duplicate suppression, three retention policies, partial response save/resume, explicit empty/unreadable/skip dispositions and follow-up relationships. Structured canonical bundles and selected plain text remain supported.
+When the host lacks a capability, report the specific limitation and use selected text, a supplied transcript or an explicitly labelled draft where appropriate. See [portability](portability.md) to check a new host.
 
-M2 supports host labels with controlled vocabulary/extensions and audited metadata correction. M3 preserves historical occurrences and merged Question records. M4 exports files or viewer JSON data. The optional Web command added in 1.10 reads an existing bank directly; it does not require a viewer export. M5 retains structured answers, source evidence and versions, with derived age-based staleness.
+## Runtime
 
-Version 1.8 implements local audio/video speech transcription through optional faster-whisper, plus standard-library SRT/VTT/TXT/JSON transcript intake and provided sidecar attachment. It adds paginated host extraction, checked timestamp provenance and per-file transcription resume. Video frame OCR and automatic speaker diarization are not implemented. See [media protocol](media.md). Automatic social-platform scraping remains unimplemented; web Source type is still only structured provenance. The 1.10 Web UI supports browsing and self-rated practice; editing and merge-review UI remain future work. On-demand spaced review and mock interviews are supported in V2 by 1.7.
+- Python 3.10+ standard library; the CLI refuses older interpreters. No model SDK, embeddings, API key, database server or OCR installation.
+- A writable bank outside the installed skill. SQLite under cache/ is disposable and rebuilt from JSONL.
+- Optional: `faster-whisper==1.2.1` in a workspace virtual environment for raw audio/video.
 
-Version 1.2 adds reusable-question selection, reversible report exclusions, audited canonical rewrites during semantic merges, and a concise default Markdown report with a complete JSON sidecar. Reports hide internal IDs, source/round details and personal-only prompts; dated metadata shows years only.
+## Supported today
 
-Version 1.3 adds a heading outline, per-domain totals and frequency-based numbering, mandatory reference-answer slots, and full-scope research/verification guidance. Draft or stale answers are retained in structured history and do not appear as verified reader answers.
+- Intake: images (files, directories, recursive), selected text lines, local audio/video speech, SRT/VTT/TXT/JSON transcripts and sidecars, host transcription results. Byte-identical sources never add frequency.
+- Organisation: hierarchical roles/domains/industries with Chinese labels and aliases, evidenced company profiles, conservative merges with audited canonical rewrites, reversible report exclusions.
+- Answers: source-backed versions with per-key-point evidence, age- and revision-based staleness, optional practice depth (spoken answer, follow-ups, pitfalls).
+- Output: two Markdown editions with a JSON sidecar, JSON/JSONL/CSV/viewer exports, compact size-bounded `--json` output with paging.
+- Personal state (V2): verified backup migration, field protection and never-merge rules, durable research workflows, saved topics and JD mappings, self-rated review queues, one-question-at-a-time mock interviews.
+- Housekeeping: doctor, validate, undo of the latest snapshot change, gc compaction of old run snapshots.
 
-Version 1.4 makes verified reference-answer research the default in an end-to-end organization task, followed by two Markdown editions from shared committed data. Explicit question-only/export-only requests retain their scope. Compact research packets and reusable source/answer evidence reduce repeated context; the CLI still does not perform model inference or browsing.
+## Not implemented
 
-Version 1.5–1.7 adds explicit V2 migration with verified backups and isolated restores, user field protections/forbidden pairs, durable scoped research and receipt-derived progress, saved snapshot/dynamic topics with source-context AST filters and JD evidence, self-rated review schedules, and one-at-a-time interview sessions with durable feedback. See [maintenance](maintenance.md), [study sets](studysets.md), and [practice](practice.md). The runtime provides storage and validation; semantic JD mapping, research and feedback remain host responsibilities.
-
-Version 1.9 adds measured Python/workspace/dependency checks separated from host-declared capabilities; media-plan recommends saved/provided, host or local transcription. Provider tasks bind a real host tool result to the input hash, carry source-scoped remote authorization where needed, normalize segments/chunks/text and import idempotently. The Python adapter never invokes arbitrary tools or uploads media; transport stays with the host. See [portability](portability.md).
-
-Version 1.10 adds an optional loopback-only Web reader and self-rated practice UI, with no additional runtime packages or remote assets. It supports text/tag filters, pagination, answer/source reading and V2 practice commits. V1 and read-only mode support temporary practice; no automatic migration, model execution or grading occurs. Submitted V2 events persist; an unfinished browser round does not survive reload. See [local Web usage](web.md).
+Video frame OCR, automatic speaker diarization, mid-file ASR resume, social-platform scraping (the web Source type only records provenance), Web editing and merge review, background reminders, and splitting arbitrary historical merges.

@@ -6,7 +6,7 @@ Company/industry/company-type/ownership/business-model/role/round/interview-type
 
 Dates retain original precision. YYYY represents that year, YYYY-MM that month; filters include intersecting intervals. Unknown dates are excluded only when a date filter exists. --recent-days N includes today and N−1 preceding UTC dates; --as-of YYYY-MM-DD makes the calculation reproducible. Do not describe partial-date matches as proven exact-day events.
 
-search supports --limit and --offset. show <id> returns occurrences, source metadata, relations, merged variants and answer history; merged IDs resolve to active targets. stats includes question/company/role/domain/technology/month/round/type/answer-status distributions and source counts. Year-only dates remain year buckets; unknown/imprecise date counts are explicit.
+search supports --limit and --offset. With --json every result is compact and bounded (32 KB, INTERVIEW_BANK_MAX_OUTPUT); an oversized result carries `_page` (field, returned, total, next_offset, full_output) and its complete version is saved under cache/outputs. show <id> returns occurrences, source metadata, relations, merged variants and answer history; merged IDs resolve to active targets. stats includes question/company/role/domain/technology/month/round/type/answer-status distributions and source counts. Year-only dates remain year buckets; unknown/imprecise date counts are explicit.
 
 ## Answers in results
 
@@ -28,6 +28,6 @@ The reader report excludes obvious self-introductions and questions with a nonem
 
 ## Two report editions (1.4)
 
-Markdown defaults to `--answers both`: `<output>` is the reference-answer edition, `<stem>（题目版）<suffix>` is the question-only edition, and `<output>.details.json` is their shared full attachment. `--answers with` or `--answers without` writes only the selected edition at `<output>`. These options apply only to Markdown; structured exports always retain full data.
+Markdown defaults to `--answers both`: `<output>` is the reference-answer edition, `<stem>（题目版）<suffix>` is the question-only edition, and `<output>.details.json` is their shared full attachment. `--answers with` or `--answers without` writes only the selected edition at `<output>`. `--answer-extras folded` (default), `inline` or `none` controls the 口述版 · 常见追问 · 易错点 block that follows a current sourced answer when those optional fields were written; the question-only edition never shows it. These options apply only to Markdown; structured exports always retain full data.
 
 Both editions use exactly the same question selection, domain totals, frequency order and numbering. The question-only Markdown has no answer text, pending slots, answer progress or answer citations; its shared structured attachment may still contain answers and history. Result fields answer_output/question_output identify the files; answered_questions/pending_answers distinguish actual coverage from empty slots. The exporter never calls a model or a website. The default Skill workflow researches and commits answers before final export; an explicit export-only request renders existing data without starting research.

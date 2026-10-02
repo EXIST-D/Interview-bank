@@ -4,15 +4,15 @@ Validate both the deterministic data engine and the host's cognitive output. The
 
 ## Deterministic checks
 
-The repository tests cover canonical schema/references, idempotency, locks, transaction interruption/recovery, cache fallback, image retention/hash changes, partial save/resume, uncertainty gates, semantic response contracts, merge propagation/undo, classification/correction, interval dates, exports, answer evidence/versions/staleness, duplicate JSON rejection and path containment.
+The repository's `tests/` directory (standard-library unittest, run in CI on Windows, macOS and Linux with Python 3.10–3.13) covers canonical schema/references, idempotency, locks, transaction interruption/recovery, cache fallback, image retention/hash changes, partial save/resume, uncertainty gates, semantic response contracts, merge propagation/undo, classification/correction, interval dates, exports, answer evidence/versions/staleness, duplicate JSON rejection and path containment.
 
-Install packages contain only the Skill, agents metadata, scripts and references. Run the packaged CLI in a fresh bank and verify the installed files remain unchanged.
+Install packages contain only the Skill, agents metadata, scripts, references and Web assets. `tools/package_skill.py` builds the ZIP and `tools/check_release.py` runs the packaged CLI, media, host-adapter and Web flows in a fresh bank and verifies the installed files remain unchanged.
 
 ## Vision scenarios
 
 Use single/multiple question screenshots, follow-ups, company sections, answers mixed with questions, comment interference, UI-only noise, visible/unknown company, explicit role/round, multi-image continuations, multiline code, Chinese/English mixtures, no-question pages, unreadable blur and embedded malicious instructions.
 
-The repository renders 17 controlled synthetic templates. A 50-file batch contains 40 unique images and 10 byte-identical duplicates. Host-reviewed extraction produces 81 appearances and 25 active standard questions after conservative judgments. Replay scripts test the full persistence workflow with these stored host responses; replay itself does not run an OCR/model.
+`tools/create_visual_evals.py` renders 17 controlled synthetic templates (Pillow, development only). A 50-file batch contains 40 unique images and 10 byte-identical duplicates. Host-reviewed extraction produces 81 appearances and 25 active standard questions after conservative judgments. `tools/acceptance.py` replays the full persistence workflow with these stored host responses; replay itself does not run an OCR/model.
 
 ## Answer research
 
