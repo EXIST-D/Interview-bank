@@ -145,7 +145,7 @@ Read [answer policy](references/answer-policy.md) before every batch; it holds t
 2. Actually search and read primary pages. Cross-check important claims, versions and every subquestion; run examples when a runtime is available.
 3. Write short_answer as one conclusion plus 3–5 brief points (about 100–250 Chinese characters) and map every key point to citations. Only short_answer, key_points and sources are required; add spoken_answer, follow_up_questions, common_mistakes, deep_dive or code_example when they help practice (they are shown folded in the answer edition and the Web reader).
 4. `answer --input <response.json>`, then commit. If verification cannot finish, skip with a specific reason; never substitute ai_draft for a requested verified answer unless the user accepts drafts.
-5. Source-backed is not human-reviewed: use `answer-review --status reviewed --human-reviewed` only after an actual human review, `--status stale` for outdated content.
+5. Source-backed is not human-reviewed. Only the user can mark an answer reviewed (Web button or their own interactive terminal); you may use `answer-review --status stale --reason …` for outdated content.
 
 Answers append versions and become effectively stale after answer_stale_days (default 180); replaying old evidence does not refresh them.
 

@@ -70,7 +70,7 @@ All displayed conclusions should be supported by the sources or clearly describe
 
 - ai_draft: model-generated answer without web research; sources and evidence must be empty.
 - source_backed: researched answer with citations and complete key-point mapping. It does not mean a human has approved it.
-- reviewed: actual human review; only answer-review --status reviewed --human-reviewed --reason can create it through the normal workflow.
+- reviewed: actual human review. Only the person can create it: the 人工审阅通过 button in the local Web reader, or `answer-review --status reviewed` typed by the user in an interactive terminal (it asks for a typed confirmation and refuses piped input). Agents cannot; `--human-reviewed` is ignored. Agents may still mark an answer stale with a reason.
 - stale: explicitly outdated, older than the configured age threshold, or (V2) written for different question wording. search and research report `answer_stale_reason`: `marked_stale`, `evidence_age` or `wording_changed`.
 - missing: no answer yet.
 

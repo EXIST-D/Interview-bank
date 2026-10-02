@@ -22,7 +22,13 @@ def user_zone(name):
         raise ValidationError('Timezone data unavailable; use UTC/Asia/Shanghai or install system timezone data') from exc
 
 
-def event(data, payload):
+RATING_SOURCES = ('user_self_rating', 'agent_relayed')
+
+
+def event(data, payload, source='agent_relayed'):
+    """A practice event. The Web page records the user's own click (user_self_rating); the CLI can only
+    relay a rating the user stated in chat (agent_relayed) and must keep the user's words."""
+    require(source in RATING_SOURCES, 'Unknown rating source')
     from .storage import fingerprint
     state = require_v2(data)
     q = question(data, payload.get('question_id'))
@@ -57,7 +63,10 @@ def event(data, payload):
     value = {'id':new_id('event'), 'created_at':utc_now(), 'request_id':payload['request_id'], 'request_digest':fingerprint(payload), 'question_id':q['id'],
              'question_revision':revision(q), 'rating':rating, 'timezone':zone, 'occurred_at':now.astimezone(timezone.utc).isoformat(),
              'next_review_at':due.astimezone(timezone.utc).isoformat(), 'interval_days':days,
-             'session_id':payload.get('session_id'), 'note':payload.get('note',''), 'rating_source':'user_self_rating'}
+             'session_id':payload.get('session_id'), 'note':payload.get('note',''), 'rating_source':source}
+    if source == 'agent_relayed':
+        string(payload.get('user_quote'), "user_quote (the user's own words giving this rating)")
+        value['user_quote'] = payload['user_quote']
     string(value['note'], 'note', empty=True)
     state['events'][value['id']] = value
     return value, False

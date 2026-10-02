@@ -145,8 +145,11 @@ def policy(bank, action, payload=None, key=None):
             require(action == 'add', 'Unknown policy action')
             require(payload.get('user_requested') is True, 'Policy requires an actual user instruction')
             string(payload.get('reason'), 'reason')
+            # The instruction that justifies the rule is kept verbatim, so "the user asked" is checkable later.
+            string(payload.get('user_quote'), 'user_quote (the user\'s own words asking for this rule)')
             kind = payload.get('kind')
-            rule = {'id': new_id('pol'), 'created_at': utc_now(), 'kind': kind, 'active': True, 'reason': payload['reason']}
+            rule = {'id': new_id('pol'), 'created_at': utc_now(), 'kind': kind, 'active': True, 'reason': payload['reason'],
+                    'user_quote': payload['user_quote']}
             if kind == 'protect':
                 q = question(current, payload.get('question_id'))
                 field = payload.get('field')

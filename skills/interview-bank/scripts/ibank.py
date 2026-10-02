@@ -143,7 +143,7 @@ def parser():
     review.add_argument("--question", required=True)
     review.add_argument("--status", choices=("reviewed", "stale"), required=True)
     review.add_argument("--reason", required=True)
-    review.add_argument("--human-reviewed", action="store_true")
+    review.add_argument("--human-reviewed", action="store_true", help="Deprecated and ignored: reviewed always needs an interactive confirmation")
     for name in ("search", "stats", "export"):
         query = sub.add_parser(name, parents=[common])
         for field in ("query", "company", "role", "domain", "technology", "round", "industry", "interview-type", "difficulty", "date-from", "date-to", "as-of", "answer-status", "question-type", "company-type", "ownership", "business-model"):
@@ -168,6 +168,18 @@ def parser():
     from ibank_core.portability import add_parsers as add_portability_parsers
     add_portability_parsers(sub, common)
     return root
+
+
+def confirm_human_review(question_id):
+    """Human review cannot be asserted by a flag: it needs a person at an interactive terminal."""
+    require(sys.stdin.isatty(),
+            "Human review must be confirmed by the user: open the local Web reader and press 人工审阅通过, "
+            "or run answer-review --status reviewed yourself in an interactive terminal")
+    print(f"Confirm that you personally reviewed the current answer of {question_id}. Type 我已审阅 (or I reviewed): ",
+          end="", file=sys.stderr, flush=True)
+    typed = sys.stdin.readline().strip()
+    require(typed in ("我已审阅", "I reviewed"), "Not confirmed; nothing was staged")
+    return "terminal"
 
 
 def dispatch(args):
@@ -257,7 +269,10 @@ def dispatch(args):
         from ibank_core.answers import recheck_answers
         return recheck_answers(bank, read_json(args.input))
     if args.command == "answer-review":
-        return review_answer(bank, args.question, args.status, args.reason, args.human_reviewed)
+        actor = "agent"
+        if args.status == "reviewed":
+            actor = confirm_human_review(args.question)
+        return review_answer(bank, args.question, args.status, args.reason, actor=actor)
     if args.command == "commit":
         return commit_run(bank, args.run)
     if args.command == "show":

@@ -88,7 +88,7 @@ def main():
             if "run_id" in result: run("commit", "--run", result["run_id"])
             return result.get("summary", result)
         qid = run("search", "--technology", "redis")["questions"][0]["id"]
-        committed(payload_run("policy", "add", {"kind":"protect", "question_id":qid, "field":"canonical", "reason":"Installation fixture", "user_requested":True}))
+        committed(payload_run("policy", "add", {"kind":"protect", "question_id":qid, "field":"canonical", "reason":"Installation fixture", "user_requested":True, "user_quote":"Synthetic: keep this wording"}))
         topic = committed(payload_run("studyset", "create", {"name":"安装验收专题", "expression":{"field":"technology","values":["redis"]}}))["studyset_id"]
         run("studyset", "export", "--id", topic, "--output", "topic.md")
         flow = committed(payload_run("workflow", "create", {"name":"安装验收研究", "studyset_id":topic}))["workflow_id"]
@@ -108,7 +108,7 @@ def main():
         committed(payload_run("interview", "end", key=session))
         assert run("interview", "summary", "--id", session)["status"] == "completed"
         assert payload_run("interview", "answer", answer, session)["already_recorded"]
-        practice = {"question_id":qid,"session_id":session,"request_id":"smoke-event","rating":"good","note":"Synthetic self-rating fixture"}
+        practice = {"question_id":qid,"session_id":session,"request_id":"smoke-event","rating":"good","note":"Synthetic self-rating fixture","user_quote":"Synthetic: I know this one"}
         committed(payload_run("study", "record", practice))
         assert payload_run("study", "record", practice)["already_recorded"]
         assert len(payload_run("study", "queue", {"include_future":True})["questions"]) == 1

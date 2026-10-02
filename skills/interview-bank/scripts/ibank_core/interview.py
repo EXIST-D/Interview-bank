@@ -82,8 +82,12 @@ def interview(bank,action,payload=None,key=None):
                 string(payload.get('text'),'actual user response')
                 require(item['status']=='question','Finish feedback before another answer')
                 require(payload.get('question_id')==item['question_id'],'Question ID does not match the current prompt')
+                captured = payload.get('captured_via', 'chat')
+                require(captured in ('chat', 'voice_transcript'), 'captured_via must be chat or voice_transcript')
+                # The text is the user's own answer, saved verbatim; the agent must not paraphrase or write it.
                 r={'id':new_id('response'),'request_id':payload['request_id'],'question_id':item['question_id'],
-                   'prompt':item['prompt'],'text':payload['text'],'created_at':utc_now(),'feedback':None,'follow_up':item['follow_up']}
+                   'prompt':item['prompt'],'text':payload['text'],'created_at':utc_now(),'feedback':None,'follow_up':item['follow_up'],
+                   'captured_via':captured}
                 s['responses'].append(r)
                 if not item['follow_up']:s['position']+=1
                 s['follow_up']=None
