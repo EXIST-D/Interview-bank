@@ -13,7 +13,7 @@ python -B <cli> migrate apply --bank <bank> --json
 
 Plan reports backup file count, uncompressed size and a conservative free-space estimate. Apply checks free space, refuses pending stages, saves a ZIP under bank/backups, verifies every archived hash and journal-commits V2 manifest/config/state. Six original tables remain; `data/state.json` stores protected policies, workflows, study sets, practice events, interview sessions and shared evidence. It is canonical, not cache. New answers bind to a content revision. Legacy answers retain content/history. An answer whose question was not edited after the answer was written is bound to the current revision; the rest are marked for coverage recheck, and apply reports answers_bound/answers_need_recheck. Upgrading does not refresh verification dates.
 
-Old runtimes reject V2. `migrate restore --archive <backup-filename.zip> --destination <new-name>` restores to a new `bank/restored/<new-name>` after checking the manifest. It never overwrites the live bank or later work. Switch to that explicit restored bank only when intended. All normal state mutations return run_id and require the usual `commit --run`; do not forget to commit workflow creation before requesting a batch. Migration is the explicit journaled exception that applies directly. `next` writes an inspectable task packet, not answers.
+Old runtimes reject V2. To roll back, restore the migration backup with `backup restore` (below) into a new directory; the older `migrate restore --archive <name.zip> --destination <new-name>` still restores into `bank/restored/<new-name>`. Neither overwrites the live bank or later work. Switch to a restored bank only when intended. All normal state mutations return run_id and require the usual `commit --run`; do not forget to commit workflow creation before requesting a batch. Migration is the explicit journaled exception that applies directly. `next` writes an inspectable task packet, not answers.
 
 ## Durable research
 
@@ -78,6 +78,16 @@ When the user explicitly changes a protected value, curate input may include `ov
 Existing undo remains restricted to the latest unchanged snapshot; arbitrary historical unmerge is not supported. Explain the affected records and preserve later changes instead of rolling back the whole bank. Review [schema.md](schema.md) for durable recovery and invariants.
 
 `workflow next` and `workflow list` return compact progress cards, not the entire scope ledger. Read only `task` items for each research batch. `workflow show` explicitly returns full details; for large banks prefer `workflow summary` and the saved JSON unless item-level diagnosis is needed. This keeps ordinary batch tool output proportional to batch size.
+
+## Backups
+
+```text
+python -B <cli> backup create --bank <bank> [--include-runs] --json
+python -B <cli> backup verify --archive <zip or name in bank/backups> --json
+python -B <cli> backup restore --archive <zip> --destination <new directory> --json
+```
+
+create zips manifest, config, data/ and media/ under the bank lock into bank/backups/ (runs/ only with `--include-runs`), writes a `.sha256` sidecar and re-reads every entry against its hash. verify checks the entry list, hashes and sidecar, then loads the unpacked copy as a bank. restore needs a destination that does not exist yet, unpacks beside it, validates, and only then renames it into place. backups/ lives inside the bank: tell the user to copy the archive somewhere else. Suggest a backup before migrate apply (which also writes its own) and before gc --apply.
 
 ## Disk housekeeping
 

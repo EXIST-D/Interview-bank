@@ -31,7 +31,7 @@ from ibank_core.curation import stage_curate, stage_classification, configure
 from ibank_core.tasks import classification_task
 from ibank_core.dedupe import candidate_task, stage_decisions
 from ibank_core.answers import research_task, stage_answers, review_answer
-from ibank_core.schema import validate_data
+from ibank_core.schema import require, validate_data
 from ibank_core.search import search, detail
 from ibank_core.export import export_bank
 from ibank_core.output import encode, fit
@@ -104,6 +104,11 @@ def parser():
     gc.add_argument("--apply", action="store_true", help="Actually compact/delete; review the dry-run with the user first")
     gc.add_argument("--keep-days", type=int, default=30, help="Keep every run younger than this many days (default 30)")
     gc.add_argument("--keep-last", type=int, default=20, help="Always keep the newest N stages and N tasks (default 20)")
+    backup = sub.add_parser("backup", parents=[common], help="Create, verify or restore a verified ZIP of the canonical bank")
+    backup.add_argument("action", choices=("create", "verify", "restore"))
+    backup.add_argument("--archive", type=Path, help="Backup ZIP (verify/restore); a bare name is looked up in bank/backups")
+    backup.add_argument("--destination", type=Path, help="restore: a new directory that must not exist yet")
+    backup.add_argument("--include-runs", action="store_true", help="create: also archive runs/ (audit, undo points, intakes)")
     abandon = sub.add_parser("abandon", parents=[common])
     abandon.add_argument("--run", required=True)
     undo = sub.add_parser("undo", parents=[common], help="Stage an audited undo of the latest snapshot operation")
@@ -215,6 +220,18 @@ def dispatch(args):
     if args.command == "gc":
         from ibank_core.cleanup import gc
         return gc(bank, apply=args.apply, keep_days=args.keep_days, keep_last=args.keep_last)
+    if args.command == "backup":
+        from ibank_core import backups
+        if args.action == "create":
+            return backups.create_backup(bank, include_runs=args.include_runs)
+        require(args.archive is not None, f"backup {args.action} needs --archive")
+        archive = args.archive
+        if not archive.exists() and len(archive.parts) == 1 and (bank / "backups" / archive).is_file():
+            archive = bank / "backups" / archive
+        if args.action == "verify":
+            return backups.verify_backup(archive)
+        require(args.destination is not None, "backup restore needs --destination <new directory>")
+        return backups.restore_into(archive, args.destination)
     if args.command == "abandon":
         return abandon_run(bank, args.run)
     if args.command == "undo":

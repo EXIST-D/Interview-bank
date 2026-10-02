@@ -36,7 +36,7 @@ A local, provenance-preserving interview question bank. You read screenshots, re
 | merge duplicates in an existing bank | [dedupe](references/dedupe.md) | `dedupe-candidates`, `dedupe`, `commit` |
 | add or refresh reference answers | [answer policy](references/answer-policy.md) | `research`, `answer`, `commit` (V2: `workflow`) |
 | search, count or export | [query/export](references/query-export.md) | `search`, `stats`, `show`, `export` |
-| keep a bank over time, protect edits, recover, free space | [maintenance](references/maintenance.md) | `migrate`, `policy`, `workflow`, `undo`, `gc` |
+| keep a bank over time, protect edits, recover, free space | [maintenance](references/maintenance.md) | `migrate`, `backup`, `policy`, `workflow`, `undo`, `gc` |
 | prepare for a role or a JD | [study sets](references/studysets.md) | `studyset` |
 | review weak questions or run a mock interview | [practice](references/practice.md) | `study`, `interview` |
 | browse or practise in a browser | [local Web](references/web.md) | `web` |
