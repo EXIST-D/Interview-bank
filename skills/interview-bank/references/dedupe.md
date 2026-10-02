@@ -30,7 +30,7 @@ Every incoming ID must appear exactly once. For merge/related decisions, target_
 | KEEP_DISTINCT | Different question, or no viable candidate; target_id may be omitted |
 | REVIEW | Unresolved ambiguity; blocks the entire commit |
 
-Merges require confidence ≥0.90; lower merge confidence becomes REVIEW. KEEP_RELATED requires ≥0.80. Exact deterministic automation via dedupe --task merges only exact pairs when auto_merge_exact is enabled, keeps no-candidate items, and marks other candidates REVIEW.
+Merges require confidence ≥0.90; lower merge confidence becomes REVIEW. A REVIEW item names its best candidate. When the user would rather decide, start `web` for this bank: they settle each item under 合并裁决, then `dedupe --resolve <stage-run>` re-stages with their decisions (confidence 1.0, reason quoting their note) and abandons the old stage; commit the new run. KEEP_RELATED requires ≥0.80. Exact deterministic automation via dedupe --task merges only exact pairs when auto_merge_exact is enabled, keeps no-candidate items, and marks other candidates REVIEW.
 
 Ask: can a complete correct answer cover both without adding a new core concept? “Redis 为什么快” and “Redis 单线程为什么能处理高并发” overlap but may demand different scope; do not equate on one keyword. “索引原理” and “索引失效条件” stay separate. Versions, languages, negation, operators and code case matter. Missing evidence means REVIEW or distinct, not guessed merging.
 

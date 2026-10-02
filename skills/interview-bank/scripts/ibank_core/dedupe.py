@@ -7,7 +7,8 @@ from difflib import SequenceMatcher
 from .ids import new_relation_id, utc_now
 from .runs import load_stage, run_path, stage_snapshot
 from .schema import require, confidence, string
-from .storage import fingerprint, open_bank, read_json
+from .errors import ValidationError
+from .storage import bank_file, fingerprint, open_bank, read_json
 from .tasks import read_task, write_task
 from .curation import apply_changes
 from .editorial import exclusion_reason
@@ -176,7 +177,9 @@ def stage_decisions(bank, response=None, task_id=None):
             for key, item in items.items():
                 exact = next((m for m in item["matches"] if m["exact"]), None)
                 action = "MERGE_EXACT" if exact and config["dedupe"]["auto_merge_exact"] else "REVIEW" if item["matches"] else "KEEP_DISTINCT"
-                decisions.append({"question_id": key, "action": action, "target_id": exact["question"]["id"] if exact else None,
+                # A REVIEW item names its best candidate so a person can compare the two questions.
+                best = exact or (item["matches"][0] if item["matches"] else None)
+                decisions.append({"question_id": key, "action": action, "target_id": best["question"]["id"] if best else None,
                                   "confidence": 1.0, "reason": "Deterministic exact match" if exact else "No exact match"})
         else:
             decisions = response.get("decisions")
@@ -225,4 +228,81 @@ def stage_decisions(bank, response=None, task_id=None):
                 audit.append(d)
         return stage_snapshot(bank, current, final, config, operation="dedupe", audit=audit, review=review,
                               summary={**meta.get("summary", {}), "dedupe": actions, "task_id": task_id}, intake_id=meta.get("intake_id"),
-                              supersedes=[task["input_run"]] if task["input_run"] else [])
+                              supersedes=[task["input_run"]] if task["input_run"] else [],
+                              # Kept so a person's Web decisions on the review items can replace just those items.
+                              extra={"decisions": decisions})
+
+
+HUMAN_ACTIONS = ("MERGE_VARIANT", "KEEP_RELATED", "KEEP_DISTINCT")
+
+
+def human_decisions_path(bank, run_id):
+    return run_path(bank, run_id) / "human-decisions.json"
+
+
+def review_queue(bank):
+    """Review items of staged dedupe runs, with both questions' wording, for a person to decide."""
+    from .runs import load_stage
+    with open_bank(bank, shared=True) as (_, _, current):
+        items = []
+        for path in sorted(bank_file(bank, "runs").glob("run_*/run.json")):
+            run = read_json(path)
+            if run.get("status") != "staged" or run.get("operation") != "dedupe" or not run.get("review"):
+                continue
+            try:
+                final = load_stage(bank, run["id"], run, current)
+            except ValidationError:
+                continue  # stale stage: the agent must regenerate it
+            questions = {q["id"]: q for q in final["questions"]}
+            decided = read_json(human_decisions_path(bank, run["id"]))["decisions"] if human_decisions_path(bank, run["id"]).is_file() else {}
+            for item in run["review"]:
+                if "question_id" not in item or item.get("target_id") not in questions:
+                    continue
+                incoming, target = questions[item["question_id"]], questions[item["target_id"]]
+                items.append({"run_id": run["id"], "question_id": incoming["id"], "question": incoming["canonical"],
+                              "target_id": target["id"], "target": target["canonical"], "reason": item["reason"],
+                              "decision": decided.get(incoming["id"])})
+        return items
+
+
+def record_human_decision(bank, run_id, question_id, action, note):
+    """Store one person's decision next to the stage; nothing canonical changes until dedupe --resolve and commit."""
+    require(action in HUMAN_ACTIONS, "action must be MERGE_VARIANT, KEEP_RELATED or KEEP_DISTINCT")
+    string(note, "note")
+    with open_bank(bank) as (_, _, _):
+        run = read_json(run_path(bank, run_id) / "run.json")
+        require(run.get("status") == "staged" and run.get("operation") == "dedupe", "This dedupe stage is no longer pending")
+        item = next((i for i in run.get("review", []) if i.get("question_id") == question_id), None)
+        require(item is not None, "Not a review item of this stage")
+        path = human_decisions_path(bank, run_id)
+        stored = read_json(path) if path.is_file() else {"schema_version": 1, "decisions": {}}
+        stored["decisions"][question_id] = {"action": action, "target_id": item.get("target_id"), "note": note.strip(),
+                                            "actor": "local_web", "decided_at": utc_now()}
+        from .storage import atomic_write, dumps
+        atomic_write(path, dumps(stored) + "\n")
+        return {"run_id": run_id, "question_id": question_id, "action": action,
+                "remaining": sum(i.get("question_id") not in stored["decisions"] for i in run["review"])}
+
+
+def resolve_with_human_decisions(bank, run_id):
+    """Re-stage a dedupe run with the person's decisions for its review items; the old stage is abandoned."""
+    from .runs import abandon_run
+    run = read_json(run_path(bank, run_id) / "run.json")
+    require(run.get("status") == "staged" and run.get("operation") == "dedupe", "Expected a staged dedupe run")
+    require("decisions" in run, "This stage predates recorded decisions; stage dedupe again with full decisions")
+    path = human_decisions_path(bank, run_id)
+    require(path.is_file(), "No decisions recorded yet; ask the user to decide the review items in the Web reader")
+    human = read_json(path)["decisions"]
+    missing = [i["question_id"] for i in run.get("review", []) if i.get("question_id") not in human]
+    require(not missing, f"{len(missing)} review items still need the user's decision")
+    decisions = []
+    for decision in run["decisions"]:
+        choice = human.get(decision["question_id"])
+        if choice:
+            decision = {"question_id": decision["question_id"], "action": choice["action"], "confidence": 1.0,
+                        "reason": "User decision in the Web reader: " + choice["note"],
+                        **({"target_id": choice["target_id"]} if choice["action"] != "KEEP_DISTINCT" else {})}
+        decisions.append(decision)
+    staged = stage_decisions(bank, {"schema_version": 1, "task_id": run["summary"]["task_id"], "decisions": decisions})
+    abandon_run(bank, run_id)
+    return {**staged, "replaces": run_id, "human_decisions": len(human)}

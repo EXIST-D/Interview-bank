@@ -23,6 +23,7 @@ from .storage import open_bank, guard_bank_path
 from .study import event
 from .studysets import select
 from .selection import apply_expression
+from .messages import group_title, label, language
 from .timestamps import parse_timestamp
 
 ASSETS = Path(__file__).resolve().parents[2] / 'assets' / 'web'
@@ -50,10 +51,12 @@ def progress(data, rows):
     return result
 
 
-def card(q, state):
+def card(q, state, lang='zh-CN'):
+    group = report_group(q)
     return {k: q[k] for k in ('id', 'canonical', 'frequency', 'answer_status', 'difficulty', 'updated_at')} | {
-        'group': report_group(q), 'revision': revision(q), 'progress': state,
-        'domains': [{'id': d, 'label': display('domains', d)} for d in q['domains']],
+        'group': group_title(lang, group, q['domains'][0].split('.')[0] if q['domains'] else None),
+        'revision': revision(q), 'progress': state, 'problem_url': q.get('problem_url'),
+        'domains': [{'id': d, 'label': label(lang, 'domains', d, display('domains', d))} for d in q['domains']],
         'technologies': [display('technologies', t) for t in q['technologies']],
         'companies': [c['name'] for c in q['companies'] if c['id']],
         'years': sorted({o['event_date'][:4] for o in q['occurrences'] if o['event_date']}, reverse=True),
@@ -96,7 +99,7 @@ class WebApp:
             states = progress(data, rows)
             found = filtered(rows, data['companies'], states, params)
             if practice:
-                return {'total': len(found), 'questions': [card(q, states[q['id']]) for q in found[offset:offset + limit]]}
+                return {'total': len(found), 'questions': [card(q, states[q['id']], language(config)) for q in found[offset:offset + limit]]}
             facets = {}
             for name, dimension, values in (
                 ('domain', 'domains', [d for q in rows for d in set(q['domains'])]),
@@ -104,7 +107,7 @@ class WebApp:
                 ('role', 'role_tracks', [r for q in rows for r in {r for o in q['occurrences'] for r in o['role_tracks']}]),
             ):
                 counts = Counter(values)
-                facets[name] = [{'value': v, 'label': display(dimension, v), 'count': n} for v, n in sorted(counts.items(), key=lambda x: (-x[1], x[0]))]
+                facets[name] = [{'value': v, 'label': label(language(config), dimension, v, display(dimension, v)), 'count': n} for v, n in sorted(counts.items(), key=lambda x: (-x[1], x[0]))]
             company_counts = Counter(c['id'] for q in rows for c in q['companies'] if c['id'])
             facets['company'] = [{'value': c['id'], 'label': c['name'], 'count': company_counts[c['id']]} for c in data['companies'] if company_counts[c['id']]]
             used = [c for c in data['companies'] if company_counts[c['id']]]
@@ -112,13 +115,14 @@ class WebApp:
             return {
                 'name': self.bank.name, 'version': __version__, 'schema_version': manifest['schema_version'],
                 'can_record': manifest['schema_version'] == 2 and not self.read_only, 'can_review': not self.read_only,
+                'language': language(config),
                 'read_only': self.read_only, 'updated_at': manifest.get('last_updated_at'),
                 'summary': {'questions': len(rows), 'answered': sum(q['answer_status'] in ('source_backed', 'reviewed') for q in rows),
                             'answer_count': sum(q['answer'] is not None for q in rows), 'stale': sum(q['answer_status'] == 'stale' for q in rows),
                             'due': sum(s['due'] for s in states.values()), 'weak': sum(s['state'] in ('weak', 'changed') for s in states.values()),
                             'unseen': sum(s['state'] == 'unseen' for s in states.values()), 'domains': len(facets['domain'])},
                 'total': len(found), 'offset': offset, 'limit': limit, 'facets': facets,
-                'questions': [card(q, states[q['id']]) for q in found[offset:offset + limit]],
+                'questions': [card(q, states[q['id']], language(config)) for q in found[offset:offset + limit]],
             }
 
     def question(self, qid):
@@ -127,7 +131,7 @@ class WebApp:
             require(bool(rows), 'Question is no longer available; refresh the library')
             q = rows[0]
             sources = {s['id']: s for s in data['sources']}
-            result = card(q, progress(data, rows)[q['id']])
+            result = card(q, progress(data, rows)[q['id']], language(config))
             result['answer'] = q['answer']
             result['occurrences'] = [{
                 'text': o['original_text'], 'year': o['event_date'][:4] if o['event_date'] else None,
@@ -190,6 +194,19 @@ class WebApp:
             return {'saved': True, **summary}
 
 
+    def dedupe_decision(self, payload):
+        """The person decides one uncertain merge; the agent applies it later with dedupe --resolve."""
+        require(not self.read_only, 'This server is in read-only mode')
+        require(isinstance(payload, dict) and set(payload) == {'run_id', 'question_id', 'action', 'note'}, 'Invalid decision payload')
+        require(all(isinstance(v, str) for v in payload.values()), 'Decision values must be strings')
+        require(1 <= len(payload['note'].strip()) <= 2000, 'Write a short reason for your decision')
+        from .dedupe import record_human_decision
+        from .runs import run_path
+        run_path(self.bank, payload['run_id'])
+        with self.mutation_lock:
+            return {'saved': True, **record_human_decision(self.bank, payload['run_id'], payload['question_id'], payload['action'], payload['note'])}
+
+
 class LocalServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = False
@@ -236,9 +253,12 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def route(self, post=False):
-        host = f'127.0.0.1:{self.server.server_port}'
-        if self.headers.get_all('Host') != [host] or self.headers.get('Origin') not in (None, self.server.origin):
-            return self.send(403, {'error': '仅支持当前本机页面访问。'})
+        # Both loopback names are accepted; any other Host (DNS rebinding) or foreign Origin is refused.
+        port = self.server.server_port
+        hosts = [f'127.0.0.1:{port}', f'localhost:{port}']
+        if len(self.headers.get_all('Host') or []) != 1 or self.headers.get('Host') not in hosts \
+                or self.headers.get('Origin') not in (None, *(f'http://{h}' for h in hosts)):
+            return self.send(403, {'error': f'仅支持本机访问：请打开 Agent 提供的 http://127.0.0.1:{port}/ 链接。'})
         path = urlsplit(self.path).path
         assets = {'/': ('index.html', 'text/html; charset=utf-8'), '/app.js': ('app.js', 'text/javascript; charset=utf-8'), '/app.css': ('app.css', 'text/css; charset=utf-8')}
         if path in assets and not post:
@@ -251,7 +271,7 @@ class Handler(BaseHTTPRequestHandler):
         require(all(len(v) == 1 for v in query.values()), 'Duplicate query parameters')
         params = {k: v[0] for k, v in query.items()}
         if post:
-            if path not in ('/api/practice', '/api/review'):
+            if path not in ('/api/practice', '/api/review', '/api/dedupe-decision'):
                 return self.send(404, {'error': 'Unknown endpoint'})
             require(self.headers.get('Content-Type', '').split(';')[0] == 'application/json', 'Expected JSON')
             require(not self.headers.get('Transfer-Encoding'), 'Transfer encoding not supported')
@@ -259,12 +279,16 @@ class Handler(BaseHTTPRequestHandler):
             require(len(sizes) == 1 and sizes[0].isdigit() and 0 < int(sizes[0]) <= 65536, 'Invalid content length')
             body = self.rfile.read(int(sizes[0]))
             require(len(body) == int(sizes[0]), 'Incomplete request')
-            handler = self.server.app.record if path == '/api/practice' else self.server.app.review
+            handler = {'/api/practice': self.server.app.record, '/api/review': self.server.app.review,
+                       '/api/dedupe-decision': self.server.app.dedupe_decision}[path]
             result = handler(json.loads(body))
         elif path == '/api/library':
             result = self.server.app.library(params)
         elif path == '/api/practice':
             result = self.server.app.library(params, practice=True)
+        elif path == '/api/dedupe-reviews':
+            from .dedupe import review_queue
+            result = {'items': review_queue(self.server.app.bank)}
         elif path == '/api/question':
             require(set(params) == {'id'}, 'Expected question ID')
             result = self.server.app.question(params['id'])
