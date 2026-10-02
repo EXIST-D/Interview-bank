@@ -71,9 +71,20 @@ All displayed conclusions should be supported by the sources or clearly describe
 - ai_draft: model-generated answer without web research; sources and evidence must be empty.
 - source_backed: researched answer with citations and complete key-point mapping. It does not mean a human has approved it.
 - reviewed: actual human review; only answer-review --status reviewed --human-reviewed --reason can create it through the normal workflow.
-- stale: explicitly outdated, or effectively older than the configured age threshold.
+- stale: explicitly outdated, older than the configured age threshold, or (V2) written for different question wording. search and research report `answer_stale_reason`: `marked_stale`, `evidence_age` or `wording_changed`.
 - missing: no answer yet.
 
 Each write appends a version. Existing answer content is not overwritten. Source-backed verified_at uses the oldest cited accessed_at; replaying old evidence does not refresh it. Human review appends a copy with review timestamp. Merging questions retains answers and audits any version renumbering.
+
+## Recheck instead of research
+
+When `answer_stale_reason` is `wording_changed` (a curate edit, a merge rewrite or a V2 migration left the answer unbound) and the new wording asks nothing the answer does not already cover, a recheck is enough:
+
+```json
+{"schema_version": 1, "rechecks": [{"question_id": "q_ID", "reason": "only the wording changed; sub-questions A and B are still covered",
+  "checks": ["compared sub-questions A and B with key_points 0-3"], "covers_current_wording": true}]}
+```
+
+`answer-recheck --input <file>` stages a new version with the same content, sources and verified_at, bound to the current wording, with the checks appended. A reviewed answer comes back as source_backed: a human reviewed the old wording, not the new one. A recheck is refused for drafts, answers without citations, evidence older than answer_stale_days and V1 banks. If the new wording adds a sub-question, changes the version scope or asks for something else, research it instead.
 
 When research cannot be completed, return {"question_id":"q_ID","skip":true,"reason":"..."} for that item, or an honest ai_draft if useful and consistent with the user's request. Do not silently substitute unsourced answers when the user specifically requires verified sources.

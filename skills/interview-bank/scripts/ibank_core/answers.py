@@ -38,7 +38,8 @@ def research_task(bank, question_ids=None, limit=10, **filters):
         for q in questions:
             domains = sorted({OFFICIAL_DOMAINS[t] for t in q["technologies"] if t in OFFICIAL_DOMAINS})
             # Full occurrences and answer histories can be large; retrieve with show only when needed.
-            context = {field: q[field] for field in ('id', 'canonical', 'question_type', 'language', 'domains', 'technologies', 'answer_status')}
+            context = {field: q[field] for field in ('id', 'canonical', 'question_type', 'language', 'domains', 'technologies',
+                                                     'answer_status', 'answer_stale_reason')}
             context['answer'] = ({field: q['answer'][field] for field in ('id', 'version', 'short_answer', 'key_points', 'sources', 'verified_at')}
                                  if q['answer'] else None)
             items.append({"question": context, "suggested_queries": [q["canonical"], *(f"site:{d} {q['canonical']}" for d in domains)],
@@ -144,3 +145,52 @@ def review_answer(bank, question_id, status, reason, human_reviewed=False):
         return stage_snapshot(bank, current, final, config, operation="answer-review",
             audit=[{"action": "ANSWER_REVIEW", "previous_answer_id": latest["id"], "answer_id": record["id"], "reason": reason, "human_reviewed": human_reviewed}],
             summary={"question_id": question_id, "version": record["version"], "status": status})
+
+
+def recheck_answers(bank, payload):
+    """Rebind still-valid answers to reworded questions without new research.
+
+    Only for answers whose evidence is current but whose question wording changed since they were
+    written (answer_stale_reason "wording_changed"). Content, sources and verified_at are copied
+    unchanged; the new version records the agent's coverage checks. A reworded question that now
+    asks something new needs research, not a recheck.
+    """
+    require(isinstance(payload, dict) and payload.get("schema_version") == 1, "Expected v1 recheck input")
+    items = payload.get("rechecks")
+    require(isinstance(items, list) and bool(items), "rechecks must be a nonempty array")
+    with open_bank(bank) as (_, config, current):
+        from .state import question, require_v2, revision
+        require_v2(current)
+        privacy_check(dumps(payload), config)
+        final, audit, seen = copy.deepcopy(current), [], set()
+        stale_days = config.get("answer_stale_days", 180)
+        for item in items:
+            require(isinstance(item, dict) and set(item) <= {"question_id", "reason", "checks", "covers_current_wording"},
+                    "Recheck fields: question_id, reason, checks, covers_current_wording")
+            qid = item.get("question_id")
+            require(isinstance(qid, str) and qid not in seen, "Each recheck needs a distinct question_id")
+            seen.add(qid)
+            string(item.get("reason"), "recheck.reason")
+            strings(item.get("checks"), "recheck.checks")
+            require(bool(item["checks"]), "recheck.checks: list what was compared, e.g. each sub-question against key points")
+            require(item.get("covers_current_wording") is True,
+                    "covers_current_wording must be true; if the new wording asks for more, research the question instead")
+            q = question(current, qid)
+            versions = [a for a in current["answers"] if a["question_id"] == q["id"]]
+            require(bool(versions), f"{qid}: no answer to recheck; research it")
+            latest = max(versions, key=lambda a: a["version"])
+            require(latest["status"] in ("source_backed", "reviewed") and bool(latest["sources"]),
+                    f"{qid}: only source-backed or reviewed answers with citations can be rechecked")
+            require(effective_answer(latest, None, stale_days) != "stale",
+                    f"{qid}: evidence is older than answer_stale_days; research it again instead of rechecking")
+            require(latest.get("question_revision") != revision(q), f"{qid}: answer already matches the current wording")
+            record = {**copy.deepcopy(latest), "id": new_answer_id(), "version": latest["version"] + 1,
+                      # A human review covered the old wording only; the agent's recheck is not a human review.
+                      "status": "source_backed", "created_at": utc_now(), "question_revision": revision(q),
+                      "checks": [*latest.get("checks", []), *item["checks"]]}
+            final["answers"].append(record)
+            audit.append({"action": "ANSWER_RECHECK", "actor": "agent", "question_id": q["id"], "previous_answer_id": latest["id"],
+                          "answer_id": record["id"], "reason": item["reason"], "checks": item["checks"],
+                          "previous_revision": latest.get("question_revision"), "was_reviewed": latest["status"] == "reviewed"})
+        return stage_snapshot(bank, current, final, config, operation="answer-recheck", audit=audit,
+                              summary={"answers_rechecked": len(audit)})

@@ -44,9 +44,13 @@ def select_questions(data, *, query=None, company=None, role=None, technology=No
         versions = sorted(answers[question["id"]], key=lambda a: a["version"])
         latest = versions[-1] if versions else None
         status = effective_answer(latest, as_of, stale_days)
+        stale_reason = None
+        if status == "stale":
+            stale_reason = "marked_stale" if latest["status"] == "stale" else "evidence_age"
         if latest and "question_revision" in latest:
             from .state import revision
             if latest["question_revision"] != revision(question):
+                stale_reason = stale_reason or "wording_changed"
                 status = "stale"
         if answer_status and answer_status != status:
             continue
@@ -79,7 +83,8 @@ def select_questions(data, *, query=None, company=None, role=None, technology=No
         result.append({**question, "frequency": len(matching), "total_frequency": len(occurrences),
                        "companies": [{"id": key, "name": companies.get(key, {}).get("name", "unknown"), "frequency": count}
                                      for key, count in sorted(company_counts.items(), key=lambda item: (-item[1], item[0] or ""))],
-                       "occurrences": matching, "answer_status": status, "answer": latest, "answer_versions": versions})
+                       "occurrences": matching, "answer_status": status, "answer_stale_reason": stale_reason,
+                       "answer": latest, "answer_versions": versions})
     if expression is not None:
         from .selection import apply_expression
         result = apply_expression(result, list(companies.values()), expression)
