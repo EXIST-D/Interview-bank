@@ -151,6 +151,9 @@ def main():
         assert run("taxonomy", "--dimension", "domains", "--query", "向量")["items"][0]["id"] == "backend.database.vector"
         assert run("validate")["valid"]
         assert not run("doctor")["incomplete_runs"]
+        demo = subprocess.run([sys.executable, "-B", str(cli), "demo", "--bank", str(directory / "demo-bank"), "--json"],
+                              capture_output=True, text=True, encoding="utf-8", cwd=directory)
+        assert demo.returncode == 0 and json.loads(demo.stdout)["result"]["answered"] == 8, demo.stderr
         backup = run("backup", "create")
         assert run("backup", "verify", "--archive", backup["archive"])["valid"]
         restored = run("backup", "restore", "--archive", backup["archive"], "--destination", str(directory / "restored-bank"))
