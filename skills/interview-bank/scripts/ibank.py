@@ -93,6 +93,21 @@ def parser():
     images.add_argument("--retention", choices=("reference", "copy", "none"))
     images.add_argument("--recursive", action="store_true")
     images.add_argument("--reprocess", action="store_true", help="Retry known sources that have no question occurrences")
+    ingest = sub.add_parser("ingest", parents=[common], help="Composite intake: images/media -> submit extraction -> finalize dedupe")
+    ingest_sub = ingest.add_subparsers(dest="ingest_action", required=True)
+    for kind in ("images", "media"):
+        step = ingest_sub.add_parser(kind, parents=[common], help=f"Intake {kind} and return a compact reading list")
+        step.add_argument("paths", nargs="+")
+        step.add_argument("--retention", choices=("reference", "copy", "none"))
+        step.add_argument("--recursive", action="store_true")
+        step.add_argument("--reprocess", action="store_true")
+    submit = ingest_sub.add_parser("submit", parents=[common], help="extract-save + stage + dedupe candidates")
+    submit.add_argument("--intake", required=True)
+    submit.add_argument("--extraction", type=Path, required=True)
+    finalize = ingest_sub.add_parser("finalize", parents=[common], help="dedupe decisions + commit (+ optional workflow)")
+    finalize.add_argument("--task", required=True)
+    finalize.add_argument("--decisions", type=Path, help="Host decisions; omitted = exact matches only, others need review")
+    finalize.add_argument("--workflow", help="Also create and commit a V2 research workflow over this intake")
     save = sub.add_parser("extract-save", parents=[common], help="Save partial vision results and resume a batch")
     save.add_argument("--run", required=True)
     save.add_argument("--input", type=Path, required=True)
@@ -137,6 +152,7 @@ def parser():
         research.add_argument(f"--{field}")
     answer = sub.add_parser("answer", parents=[common], help="Stage evidence-backed answer versions")
     answer.add_argument("--input", type=Path, required=True)
+    answer.add_argument("--commit", action="store_true", help="Commit at once when the stage has no review items")
     answer.add_argument("--page-texts", type=Path, help="JSON object mapping citation URL -> text file of the page you read; checks evidence_quote")
     citations = sub.add_parser("verify-citations", parents=[common], help="Optional online check that cited URLs still respond (only on request)")
     citations.add_argument("--question", action="append", default=[])
@@ -235,6 +251,14 @@ def dispatch(args):
         return intake_images(bank, args.paths, retention=args.retention, recursive=args.recursive, reprocess=args.reprocess)
     if args.command == "run-show":
         return show_run(bank, args.run, args.offset, args.limit)
+    if args.command == "ingest":
+        from ibank_core import flows
+        if args.ingest_action in ("images", "media"):
+            run = flows.ingest_images if args.ingest_action == "images" else flows.ingest_media
+            return run(bank, args.paths, retention=args.retention, recursive=args.recursive, reprocess=args.reprocess)
+        if args.ingest_action == "submit":
+            return flows.ingest_submit(bank, args.intake, read_json(args.extraction))
+        return flows.ingest_finalize(bank, args.task, read_json(args.decisions) if args.decisions else None, args.workflow)
     if args.command == "extract-save":
         return save_extraction(bank, args.run, read_json(args.input))
     if args.command == "gc":
@@ -276,7 +300,11 @@ def dispatch(args):
                     "--page-texts expects {\"<citation url>\": \"<path to page text>\"}")
             base = args.page_texts.resolve().parent
             pages = {url: (base / path).read_text(encoding="utf-8-sig") for url, path in mapping.items()}
-        return stage_answers(bank, read_json(args.input), page_texts=pages)
+        staged = stage_answers(bank, read_json(args.input), page_texts=pages)
+        if args.commit:
+            from ibank_core.flows import commit_unless_review
+            return commit_unless_review(bank, staged)
+        return staged
     if args.command == "verify-citations":
         from ibank_core.citations import verify_citations
         return verify_citations(bank, args.question, args.workflow, args.limit)

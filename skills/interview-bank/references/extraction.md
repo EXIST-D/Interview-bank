@@ -2,6 +2,23 @@
 
 Run images first, then actually view every unique item's view_path. The script checks file size/hash and supported suffix; the host must verify the image decodes and is readable. Maximum input size is 50 MiB per image. Intake copies or references source bytes before semantic work.
 
+## Three-call flow
+
+```text
+python -B <cli> ingest images <files-or-dirs…> --bank <bank> --json          # or: ingest media
+python -B <cli> ingest submit --intake <intake-id> --extraction <response.json> --bank <bank> --json
+python -B <cli> ingest finalize --task <dedupe-task-id> --decisions <decisions.json> [--workflow <name>] --bank <bank> --json
+```
+
+`ingest images` returns the intake ID, the source count and the first view paths (page the rest with run-show).
+`ingest submit` saves the extraction, stages it and prepares dedupe candidates. It returns `extraction_incomplete`
+(submit the remaining sources), `review_required` (fix the flagged candidates) or `dedupe_pending` with every
+incoming question and its top candidates. `ingest finalize` stages your decisions ([dedupe](dedupe.md)) and commits
+when nothing needs review. Without `--decisions` only exact matches are decided, so anything with a candidate becomes
+review. With `--workflow` it also opens a V2 research workflow over the new questions. The individual commands below
+(`images`, `extract-save`, `stage --from-intake`, `dedupe-candidates`, `dedupe`, `commit`) remain for partial work.
+For already selected plain text, `stage --text <UTF-8 file>` takes one question per nonblank line.
+
 ## Response
 
 A complete response accounts for exactly every intake source. source_id comes from intake; candidate id is a unique stable label within this batch.

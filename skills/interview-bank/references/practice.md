@@ -32,7 +32,12 @@ Present only the current prompt to the user. next returns no reference answer in
 
 Once the user responds, write `interview answer` input with request_id, question_id, text (the user's answer verbatim) and optionally `captured_via` (`chat`, default, or `voice_transcript`); commit. next then returns an Agent-only awaiting_feedback packet with the actual response and a currently valid reference answer if available. Preserve the original response exactly; quotes in feedback must be actual substrings of it.
 
-Feedback payload for `interview feedback`, followed by commit:
+`interview turn --id <session> --input <answer.json>` does answer + commit + next in one call and returns the
+feedback packet; `interview review --id <session> --input <feedback.json>` does feedback + commit + next and
+returns the next prompt. A 10-question interview then takes about 22 calls instead of 65. `study record --commit`
+and `interview start --commit` commit at once; any stage with review items is left staged.
+
+Feedback payload for `interview feedback` (or `interview review`), followed by commit:
 
 ```json
 {
