@@ -14,8 +14,10 @@ from html.parser import HTMLParser
 from support import CLI, SKILL, Bank
 
 from ibank_core import web
+from ibank_core.catalog import CATALOG
 from ibank_core.doctor import doctor
 from ibank_core.errors import LockConflict
+from ibank_core.export import report_group
 from ibank_core.locking import bank_lock
 from ibank_core.timestamps import parse_timestamp
 
@@ -158,6 +160,41 @@ class WebPracticeMarkup(unittest.TestCase):
         parser = PracticeLimitOptions()
         parser.feed((SKILL / "assets" / "web" / "index.html").read_text(encoding="utf-8"))
         self.assertEqual(parser.options, [("5", False), ("10", True), ("20", False)])
+
+
+class ReportGrouping(unittest.TestCase):
+    """B4: ten of eighteen top-level domains fell into a catch-all 其他知识题 section."""
+
+    def test_every_builtin_top_level_domain_gets_its_catalog_label(self):
+        labels = {entry["id"]: entry["label"] for entry in CATALOG["domains"]}
+        tops = sorted({entry["id"].split(".")[0] for entry in CATALOG["domains"]})
+        for top in tops:
+            with self.subTest(domain=top):
+                self.assertNotEqual(report_group({"domains": [top]}), "其他知识题")
+        self.assertEqual(report_group({"domains": ["mobile"]}), labels["mobile"])
+        self.assertEqual(report_group({"domains": ["security"]}), labels["security"])
+
+    def test_first_domain_decides_the_group(self):
+        self.assertEqual(report_group({"domains": ["mobile", "backend.cache"]}), "移动技术")
+        self.assertEqual(report_group({"domains": ["backend.cache", "mobile"]}), "缓存")
+
+    def test_unknown_extension_domains_still_fall_back(self):
+        self.assertEqual(report_group({"domains": ["custom.topic"]}), "其他知识题")
+        self.assertEqual(report_group({"domains": []}), "其他知识题")
+
+    def test_exported_report_has_no_catch_all_section_for_builtin_domains(self):
+        bank = Bank()
+        try:
+            bank.add_questions("mobile", "Handler 消息机制的原理是什么？")
+            bank.add_questions("security", "XSS 和 CSRF 有什么区别？")
+            output = bank.result("export", "--output", "report.md")["answer_output"]
+            with open(output, encoding="utf-8") as handle:
+                headings = [line for line in handle if line.startswith("## ")]
+            self.assertTrue(any("移动技术" in line for line in headings))
+            self.assertTrue(any("信息安全" in line for line in headings))
+            self.assertFalse(any("其他知识题" in line for line in headings))
+        finally:
+            bank.close()
 
 
 if __name__ == "__main__":
