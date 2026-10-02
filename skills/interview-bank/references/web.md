@@ -35,6 +35,8 @@ The page fetches bank data on navigation, refresh and after practice; it does no
 
 `--read-only` disables practice writes. Opening a bank still uses the normal lock, recoverable-transaction handling and rebuildable cache; it is not a promise of zero filesystem activity. Do not open an unrelated or unauthorized bank.
 
+Appending `&question=<question-id>` to the launch URL opens that question directly (useful when pointing the user at one answer).
+
 The server accepts both `http://127.0.0.1:<port>` and `http://localhost:<port>`; any other Host or Origin gets 403 (DNS-rebinding protection).
 
 ## Service boundary and validation

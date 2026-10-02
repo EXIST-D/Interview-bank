@@ -146,7 +146,9 @@ function applyLanguage(code) {
 const $ = id => document.getElementById(id);
 const filters = ['domain', 'role', 'technology', 'company', 'industry', 'answer_status'];
 const state = { view: 'all', offset: 0, limit: 20, selected: null, data: null, load: 0, detail: 0, round: null };
-let token = new URLSearchParams(location.hash.slice(1)).get('token');
+const launch = new URLSearchParams(location.hash.slice(1));
+let token = launch.get('token');
+const openOnLoad = launch.get('question');  // #token=…&question=q_… opens one question directly
 try { if (token) sessionStorage.setItem('ibank-token', token); else token = sessionStorage.getItem('ibank-token'); } catch (_) {}
 if (location.hash) history.replaceState(null, '', location.pathname);
 
@@ -771,4 +773,4 @@ window.addEventListener('beforeunload', event => {
   if (state.round && $('practice-response')?.value) { event.preventDefault(); event.returnValue = ''; }
 });
 offerResume();
-loadLibrary();
+loadLibrary().then(() => { if (openOnLoad) openQuestion(openOnLoad, false); });
