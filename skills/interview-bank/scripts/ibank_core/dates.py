@@ -26,6 +26,11 @@ def today(as_of=None):
     return datetime.now(timezone.utc).date()
 
 
+def latest_calendar_date():
+    """Newest date anywhere on Earth (UTC+14): a reader's local 'today' is never in the future."""
+    return datetime.now(timezone(timedelta(hours=14))).date()
+
+
 def bounds(date_from=None, date_to=None, recent_days=None, as_of=None):
     if as_of is not None:
         today(as_of)

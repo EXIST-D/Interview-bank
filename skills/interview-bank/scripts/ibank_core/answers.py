@@ -3,7 +3,7 @@ import copy
 from datetime import datetime
 from urllib.parse import quote_plus, urlparse
 
-from .dates import effective_answer, today
+from .dates import effective_answer, latest_calendar_date, today
 from .editorial import exclusion_reason
 from .ids import new_answer_id, utc_now
 from .index import connect_index
@@ -91,7 +91,7 @@ def stage_answers(bank, response):
                     require(len(citation["evidence_note"]) <= 2000, "Use concise evidence notes, not whole articles")
                     accessed = citation.get("accessed_at")
                     require(isinstance(accessed, str) and len(accessed) == 10, "Citation accessed_at requires YYYY-MM-DD")
-                    require(today(accessed) <= today(), "Citation access date cannot be in the future")
+                    require(today(accessed) <= latest_calendar_date(), "Citation access date cannot be in the future")
                     urls.add(citation["url"])
                 require(len(urls) == len(item["sources"]), "Duplicate citation URL")
                 require(isinstance(evidence, list), "Evidence must be array")

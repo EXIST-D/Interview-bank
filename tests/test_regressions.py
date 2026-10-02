@@ -10,13 +10,16 @@ import unittest
 import uuid
 from datetime import datetime, timedelta, timezone
 from html.parser import HTMLParser
+from unittest import mock
 
-from support import CLI, SKILL, Bank
+from support import CLI, SKILL, Bank, sourced_answer
 
-from ibank_core import web
+from ibank_core import dates, web
+from ibank_core.answers import stage_answers
 from ibank_core.catalog import CATALOG
+from ibank_core.dates import latest_calendar_date
 from ibank_core.doctor import doctor
-from ibank_core.errors import LockConflict
+from ibank_core.errors import LockConflict, ValidationError
 from ibank_core.export import report_group
 from ibank_core.locking import bank_lock
 from ibank_core.privacy import contact_findings
@@ -223,6 +226,44 @@ class PrivacyGuard(unittest.TestCase):
             self.assertIn("personal contact information", proc.stderr)
         finally:
             bank.close()
+
+
+class BeijingJustAfterMidnight(datetime):
+    """Frozen clock: 2026-09-30 16:30 UTC is already 2026-10-01 00:30 in Beijing."""
+    @classmethod
+    def now(cls, tz=None):
+        instant = datetime(2026, 9, 30, 16, 30, tzinfo=timezone.utc)
+        return instant.astimezone(tz) if tz else instant.replace(tzinfo=None)
+
+
+class CitationDates(unittest.TestCase):
+    """B6: accessed_at was compared with the UTC date, rejecting UTC+8 local dates after midnight."""
+
+    def setUp(self):
+        self.bank = Bank()
+        self.bank.add_questions("backend.cache", "Redis 为什么快？")
+        self.task = self.bank.result("research", "--limit", "1")
+
+    def tearDown(self):
+        self.bank.close()
+
+    def stage(self, accessed_at):
+        response = {"schema_version": 1, "task_id": self.task["id"],
+                    "answers": [sourced_answer(self.task["items"][0]["question"]["id"], accessed_at)]}
+        with mock.patch.object(dates, "datetime", BeijingJustAfterMidnight):
+            return stage_answers(self.bank.path, response)
+
+    def test_beijing_local_date_after_midnight_is_accepted(self):
+        self.assertEqual(self.stage("2026-10-01")["status"], "staged")
+
+    def test_truly_future_dates_are_still_rejected(self):
+        with self.assertRaisesRegex(ValidationError, "future"):
+            self.stage("2026-10-02")
+
+    def test_latest_calendar_date_is_never_behind_any_local_date(self):
+        for hours in range(-12, 15):
+            local = datetime.now(timezone(timedelta(hours=hours))).date()
+            self.assertGreaterEqual(latest_calendar_date(), local)
 
 
 if __name__ == "__main__":
