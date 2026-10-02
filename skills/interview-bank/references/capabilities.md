@@ -11,8 +11,9 @@ Who does what. Version history lives in the repository CHANGELOG, not here.
 | Research answers (M5) | Required: actual search and page reading | Validates citations, key-point evidence and quotes against supplied page text; never browses |
 | Check cited links | — | `verify-citations`, only on request: the one CLI command that makes network requests |
 | Transcribe audio/video | Optional host tool, or local faster-whisper | `media-transcribe` runs the optional local model; supplied SRT/VTT/TXT/JSON need nothing |
-| Store, query, export, recover | — | Transactions, audit, undo, search, statistics, reports, `gc` |
-| Local Web reader and practice | User's browser | Loopback-only server; self-ratings are saved only in V2 banks |
+| Store, query, export, recover | — | Transactions, change-set runs, audit, undo, search, statistics, reports, `gc`, `backup` |
+| Local Web reader and practice | User's browser | Loopback-only server; self-ratings saved only in V2 banks |
+| Human decisions (review, merges, ratings) | Relays the user's words only | Web buttons and an interactive-terminal confirmation; agents cannot mark answers reviewed |
 
 When the host lacks a capability, report the specific limitation and use selected text, a supplied transcript or an explicitly labelled draft where appropriate.
 See [portability](portability.md) to check a new host.
@@ -25,18 +26,22 @@ See [portability](portability.md) to check a new host.
 
 ## Supported today
 
-- Try it: `demo --bank <new dir> [--v2]` builds a sample bank of 20 synthetic questions, 8 with answers checked against the cited official pages, the rest pending.
-
-- Intake: images (files, directories, recursive), selected text lines, local audio/video speech, SRT/VTT/TXT/JSON transcripts and sidecars, host transcription results.
-  Byte-identical sources never add frequency.
-- Organisation: hierarchical roles/domains/industries with Chinese labels and aliases, evidenced company profiles, conservative merges with audited canonical rewrites, reversible report exclusions.
-- Answers: source-backed versions with per-key-point evidence, age- and revision-based staleness, optional practice depth (spoken answer, follow-ups, pitfalls).
-- Output: two Markdown editions with a JSON sidecar, JSON/JSONL/CSV/viewer exports, compact size-bounded `--json` output with paging.
-- Personal state (V2):
-  verified backup migration, field protection and never-merge rules, durable research workflows, saved topics and JD mappings, self-rated review queues, one-question-at-a-time mock interviews.
-- Housekeeping: doctor, validate, undo of the latest snapshot change, gc compaction of old run snapshots.
+- Try it: `demo --bank <new dir> [--v2]` builds a sample bank of 20 synthetic questions, 8 with answers checked against the cited
+  official pages, the rest pending.
+- Intake: images (files, directories, recursive), selected text lines, web page bodies the host read (`web-intake`), local audio/video speech,
+  SRT/VTT/TXT/JSON transcripts (including Bilibili JSON and rolling auto-captions) and sidecars, host transcription results.
+  Byte-identical sources never add frequency. Composite `ingest images|media|submit|finalize` commands cover the usual sequence.
+- Organisation: hierarchical roles/domains/industries with Chinese labels and aliases, evidenced company profiles, conservative merges with
+  audited canonical rewrites, user decisions on uncertain merges in the Web reader, reversible report exclusions, problem links.
+- Answers: source-backed versions with per-key-point evidence and optional verified quotes, age- and revision-based staleness with
+  `answer-recheck`, optional practice depth (spoken answer, follow-ups, pitfalls), optional link checks.
+- Output: two Markdown editions (Chinese or English) with a JSON sidecar, JSON/JSONL/CSV/viewer/Anki exports, compact size-bounded
+  `--json` output with question cards and paging, `error_type` and `hint` on errors.
+- Personal state (V2): verified backup migration, field protection and never-merge rules, durable research workflows, saved topics and JD
+  mappings with daily .ics plans, review queues (doubling schedule or FSRS), one-question-at-a-time mock interviews.
+- Housekeeping: doctor, validate, undo of the latest snapshot change, `gc`, `backup create|verify|restore`, shared read locks.
 
 ## Not implemented
 
-Video frame OCR, automatic speaker diarization, mid-file ASR resume, social-platform scraping (the web Source type only records provenance), Web editing and merge review,
-background reminders, and splitting arbitrary historical merges.
+Video frame OCR, automatic speaker diarization, mid-file ASR resume, platform scraping (the CLI never fetches pages; `web-intake` takes
+text the host read), editing questions in the Web reader, background reminders, and splitting arbitrary historical merges.
