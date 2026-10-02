@@ -48,7 +48,7 @@ Question optional field (1.2): report_exclusion, null or a nonempty string expla
 
 ## V2 personal state (1.5–1.7)
 
-manifest.schema_version and manifest/config.bank_version are 2. The six table records remain schema_version=1; new V2 answers optionally retain question_revision, evidence, checks and version_scope. Migrated answers have null question_revision until an actual new coverage/source check is submitted. Effective staleness includes content revision mismatch, independent of metadata frequency changes.
+manifest.schema_version and manifest/config.bank_version are 2. The six table records remain schema_version=1; new V2 answers optionally retain question_revision, evidence, checks and version_scope. Migrated answers get the current question_revision when the question's updated_at is not later than the answer's created_at; otherwise question_revision stays null until an actual new coverage/source check is submitted. Effective staleness includes content revision mismatch, independent of metadata frequency changes.
 
 `data/state.json` is a version=2 object containing policies, workflows, studysets, events, sessions and evidence, each an ID-keyed object. All are loaded and validated under the same lock as the six tables, included in bank/task digests, staged snapshots, before-images, undo and transaction journal. SQLite indexes the six tables; it is still reconstructible. State and private study data are not automatically published by report export.
 

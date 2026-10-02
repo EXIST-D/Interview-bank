@@ -6,8 +6,9 @@ from pathlib import Path
 
 from .schema import require, validate_data
 from .storage import open_bank, bank_file, dumps, read_json, transaction, fingerprint, atomic_write
-from .state import empty_state
+from .state import empty_state, revision
 from .ids import new_id, utc_now
+from .timestamps import parse_timestamp
 
 
 def migrate(bank, action='plan'):
@@ -50,9 +51,15 @@ def migrate(bank, action='plan'):
         config = {**config, 'bank_version': 2}
         manifest = {**manifest, 'schema_version': 2, 'bank_version': 2, 'last_updated_at': utc_now()}
         data['_state'] = empty_state()
-        # Legacy answers remain intact, but their coverage must be rechecked in V2.
+        # A question untouched since its answer was written still has the wording that answer covered.
+        # Anything edited afterwards (curate, merge, reclassification) keeps None and needs a coverage recheck.
+        questions = {q['id']: q for q in data['questions']}
         for a in data['answers']:
-            a['question_revision'] = None
+            q = questions[a['question_id']]
+            unchanged = parse_timestamp(q['updated_at']) <= parse_timestamp(a['created_at'])
+            a['question_revision'] = revision(q) if unchanged else None
+        result['answers_bound'] = sum(a['question_revision'] is not None for a in data['answers'])
+        result['answers_need_recheck'] = len(data['answers']) - result['answers_bound']
         validate_data(data, config)
         from .storage import jsonl_text
         transaction(bank, {'manifest.json': dumps(manifest)+'\n', 'config.json': dumps(config)+'\n',

@@ -266,5 +266,24 @@ class CitationDates(unittest.TestCase):
             self.assertGreaterEqual(latest_calendar_date(), local)
 
 
+class MigrationKeepsVerifiedAnswers(unittest.TestCase):
+    """B8: V2 migration marked every verified answer as needing a recheck."""
+
+    def test_only_questions_edited_after_their_answer_need_a_recheck(self):
+        bank = Bank()
+        try:
+            bank.add_questions("backend.cache", "Redis 为什么快？", "Redis 持久化有哪些方式？")
+            bank.result("commit", "--run", json.loads(bank.answer_all().stdout)["result"]["run_id"])
+            edited = next(q for q in bank.result("search")["questions"] if q["canonical"].startswith("Redis 持久化"))
+            bank.stage_commit("curate", payload={"schema_version": 1, "changes": [
+                {"table": "questions", "id": edited["id"], "set": {"canonical": "Redis 的 RDB 与 AOF 有什么区别？"}, "reason": "题干改写"}]})
+            migrated = bank.result("migrate", "apply")
+            self.assertEqual((migrated["answers_bound"], migrated["answers_need_recheck"]), (1, 1))
+            statuses = {q["canonical"]: q["answer_status"] for q in bank.result("search")["questions"]}
+            self.assertEqual(statuses, {"Redis 为什么快？": "source_backed", "Redis 的 RDB 与 AOF 有什么区别？": "stale"})
+        finally:
+            bank.close()
+
+
 if __name__ == "__main__":
     unittest.main()
