@@ -161,6 +161,8 @@ def markdown(payload, *, include_answers=True, extras='folded', lang='zh-CN'):
         title = report_group(q)
         groups.setdefault(title, []).append(q)
         names.setdefault(title, _group_name(lang, title, q))
+    # Largest topics first (ties by name), so the overview reads as a ranking and matches the sections below.
+    groups = dict(sorted(groups.items(), key=lambda item: (-len(item[1]), names[item[0]])))
     if groups:
         out.append('## ' + text(lang, 'overview'))
         out.append(text(lang, 'overview_head') + '\n|---|---:|\n' + '\n'.join(f'| {names[title]} | {len(rows)} |' for title, rows in groups.items()))

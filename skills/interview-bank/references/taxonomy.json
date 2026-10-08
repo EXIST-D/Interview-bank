@@ -23,6 +23,7 @@
     "backend.node",
     "backend.cpp",
     "backend.platform",
+    "ai-agent.application",
     "mobile.android",
     "mobile.ios",
     "mobile.cross-platform",
