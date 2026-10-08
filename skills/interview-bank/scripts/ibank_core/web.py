@@ -27,7 +27,8 @@ from .messages import group_title, label, language
 from .timestamps import parse_timestamp
 
 ASSETS = Path(__file__).resolve().parents[2] / 'assets' / 'web'
-FILTERS = {'query', 'domain', 'role', 'technology', 'company', 'industry', 'answer_status'}
+FILTERS = {'query', 'domain', 'role', 'technology', 'company', 'industry', 'answer_status', 'group'}
+ANSWERED = ('source_backed', 'reviewed')
 VIEWS = {'all', 'due', 'weak', 'unseen'}
 
 
@@ -64,9 +65,13 @@ def card(q, state, lang='zh-CN'):
 
 
 def filtered(rows, companies, states, params):
-    predicates = [{'field': k, 'values': [v]} for k, v in params.items() if k in FILTERS and v]
+    # 'group' is the report topic; answer_status 'answered' means any current sourced or reviewed answer.
+    predicates = [{'field': k, 'values': list(ANSWERED) if (k, v) == ('answer_status', 'answered') else [v]}
+                  for k, v in params.items() if k in FILTERS - {'group'} and v]
     if predicates:
         rows = apply_expression(rows, companies, {'all': predicates})
+    if params.get('group'):
+        rows = [q for q in rows if report_group(q) == params['group']]
     view = params.get('view', 'all')
     require(view in VIEWS, 'Unknown library view')
     if view != 'all':
@@ -108,6 +113,10 @@ class WebApp:
             ):
                 counts = Counter(values)
                 facets[name] = [{'value': v, 'label': label(language(config), dimension, v, display(dimension, v)), 'count': n} for v, n in sorted(counts.items(), key=lambda x: (-x[1], x[0]))]
+            groups = Counter(report_group(q) for q in rows)
+            facets['group'] = [{'value': g, 'label': group_title(language(config), g, next((q['domains'][0].split('.')[0] for q in rows
+                                if report_group(q) == g and q['domains']), None)), 'count': n}
+                               for g, n in sorted(groups.items(), key=lambda x: (-x[1], x[0]))]
             company_counts = Counter(c['id'] for q in rows for c in q['companies'] if c['id'])
             facets['company'] = [{'value': c['id'], 'label': c['name'], 'count': company_counts[c['id']]} for c in data['companies'] if company_counts[c['id']]]
             used = [c for c in data['companies'] if company_counts[c['id']]]
@@ -121,7 +130,10 @@ class WebApp:
                             'answer_count': sum(q['answer'] is not None for q in rows), 'stale': sum(q['answer_status'] == 'stale' for q in rows),
                             'due': sum(s['due'] for s in states.values()), 'weak': sum(s['state'] in ('weak', 'changed') for s in states.values()),
                             'unseen': sum(s['state'] == 'unseen' for s in states.values()), 'domains': len(facets['domain'])},
-                'total': len(found), 'offset': offset, 'limit': limit, 'facets': facets,
+                'total': len(found), 'total_answered': sum(q['answer_status'] in ANSWERED for q in found),
+                'offset': offset, 'limit': limit, 'facets': facets,
+                # The whole filtered order, so the reader can step to the previous or next question across pages.
+                'ids': [q['id'] for q in found],
                 'questions': [card(q, states[q['id']], language(config)) for q in found[offset:offset + limit]],
             }
 
