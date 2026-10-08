@@ -68,6 +68,30 @@ class WebTests(BankFixture):
         self.assertEqual(self.server.server_address[0],'127.0.0.1')
         self.assertEqual(self.request('/api/library',headers={'Origin':self.server.origin})[0],200)
 
+    def test_hosting_behind_a_proxy_uses_a_fixed_token_and_named_origin(self):
+        self.seed()
+        token = 'proxy-token-' + 'x' * 40
+        self.app = WebApp(self.bank, True)
+        self.server = LocalServer(self.app, 0, token, ['https://exist.example'])
+        self.thread = threading.Thread(target=self.server.serve_forever, kwargs={'poll_interval': .01}, daemon=True)
+        self.thread.start()
+        self.addCleanup(self.stop)
+        self.assertEqual(self.server.server_address[0], '127.0.0.1')
+        self.assertEqual(self.request('/api/library', headers={'Origin': 'https://exist.example'})[0], 200)
+        for headers in ({'Origin': 'https://other.example'}, {'X-Interview-Token': 'wrong'}):
+            self.assertIn(self.request('/api/library', headers=headers)[0], (401, 403))
+
+    def test_serve_validates_hosting_options(self):
+        from ibank_core.web import serve
+        with self.assertRaises(ValidationError):
+            serve(self.bank, 0, True, False, None, ['https://exist.example'])
+        with self.assertRaises(ValidationError):
+            serve(self.bank, 0, True, False, None, ['http://exist.example/ibank'])
+        short = self.bank.parent / 'short-token'
+        short.write_text('short', encoding='utf-8')
+        with self.assertRaises(ValidationError):
+            serve(self.bank, 0, True, False, str(short), ['https://exist.example'])
+
     def test_static_assets_and_no_arbitrary_file_server(self):
         self.start()
         for path,mime in (('/','text/html'),('/app.js','text/javascript'),('/app.css','text/css')):

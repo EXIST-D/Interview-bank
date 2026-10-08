@@ -70,7 +70,22 @@ The server accepts both `http://127.0.0.1:<port>` and `http://localhost:<port>`;
 Bind exclusively to `127.0.0.1`; no LAN/public binding option.
 The custom handler serves only three bundled assets and a small authenticated API, with Host/Origin checks, per-process token, bounded JSON bodies, no CORS grants and a restrictive content policy.
 Question/answer HTML is rendered as text, source links accept only HTTP(S), and no remote scripts/fonts or file-upload endpoints are used.
-This is a personal local helper, not an Internet deployment or a multi-user service. Do not tunnel or host it publicly.
+It is a personal helper, not a multi-user service. Never tunnel or expose the port itself; reading on a phone goes
+through your own server as below, only when the user asks for it.
+
+## Reading on your own server (optional)
+
+For a person who wants to read and practise on a phone, the reader can sit behind their own HTTPS reverse proxy,
+read-only, with the bank copied there. Templates are in the repository's `tools/deploy/`.
+
+- The server still binds to loopback. `web --read-only --token-file <file> --public-origin https://<site>` uses a
+  fixed token from a root-readable file (never printed) and accepts that site's Origin. Assets and API calls are
+  relative, so the reader works under a path such as `/ibank/`.
+- The proxy asks for a login (`auth_basic`, password set by the person with `set-password.sh` on the server) and
+  adds `X-Interview-Token`; the systemd unit runs as an unprivileged user with a read-only filesystem except the bank.
+- The agent keeps working on the local bank. `tools/deploy/sync.sh <bank> <user@server>` copies only `data/`,
+  `config.json` and `manifest.json`: no images, runs, caches or exports. Practice ratings are not saved there.
+- Personal data leaves the machine: deploy only when the user asks, to a server they control, with HTTPS and login.
 
 Protocol endpoints for diagnostics: GET `/api/library`, `/api/question?id=...`, `/api/practice`; POST `/api/practice`. All require `X-Interview-Token` from the launch URL;
 keep it out of public logs. Use the browser for normal practice instead of submitting synthetic user ratings into a real bank.
