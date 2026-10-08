@@ -87,8 +87,11 @@ read-only, with the bank copied there. Templates are in the repository's `tools/
   proxy also rate-limits the login endpoint. The proxy adds `X-Interview-Token` and the client address; the
   systemd unit runs as an unprivileged user with a read-only filesystem except the bank, and starts only once a
   login exists.
-- The agent keeps working on the local bank. `tools/deploy/sync.sh <bank> <user@server>` copies only `data/`,
-  `config.json` and `manifest.json`: no images, runs, caches or exports. Practice ratings are not saved there.
+- Several people: `--banks-dir <dir>` gives each account its own bank, `<dir>/<bank name of the account>`; an
+  account never sees another's questions. Accounts are managed on the server with `set-login.py add|passwd|remove|list`.
+- The agent keeps working on the local bank, which stays the original. `tools/deploy/sync.sh <bank> <user@server>
+  <bank name>` copies only `data/`, `config.json` and `manifest.json` to that account: no images, runs, caches or
+  exports. Practice ratings are not saved there. `backup.sh` with its systemd timer keeps 14 daily verified backups.
 - Personal data leaves the machine: deploy only when the user asks, to a server they control, with HTTPS and login.
 
 Protocol endpoints for diagnostics: GET `/api/library`, `/api/question?id=...`, `/api/practice`; POST `/api/practice`. All require `X-Interview-Token` from the launch URL;

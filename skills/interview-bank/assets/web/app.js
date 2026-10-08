@@ -7,6 +7,15 @@
 const TEXT = {
   'zh-CN': {
     library: '题目列表', reader: '阅读', more: '更多', filters: '筛选', topics: '主题', navigation: '切换题目',
+    sidebar: '导航', stat_total: '题目', stat_answered: '有答案', stat_topics: '主题', study: '学习', view_all_long: '全部题目',
+    tools: '工具', import: '导入题目', research: '补充答案', export: '导出报告', via_agent: 'Agent', think_first_short: '先想再看',
+    info_soon: '网页内直接操作会在后续版本提供。',
+    info_import_title: '导入题目', info_import_text: '题目由电脑上的 Agent 从截图、文字或音视频中抽取、去重后写入题库，再同步到这里。在电脑上对 Agent 说：',
+    info_import_example: '用 interview-bank 把 <截图目录> 里的面试题整理进我的题库，然后同步到服务器',
+    info_research_title: '补充答案', info_research_text: '参考答案由 Agent 阅读官方文档等原始资料后撰写，每个要点都附出处，再同步到这里。在电脑上对 Agent 说：',
+    info_research_example: '给题库里还没有答案的 AI Agent 方向题目补充有来源的参考答案，然后同步到服务器',
+    info_export_title: '导出报告', info_export_text: '带答案版和题目版两份 Markdown 报告由 Agent 在电脑上导出。在电脑上对 Agent 说：',
+    info_export_example: '用 interview-bank 导出我的题库报告（带答案版和题目版）',
     practice: '练习一组', merges: '合并裁决', think_first: '先想再看（默认隐藏答案）', refresh: '刷新', logout: '退出登录',
     search: '搜索题目…', search_label: '搜索题目', answered_only: '只看有答案', more_questions: '加载更多',
     resume: '继续练习', discard: '放弃', back: '返回列表', hide_answer: '隐藏答案', show_answer: '显示答案',
@@ -14,7 +23,7 @@ const TEXT = {
     f_view: '练习状态', view_all: '全部', view_due: '待复习', view_weak: '待巩固', view_unseen: '尚未练习',
     f_domain: '领域', f_technology: '技术栈', f_company: '公司', f_role: '岗位', f_industry: '行业', f_answer: '答案',
     answer_any: '全部', sort: '排序', sort_frequency: '出现次数', sort_recent: '最近更新', sort_title: '题目名称',
-    reset: '重置', apply: '完成', close: '关闭',
+    reset: '重置筛选', apply: '完成', close: '关闭',
     practice_title: '练习', close_practice: '结束练习', round_size: '本轮题数', begin_round: '开始',
     merge_intro: '这些题 Agent 不确定是否相同，请逐条判断；由 Agent 应用后才写入题库。',
     status_answered: '有答案', status_source_backed: '有来源', status_reviewed: '已审阅', status_missing: '待补写',
@@ -53,6 +62,15 @@ const TEXT = {
   },
   en: {
     library: 'Questions', reader: 'Reader', more: 'More', filters: 'Filters', topics: 'Topics', navigation: 'Question navigation',
+    sidebar: 'Navigation', stat_total: 'Questions', stat_answered: 'Answered', stat_topics: 'Topics', study: 'Study', view_all_long: 'All questions',
+    tools: 'Tools', import: 'Import questions', research: 'Add answers', export: 'Export reports', via_agent: 'Agent', think_first_short: 'Think first',
+    info_soon: 'Doing this directly in the page is planned for a later version.',
+    info_import_title: 'Import questions', info_import_text: 'The agent on your computer extracts and deduplicates questions from screenshots, text or recordings, then syncs the bank here. Ask the agent, for example',
+    info_import_example: 'Use interview-bank to add the interview questions in <screenshot folder> to my bank, then sync it to the server',
+    info_research_title: 'Add answers', info_research_text: 'The agent writes reference answers from official docs and other primary sources, with a source for every key point, then syncs. Ask the agent, for example',
+    info_research_example: 'Add sourced reference answers to the unanswered AI Agent questions in my bank, then sync it to the server',
+    info_export_title: 'Export reports', info_export_text: 'The agent exports the two Markdown reports (with answers and questions only) on your computer. Ask the agent, for example',
+    info_export_example: 'Use interview-bank to export my bank reports (with answers and questions only)',
     practice: 'Practise a round', merges: 'Merge decisions', think_first: 'Think first (hide answers by default)', refresh: 'Refresh', logout: 'Sign out',
     search: 'Search questions…', search_label: 'Search questions', answered_only: 'Answered only', more_questions: 'Load more',
     resume: 'Resume', discard: 'Discard', back: 'Back to the list', hide_answer: 'Hide answer', show_answer: 'Show answer',
@@ -60,7 +78,7 @@ const TEXT = {
     f_view: 'Practice state', view_all: 'All', view_due: 'Due', view_weak: 'Needs work', view_unseen: 'Not practised',
     f_domain: 'Topic', f_technology: 'Tech', f_company: 'Company', f_role: 'Role', f_industry: 'Industry', f_answer: 'Answer',
     answer_any: 'Any', sort: 'Sort', sort_frequency: 'Frequency', sort_recent: 'Recently updated', sort_title: 'Title',
-    reset: 'Reset', apply: 'Done', close: 'Close',
+    reset: 'Reset filters', apply: 'Done', close: 'Close',
     practice_title: 'Practice', close_practice: 'End practice', round_size: 'Questions', begin_round: 'Start',
     merge_intro: 'The agent was unsure whether these are the same question. Decide each; the agent applies your decisions.',
     status_answered: 'Answered', status_source_backed: 'Sourced', status_reviewed: 'Reviewed', status_missing: 'No answer',
@@ -121,6 +139,7 @@ function applyLanguage(code) {
 const $ = id => document.getElementById(id);
 const filters = ['domain', 'role', 'technology', 'company', 'industry', 'answer_status'];
 const wide = matchMedia('(min-width: 900px)');
+const roomy = matchMedia('(min-width: 1100px)');  // three columns: sidebar, list, reader
 const state = {
   group: '', offset: 0, limit: 30, questions: [], ids: [], data: null, load: 0, detail: 0,
   current: null, revealed: true, cache: new Map(), round: null, merges: [],
@@ -277,6 +296,38 @@ function updateFacets(facets) {
     groups.append(chip);
   }
   groups.querySelector('.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  const side = $('side-groups');
+  side.replaceChildren();
+  for (const item of [{ value: '', label: t('all_group'), count: total }, ...(facets.group || [])]) {
+    const entry = button('', 'side-item' + (state.group === item.value ? ' active' : ''), () => { state.group = item.value; loadLibrary(true); });
+    entry.append(el('span', '', item.label), el('small', '', String(item.count)));
+    side.append(entry);
+  }
+}
+
+function updateSidebar(data) {
+  $('stat-total').textContent = data.summary.questions;
+  $('stat-answered').textContent = data.summary.answered;
+  $('stat-topics').textContent = (data.facets.group || []).length;
+  for (const key of ['all', 'due', 'weak', 'unseen']) $('nav-' + key).textContent = data.summary[key === 'all' ? 'questions' : key];
+  for (const node of document.querySelectorAll('[data-view]')) node.classList.toggle('active', node.dataset.view === $('view').value);
+  $('account').textContent = data.account || data.name;
+  $('side-logout').hidden = !data.can_logout;
+  $('side-status').textContent = [data.read_only ? t('notice_read_only') : data.schema_version === 1 ? t('notice_v1') : '', 'v' + data.version].filter(Boolean).join(' · ');
+}
+
+function placeFilters() {
+  // Wide screens keep the filters inline above the list; phones open them as a bottom sheet.
+  if (roomy.matches) $('inline-filters').append($('filter-fields'));
+  else $('filter-dialog').querySelector('.sheet-head').after($('filter-fields'));
+  if (!roomy.matches) $('inline-filters').hidden = true;
+}
+
+function showInfo(kind) {
+  $('info-title').textContent = t(`info_${kind}_title`);
+  $('info-text').textContent = t(`info_${kind}_text`);
+  $('info-example').textContent = t(`info_${kind}_example`);
+  $('info-dialog').showModal();
 }
 
 function filterCount() {
@@ -301,6 +352,7 @@ async function loadLibrary(reset = false) {
     state.ids = data.ids;
     state.questions = state.offset ? [...state.questions, ...data.questions] : data.questions;
     updateFacets(data.facets);
+    updateSidebar(data);
     filterCount();
     $('version').textContent = `${data.name} · v${data.version}`;
     $('logout').hidden = !data.can_logout;
@@ -556,13 +608,15 @@ function reviewControls(q) {
 // ---------------------------------------------------------------- merge decisions
 
 async function loadMerges() {
-  if (state.data?.read_only) { $('open-merges').hidden = true; return; }
+  if (state.data?.read_only) { $('open-merges').hidden = true; $('side-merges').hidden = true; return; }
   try {
     const { items } = await api('/api/dedupe-reviews');
     state.merges = items;
     const open = items.filter(item => !item.decision).length;
     $('open-merges').hidden = !items.length;
+    $('side-merges').hidden = !items.length;
     $('merge-count').textContent = open ? String(open) : '✓';
+    $('side-merge-count').textContent = open ? String(open) : '✓';
     if ($('merge-dialog').open) renderMerges();
   } catch (_) {
     $('open-merges').hidden = true;
@@ -782,20 +836,40 @@ $('answered-only').addEventListener('click', () => {
 });
 $('more').addEventListener('click', () => { state.offset = state.questions.length; loadLibrary(); });
 $('continue').addEventListener('click', () => { const last = stored('ibank-last', null); if (last) openQuestion(last.id, true); });
-$('open-filters').addEventListener('click', () => $('filter-dialog').showModal());
+$('open-filters').addEventListener('click', () => {
+  if (roomy.matches) $('inline-filters').hidden = !$('inline-filters').hidden;
+  else $('filter-dialog').showModal();
+});
+for (const name of [...filters, 'view', 'sort']) $(name).addEventListener('change', () => { if (roomy.matches) loadLibrary(true); });
+roomy.addEventListener('change', placeFilters);
+$('views').addEventListener('click', event => {
+  const target = event.target.closest('[data-view]');
+  if (!target) return;
+  $('view').value = target.dataset.view;
+  loadLibrary(true);
+});
+for (const node of document.querySelectorAll('[data-info]')) node.addEventListener('click', () => { $('menu').hidden = true; showInfo(node.dataset.info); });
+$('close-info').addEventListener('click', () => $('info-dialog').close());
+$('side-practice').addEventListener('click', preparePractice);
+$('side-merges').addEventListener('click', () => { renderMerges(); $('merge-dialog').showModal(); });
+$('side-refresh').addEventListener('click', () => $('refresh').click());
+$('side-logout').addEventListener('click', () => $('logout').click());
+$('side-think-first').addEventListener('change', () => { $('think-first').checked = $('side-think-first').checked; $('think-first').dispatchEvent(new Event('change')); });
+$('practise-current').addEventListener('click', () => { if (state.current) question(state.current).then(singlePractice).catch(error => toast(error.message)); });
 $('close-filters').addEventListener('click', () => $('filter-dialog').close());
 $('apply-filters').addEventListener('click', () => { $('filter-dialog').close(); loadLibrary(true); });
 $('clear-filters').addEventListener('click', () => {
   for (const name of filters) $(name).value = '';
   $('view').value = 'all';
   $('sort').value = 'frequency';
-  $('filter-dialog').close();
+  if ($('filter-dialog').open) $('filter-dialog').close();
   loadLibrary(true);
 });
 $('open-menu').addEventListener('click', event => { event.stopPropagation(); $('menu').hidden = !$('menu').hidden; });
 document.addEventListener('click', event => { if (!$('menu').hidden && !$('menu').contains(event.target)) $('menu').hidden = true; });
 $('think-first').addEventListener('change', () => {
   store('ibank-think-first', $('think-first').checked);
+  $('side-think-first').checked = $('think-first').checked;
   if (state.current) setReveal(!$('think-first').checked);
 });
 $('refresh').addEventListener('click', async () => {
@@ -830,7 +904,7 @@ $('reading').addEventListener('touchend', event => {
 
 document.addEventListener('keydown', event => {
   const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
-  const dialog = $('practice-dialog').open || $('merge-dialog').open || $('filter-dialog').open;
+  const dialog = $('practice-dialog').open || $('merge-dialog').open || $('filter-dialog').open || $('info-dialog').open;
   if (typing || dialog) return;
   if (event.key === '/') { event.preventDefault(); $('search').focus(); }
   if (!state.current) return;
@@ -872,6 +946,8 @@ window.addEventListener('beforeunload', event => {
 });
 
 $('think-first').checked = stored('ibank-think-first', false);
+$('side-think-first').checked = $('think-first').checked;
+placeFilters();
 $('answered-only').setAttribute('aria-pressed', String(stored('ibank-answered-only', false)));
 closeReader();
 offerResume();

@@ -12,9 +12,15 @@ Optional reading on a phone through the user's own server. Data stays V1/V2; no 
   that asks for a login and adds the token.
 - `web --login-file`: a login page for the hosted reader (one account, scrypt hash, signed HttpOnly/Secure/SameSite=Strict
   session cookie for 14 days, sign-out button, lockout after repeated failures; a new password signs every device out).
+- `web --banks-dir <dir>`: several people on one server, each account reading only its own bank; login files hold
+  several accounts (format 2; the single-account format still loads).
+- Reading-first Web design: phone list and full-screen reader with previous/next, swipe and back gesture; three columns
+  on wide screens (sidebar with overview, study views, topics and tools, inline filters, reader); key points with
+  their sources; optional think-first mode; placeholders that explain how to import, answer and export via the agent.
 - `tools/deploy/`: a hardened systemd unit (unprivileged user, read-only filesystem except the bank, starts only once a
-  login exists), nginx snippets that add the token and client address and rate-limit logins, `set-login.py` (the person
-  types the password on the server) and `sync.sh`, which copies only a bank's data, config and manifest.
+  login exists), nginx snippets that add the token and client address and rate-limit logins, `set-login.py` (accounts:
+  add, passwd, remove, list; passwords typed on the server), `sync.sh` (a bank's data, config and manifest to one
+  account) and `backup.sh` with a daily systemd timer (14 verified backups per bank).
 - web.md: “Reading on your own server”.
 
 ### Changed

@@ -1,0 +1,14 @@
+# Install as /etc/systemd/system/interview-bank-backup.service (with interview-bank-backup.timer).
+[Unit]
+Description=Interview Bank daily verified backups
+
+[Service]
+Type=oneshot
+User=ibank
+Group=ibank
+ExecStart=/usr/local/sbin/interview-bank-backup
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/srv/interview-bank
