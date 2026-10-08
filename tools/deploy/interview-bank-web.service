@@ -3,12 +3,15 @@
 [Unit]
 Description=Interview Bank Web reader (loopback, behind a reverse proxy)
 After=network.target
+# Starts only once the person has set a login (set-login.py creates the file and restarts the service).
+ConditionPathExists=/etc/interview-bank/login
 
 [Service]
 User=ibank
 Group=ibank
 ExecStart=/usr/bin/python3 -B /opt/interview-bank/interview-bank/scripts/ibank.py web --bank /srv/interview-bank/bank \
-    --port 8765 --read-only --token-file /etc/interview-bank/token --public-origin https://example.com
+    --port 8765 --read-only --token-file /etc/interview-bank/token --public-origin https://example.com \
+    --login-file /etc/interview-bank/login
 Restart=on-failure
 RestartSec=3
 NoNewPrivileges=true

@@ -211,9 +211,14 @@ class LocalServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = False
 
-    def __init__(self, app, port=0, token=None, public_origins=()):
+    def __init__(self, app, port=0, token=None, public_origins=(), login=None):
         self.app = app
         self.token = token or secrets.token_urlsafe(32)
+        # Optional login page (hosting only): one account, signed session cookie, limited failed attempts.
+        self.login = login
+        if login:
+            from .weblogin import Attempts, Sessions
+            self.sessions, self.attempts = Sessions(self.token, login), Attempts()
         # Hosting behind a reverse proxy: the proxy authenticates the person and adds the token header; the
         # browser's Origin is the public site. The server itself still binds to loopback only.
         self.public_origins = tuple(public_origins)
@@ -242,7 +247,7 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, *_):
         pass  # No credentials, question text or private paths in access logs.
 
-    def send(self, status, body, content_type='application/json; charset=utf-8'):
+    def send(self, status, body, content_type='application/json; charset=utf-8', headers=()):
         if not isinstance(body, bytes):
             body = json.dumps(body, ensure_ascii=False, allow_nan=False).encode('utf-8')
         self.send_response(status)
@@ -252,6 +257,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('Referrer-Policy', 'no-referrer')
         self.send_header('Content-Security-Policy', "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'")
+        for name, value in headers:
+            self.send_header(name, value)
         self.end_headers()
         self.wfile.write(body)
 
@@ -263,30 +270,35 @@ class Handler(BaseHTTPRequestHandler):
                 or self.headers.get('Origin') not in (None, *(f'http://{h}' for h in hosts), *self.server.public_origins):
             return self.send(403, {'error': f'仅支持本机访问：请打开 Agent 提供的 http://127.0.0.1:{port}/ 链接。'})
         path = urlsplit(self.path).path
-        assets = {'/': ('index.html', 'text/html; charset=utf-8'), '/app.js': ('app.js', 'text/javascript; charset=utf-8'), '/app.css': ('app.css', 'text/css; charset=utf-8')}
+        assets = {'/': ('index.html', 'text/html; charset=utf-8'), '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
+                  '/app.css': ('app.css', 'text/css; charset=utf-8'), '/login.js': ('login.js', 'text/javascript; charset=utf-8')}
         if path in assets and not post:
             name, mime = assets[path]
+            if path == '/' and self.server.login and not self.signed_in():
+                name = 'login.html'
             return self.send(200, (ASSETS / name).read_bytes(), mime)
         supplied = self.headers.get('X-Interview-Token', '')
         if not hmac.compare_digest(supplied, self.server.token):
             return self.send(401, {'error': '访问凭据已失效，请使用 Agent 提供的完整启动链接重新打开。'})
+        if self.server.login:
+            if post and path in ('/api/login', '/api/logout'):
+                return self.login(path)
+            if not self.signed_in():
+                return self.send(401, {'error': '请先登录。', 'login': True})
         query = parse_qs(urlsplit(self.path).query, keep_blank_values=True)
         require(all(len(v) == 1 for v in query.values()), 'Duplicate query parameters')
         params = {k: v[0] for k, v in query.items()}
         if post:
             if path not in ('/api/practice', '/api/review', '/api/dedupe-decision'):
                 return self.send(404, {'error': 'Unknown endpoint'})
-            require(self.headers.get('Content-Type', '').split(';')[0] == 'application/json', 'Expected JSON')
-            require(not self.headers.get('Transfer-Encoding'), 'Transfer encoding not supported')
-            sizes = self.headers.get_all('Content-Length', [])
-            require(len(sizes) == 1 and sizes[0].isdigit() and 0 < int(sizes[0]) <= 65536, 'Invalid content length')
-            body = self.rfile.read(int(sizes[0]))
-            require(len(body) == int(sizes[0]), 'Incomplete request')
+            body = self.json_body()
             handler = {'/api/practice': self.server.app.record, '/api/review': self.server.app.review,
                        '/api/dedupe-decision': self.server.app.dedupe_decision}[path]
-            result = handler(json.loads(body))
+            result = handler(body)
         elif path == '/api/library':
             result = self.server.app.library(params)
+            if self.server.login:
+                result = {**result, 'can_logout': True}
         elif path == '/api/practice':
             result = self.server.app.library(params, practice=True)
         elif path == '/api/dedupe-reviews':
@@ -298,6 +310,54 @@ class Handler(BaseHTTPRequestHandler):
         else:
             return self.send(404, {'error': 'Unknown endpoint'})
         self.send(200, result)
+
+    def json_body(self):
+        require(self.headers.get('Content-Type', '').split(';')[0] == 'application/json', 'Expected JSON')
+        require(not self.headers.get('Transfer-Encoding'), 'Transfer encoding not supported')
+        sizes = self.headers.get_all('Content-Length', [])
+        require(len(sizes) == 1 and sizes[0].isdigit() and 0 < int(sizes[0]) <= 65536, 'Invalid content length')
+        body = self.rfile.read(int(sizes[0]))
+        require(len(body) == int(sizes[0]), 'Incomplete request')
+        return json.loads(body)
+
+    def cookie(self):
+        from http.cookies import CookieError, SimpleCookie
+        jar = SimpleCookie()
+        try:
+            jar.load(self.headers.get('Cookie', ''))
+        except CookieError:
+            return None
+        from .weblogin import COOKIE
+        return jar[COOKIE].value if COOKIE in jar else None
+
+    def signed_in(self):
+        return self.server.sessions.valid(self.cookie())
+
+    def client(self):
+        # Behind the proxy every connection comes from loopback; the proxy names the real client.
+        return self.headers.get('X-Real-IP') or self.client_address[0]
+
+    def session_cookie(self, value, max_age):
+        import re
+        from .weblogin import COOKIE
+        prefix = self.headers.get('X-Forwarded-Prefix', '/')
+        path = prefix if re.fullmatch(r'/[A-Za-z0-9._~/-]*', prefix) else '/'
+        return ('Set-Cookie', f'{COOKIE}={value}; Path={path.rstrip("/") or "/"}; Max-Age={max_age}; HttpOnly; Secure; SameSite=Strict')
+
+    def login(self, path):
+        from .weblogin import SESSION_SECONDS, verify
+        if path == '/api/logout':
+            return self.send(200, {'signed_out': True}, headers=[self.session_cookie('', 0)])
+        client = self.client()
+        if self.server.attempts.blocked(client):
+            return self.send(429, {'error': '尝试次数过多，请 15 分钟后再试。'})
+        body = self.json_body()
+        require(isinstance(body, dict) and set(body) == {'username', 'password'}, 'Expected username and password')
+        if not verify(self.server.login, body['username'], body['password']):
+            self.server.attempts.failed(client)
+            return self.send(401, {'error': '用户名或密码不正确。'})
+        self.server.attempts.succeeded(client)
+        return self.send(200, {'signed_in': True}, headers=[self.session_cookie(self.server.sessions.issue(), SESSION_SECONDS)])
 
     def handle_route(self, post=False):
         try:
@@ -326,15 +386,20 @@ def _read_token(path):
     return token
 
 
-def serve(bank, port=0, read_only=False, open_browser=False, token_file=None, public_origins=()):
+def serve(bank, port=0, read_only=False, open_browser=False, token_file=None, public_origins=(), login_file=None):
     require(0 <= port <= 65535, 'Port must be 0..65535')
     for origin in public_origins:
         parsed = urlsplit(origin)
         require(parsed.scheme == 'https' and parsed.netloc and not parsed.path.strip('/') and not parsed.query,
                 'A public origin is https://host[:port] without a path')
     require(not public_origins or token_file, 'A public origin needs --token-file: the reverse proxy must add the token')
+    require(not login_file or public_origins, 'A login page is only for hosting: also pass --public-origin')
+    login = None
+    if login_file:
+        from .weblogin import load_login
+        login = load_login(login_file)
     server = LocalServer(WebApp(bank, read_only), port, _read_token(token_file) if token_file else None,
-                         [o.rstrip('/') for o in public_origins])
+                         [o.rstrip('/') for o in public_origins], login)
     # A fixed token lives in a file the proxy also reads; never print it into service logs.
     url = server.origin + '/' if token_file else server.url
     print(json.dumps({'ok': True, 'command': 'web', 'result': {'url': url, 'pid': __import__('os').getpid(), 'read_only': read_only,

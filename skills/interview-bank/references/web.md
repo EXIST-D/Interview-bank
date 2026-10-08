@@ -81,8 +81,12 @@ read-only, with the bank copied there. Templates are in the repository's `tools/
 - The server still binds to loopback. `web --read-only --token-file <file> --public-origin https://<site>` uses a
   fixed token from a root-readable file (never printed) and accepts that site's Origin. Assets and API calls are
   relative, so the reader works under a path such as `/ibank/`.
-- The proxy asks for a login (`auth_basic`, password set by the person with `set-password.sh` on the server) and
-  adds `X-Interview-Token`; the systemd unit runs as an unprivileged user with a read-only filesystem except the bank.
+- `--login-file` shows the reader's own login page (one account, scrypt hash written by the person with
+  `set-login.py` on the server). A login sets a signed HttpOnly, Secure, SameSite=Strict cookie for 14 days; a new
+  password signs every device out; five failures per client (thirty overall) lock login for 15 minutes, and the
+  proxy also rate-limits the login endpoint. The proxy adds `X-Interview-Token` and the client address; the
+  systemd unit runs as an unprivileged user with a read-only filesystem except the bank, and starts only once a
+  login exists.
 - The agent keeps working on the local bank. `tools/deploy/sync.sh <bank> <user@server>` copies only `data/`,
   `config.json` and `manifest.json`: no images, runs, caches or exports. Practice ratings are not saved there.
 - Personal data leaves the machine: deploy only when the user asks, to a server they control, with HTTPS and login.
