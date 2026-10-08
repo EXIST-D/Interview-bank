@@ -1,0 +1,145 @@
+{"id": "d001", "decision": "MERGE", "why": "同义改写，均问 Redis 高性能的原因。"}
+{"id": "d002", "decision": "MERGE", "why": "同一问题的同义表述，答案完全相同。"}
+{"id": "d003", "decision": "MERGE", "why": "RDB/AOF 正是持久化方式的核心子点，一个答案可同时覆盖。"}
+{"id": "d004", "decision": "MERGE", "why": "后者只多出解决方案这一兼容子点，合并后规范题保留“怎么解决”。"}
+{"id": "d005", "decision": "MERGE", "why": "后者只多出预防这一兼容子点，可用一个答案覆盖。"}
+{"id": "d006", "decision": "MERGE", "why": "Redis/MySQL 只是通用缓存-数据库双写一致性的具体化，方案不变。"}
+{"id": "d007", "decision": "MERGE", "why": "同一问题，InnoDB 限定不改变答案。"}
+{"id": "d008", "decision": "MERGE", "why": "同义改写。"}
+{"id": "d009", "decision": "MERGE", "why": "同一问题，“四种”只是答案内容。"}
+{"id": "d010", "decision": "MERGE", "why": "MVCC 定义与 MySQL 实现原理可由一个答案共同覆盖（领域已限定 MySQL 事务）。"}
+{"id": "d011", "decision": "MERGE", "why": "排查慢 SQL 与定位线上慢查询是同一问题。"}
+{"id": "d012", "decision": "MERGE", "why": "最左前缀原则即联合索引的最左匹配，同一问题。"}
+{"id": "d013", "decision": "MERGE", "why": "同一问题的同义表述。"}
+{"id": "d014", "decision": "MERGE", "why": "均问为什么三次而非两次。"}
+{"id": "d015", "decision": "MERGE", "why": "HTTPS 多出的部分正是二者区别的核心，一个答案覆盖。"}
+{"id": "d016", "decision": "MERGE", "why": "HTTPS 握手的核心就是 TLS 握手，答案相同。"}
+{"id": "d017", "decision": "MERGE", "why": "顺序颠倒的同一问题。"}
+{"id": "d018", "decision": "MERGE", "why": "前者包含后者，兼容子点，一个答案可覆盖。"}
+{"id": "d019", "decision": "MERGE", "why": "同义改写。"}
+{"id": "d020", "decision": "MERGE", "why": "顺序颠倒的同一问题。"}
+{"id": "d021", "decision": "MERGE", "why": "同义改写。"}
+{"id": "d022", "decision": "MERGE", "why": "均问 volatile 的作用/保证。"}
+{"id": "d023", "decision": "MERGE", "why": "同一问题的同义表述。"}
+{"id": "d024", "decision": "MERGE", "why": "同义改写。"}
+{"id": "d025", "decision": "RELATED", "why": "通用 MQ 防丢失与 Kafka 专属机制（acks、副本/ISR）所需知识不同，为窄化变体。"}
+{"id": "d026", "decision": "MERGE", "why": "均问重复消费/幂等消费的处理。"}
+{"id": "d027", "decision": "RELATED", "why": "分布式锁有多种实现，Redis 实现是其中一种的窄化追问。"}
+{"id": "d028", "decision": "MERGE", "why": "CAP 理论与 CAP 定理同一概念。"}
+{"id": "d029", "decision": "MERGE", "why": "选主即 leader 选举，同一问题。"}
+{"id": "d030", "decision": "MERGE", "why": "保证接口幂等与设计幂等接口是同一问题。"}
+{"id": "d031", "decision": "MERGE", "why": "同一系统设计题。"}
+{"id": "d032", "decision": "MERGE", "why": "同一系统设计题，“高并发”是其固有约束。"}
+{"id": "d033", "decision": "MERGE", "why": "同一对比问题。"}
+{"id": "d034", "decision": "MERGE", "why": "领域为 JavaScript，限定不改变答案。"}
+{"id": "d035", "decision": "MERGE", "why": "领域已限定浏览器事件循环，同一问题。"}
+{"id": "d036", "decision": "MERGE", "why": "二者区别的核心就是执行时机与顺序，一个答案可覆盖。"}
+{"id": "d037", "decision": "MERGE", "why": "同一问题的同义表述。"}
+{"id": "d038", "decision": "MERGE", "why": "顺序颠倒的同一问题。"}
+{"id": "d039", "decision": "MERGE", "why": "同义改写。"}
+{"id": "d040", "decision": "MERGE", "why": "经典同一问题的同义表述。"}
+{"id": "d041", "decision": "MERGE", "why": "重排即回流，同一问题。"}
+{"id": "d042", "decision": "MERGE", "why": "跨域解决方案是兼容子点，一个答案覆盖。"}
+{"id": "d043", "decision": "MERGE", "why": "后者为前者的防御子点，合并后保留“是什么+如何防御”。"}
+{"id": "d044", "decision": "MERGE", "why": "同一概念，后者给出全称。"}
+{"id": "d045", "decision": "MERGE", "why": "文档切分即 chunking 策略。"}
+{"id": "d046", "decision": "MERGE", "why": "自注意力的解释即其计算过程，可共同覆盖。"}
+{"id": "d047", "decision": "MERGE", "why": "同义改写（中英术语）。"}
+{"id": "d048", "decision": "MERGE", "why": "同义改写。"}
+{"id": "d049", "decision": "MERGE", "why": "Docker 是容器的代表，同一对比问题。"}
+{"id": "d050", "decision": "MERGE", "why": "K8s 即 Kubernetes，同一问题。"}
+{"id": "d051", "decision": "MERGE", "why": "跨语言同一问题。"}
+{"id": "d052", "decision": "MERGE", "why": "跨语言同一问题，闭包在前端领域即 JS 闭包。"}
+{"id": "d053", "decision": "MERGE", "why": "跨语言同一问题。"}
+{"id": "d054", "decision": "MERGE", "why": "跨语言同一问题。"}
+{"id": "d055", "decision": "MERGE", "why": "跨语言同一问题，tool calling 评估语境相同。"}
+{"id": "d056", "decision": "MERGE", "why": "跨语言同一问题。"}
+{"id": "d057", "decision": "MERGE", "why": "跨语言同一系统设计题。"}
+{"id": "d058", "decision": "MERGE", "why": "跨语言同一问题。"}
+{"id": "d059", "decision": "RELATED", "why": "同属 B+ 树索引话题，但一问适用原因、一问结构对比。"}
+{"id": "d060", "decision": "RELATED", "why": "单线程是 Redis 快的原因之一，但为何采用单线程是独立追问。"}
+{"id": "d061", "decision": "RELATED", "why": "同属 Redis 线程模型，6.0 多线程是版本相关的不同问题。"}
+{"id": "d062", "decision": "RELATED", "why": "握手与挥手是不同过程，按规则分开。"}
+{"id": "d063", "decision": "RELATED", "why": "布隆过滤器是缓存穿透的解决手段，属前置/追问关系。"}
+{"id": "d064", "decision": "RELATED", "why": "幻读是隔离级别涉及的现象之一，独立概念。"}
+{"id": "d065", "decision": "RELATED", "why": "回表与聚簇索引相关，但是不同概念。"}
+{"id": "d066", "decision": "RELATED", "why": "线程不安全是 HashMap 底层实现的追问。"}
+{"id": "d067", "decision": "RELATED", "why": "GC 算法与具体回收器对比是不同知识点。"}
+{"id": "d068", "decision": "RELATED", "why": "同属 MQ 可靠性，但防丢失与保序是不同问题。"}
+{"id": "d069", "decision": "RELATED", "why": "BASE 是 CAP 的延伸，概念不同。"}
+{"id": "d070", "decision": "RELATED", "why": "代码输出题是事件循环的应用追问。"}
+{"id": "d071", "decision": "RELATED", "why": "key 服务于 diff 算法，但 diff 是更大的独立问题。"}
+{"id": "d072", "decision": "RELATED", "why": "闭包与内存泄漏是追问关系。"}
+{"id": "d073", "decision": "RELATED", "why": "RAG 定义与 RAG/微调对比所需知识不同。"}
+{"id": "d074", "decision": "RELATED", "why": "同属 RAG 管线，切分与重排是不同环节。"}
+{"id": "d075", "decision": "RELATED", "why": "缩放因子是自注意力的细节追问。"}
+{"id": "d076", "decision": "RELATED", "why": "同属 Docker 话题，镜像分层是独立知识点。"}
+{"id": "d077", "decision": "RELATED", "why": "防超卖是秒杀系统的子问题追问。"}
+{"id": "d078", "decision": "RELATED", "why": "JWT 注销是对比题的追问。"}
+{"id": "d079", "decision": "RELATED", "why": "锁过期续期是分布式锁的追问。"}
+{"id": "d080", "decision": "RELATED", "why": "协程与线程对比是进程线程对比的延伸，概念不同。"}
+{"id": "d081", "decision": "RELATED", "why": "穿透与击穿是不同问题，按规则分开，形成对比关系。"}
+{"id": "d082", "decision": "RELATED", "why": "击穿与雪崩是不同缓存问题，对比关系。"}
+{"id": "d083", "decision": "RELATED", "why": "LRU 与 LFU 是不同算法，按规则分开。"}
+{"id": "d084", "decision": "RELATED", "why": "不同算法的实现题，互为变体。"}
+{"id": "d085", "decision": "RELATED", "why": "握手与挥手/TIME_WAIT 是 TCP 生命周期的不同阶段。"}
+{"id": "d086", "decision": "DISTINCT", "why": "不同层的不同协议对比，仅同属网络大类。"}
+{"id": "d087", "decision": "RELATED", "why": "不同 HTTP 版本，按版本分开，存在演进关系。"}
+{"id": "d088", "decision": "RELATED", "why": "不同 Redis 版本的特性，按版本分开。"}
+{"id": "d089", "decision": "RELATED", "why": "同属 Redis 持久化，RDB 原理与 AOF 重写是不同机制。"}
+{"id": "d090", "decision": "RELATED", "why": "同属 Redis 底层编码，但数据类型不同。"}
+{"id": "d091", "decision": "RELATED", "why": "redo 与 undo 是不同日志，常作对比。"}
+{"id": "d092", "decision": "RELATED", "why": "binlog 与 redo log 是不同日志，常作对比。"}
+{"id": "d093", "decision": "RELATED", "why": "不同的并发异常现象，同属隔离级别话题。"}
+{"id": "d094", "decision": "RELATED", "why": "不同索引概念，常作对比。"}
+{"id": "d095", "decision": "RELATED", "why": "间隙锁是行锁的一种细分，概念不同。"}
+{"id": "d096", "decision": "DISTINCT", "why": "两种不同维度的锁分类，所需知识不重叠。"}
+{"id": "d097", "decision": "DISTINCT", "why": "JVM 内置锁升级与 AQS 框架机制完全不同。"}
+{"id": "d098", "decision": "RELATED", "why": "内存结构与 JMM 常被混淆，属对比关系。"}
+{"id": "d099", "decision": "RELATED", "why": "不同回收器的流程，常作对比。"}
+{"id": "d100", "decision": "RELATED", "why": "均以 HashMap 为基准，但对比对象和知识点不同。"}
+{"id": "d101", "decision": "RELATED", "why": "不同排序算法，常作对比。"}
+{"id": "d102", "decision": "RELATED", "why": "不同遍历方式（DFS vs BFS），同属二叉树遍历。"}
+{"id": "d103", "decision": "RELATED", "why": "区间反转是反转链表的进阶变体，约束不同。"}
+{"id": "d104", "decision": "RELATED", "why": "三数之和是两数之和的进阶变体，解法不同。"}
+{"id": "d105", "decision": "DISTINCT", "why": "不同 MQ 产品的不同问题（保序 vs 事务消息）。"}
+{"id": "d106", "decision": "RELATED", "why": "不同共识算法的不同环节，存在对比关系。"}
+{"id": "d107", "decision": "RELATED", "why": "不同的分布式事务方案，常作对比。"}
+{"id": "d108", "decision": "RELATED", "why": "不同的 Web 攻击，常作对比。"}
+{"id": "d109", "decision": "RELATED", "why": "节流实现是防抖节流对比的追问。"}
+{"id": "d110", "decision": "DISTINCT", "why": "不同的 JS 机制，仅共享 this 话题。"}
+{"id": "d111", "decision": "RELATED", "why": "不同 Vue 版本的响应式实现，按版本分开。"}
+{"id": "d112", "decision": "RELATED", "why": "不同 Hook，常作对比。"}
+{"id": "d113", "decision": "RELATED", "why": "同属浏览器缓存，但机制不同。"}
+{"id": "d114", "decision": "RELATED", "why": "QLoRA 是 LoRA 的改进，概念不同。"}
+{"id": "d115", "decision": "RELATED", "why": "Prompt Cache 复用前缀 KV，概念相关但不同。"}
+{"id": "d116", "decision": "DISTINCT", "why": "评估对象和指标不同，仅同属评估大类。"}
+{"id": "d117", "decision": "DISTINCT", "why": "架构对比与模型代际对比是不同问题。"}
+{"id": "d118", "decision": "DISTINCT", "why": "不同的 Dockerfile 指令对比，知识不重叠。"}
+{"id": "d119", "decision": "RELATED", "why": "不同工作负载控制器，常作对比。"}
+{"id": "d120", "decision": "RELATED", "why": "进程通信与线程同步概念不同，部分机制重叠。"}
+{"id": "d121", "decision": "RELATED", "why": "I/O 多路复用与 Java I/O 模型相关但不同。"}
+{"id": "h001", "decision": "MERGE", "why": "同义改写。"}
+{"id": "h002", "decision": "MERGE", "why": "零拷贝定义与原理可由一个答案覆盖。"}
+{"id": "h003", "decision": "MERGE", "why": "原理与误判率是兼容子点，一个答案覆盖。"}
+{"id": "h004", "decision": "MERGE", "why": "同一问题的同义表述。"}
+{"id": "h005", "decision": "MERGE", "why": "主从复制即主从同步，同一问题。"}
+{"id": "h006", "decision": "MERGE", "why": "分库分表只是场景，全局 ID 方案相同。"}
+{"id": "h007", "decision": "MERGE", "why": "定义与防范是兼容子点，规范题可写为“是什么、如何防范”。"}
+{"id": "h008", "decision": "MERGE", "why": "同义改写。"}
+{"id": "h009", "decision": "MERGE", "why": "后端领域中 IoC 即 Spring IoC 概念，一个答案覆盖。"}
+{"id": "h010", "decision": "MERGE", "why": "AOP 即面向切面编程，同一问题。"}
+{"id": "h011", "decision": "MERGE", "why": "同一问题，Java 限定不改变答案。"}
+{"id": "h012", "decision": "MERGE", "why": "标准与 IE 盒模型区别是盒模型的核心子点。"}
+{"id": "h013", "decision": "MERGE", "why": "BFC 即块级格式化上下文。"}
+{"id": "h014", "decision": "MERGE", "why": "构建流程即打包过程。"}
+{"id": "h015", "decision": "MERGE", "why": "同一问题。"}
+{"id": "h016", "decision": "MERGE", "why": "中英同义。"}
+{"id": "h017", "decision": "MERGE", "why": "前者包含后者，一个答案覆盖。"}
+{"id": "h018", "decision": "MERGE", "why": "同义改写。"}
+{"id": "h019", "decision": "MERGE", "why": "跨语言同一问题。"}
+{"id": "h020", "decision": "MERGE", "why": "跨语言同一问题。"}
+{"id": "h021", "decision": "MERGE", "why": "跨语言同一问题。"}
+{"id": "h022", "decision": "MERGE", "why": "跨语言同一问题。"}
+{"id": "h023", "decision": "MERGE", "why": "跨语言同一问题。"}
+{"id": "h024", "decision": "MERGE", "why": "跨语言同一问题。"}

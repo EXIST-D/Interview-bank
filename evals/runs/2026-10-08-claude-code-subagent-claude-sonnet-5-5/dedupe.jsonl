@@ -1,0 +1,145 @@
+{"id": "d001", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d002", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d003", "decision": "MERGE", "why": "Asking for persistence methods is covered by explaining RDB and AOF."}
+{"id": "d004", "decision": "MERGE", "why": "Second wording only adds the compatible sub-point of solution/prevention to the same concept."}
+{"id": "d005", "decision": "MERGE", "why": "Second wording only adds the compatible sub-point of solution/prevention to the same concept."}
+{"id": "d006", "decision": "MERGE", "why": "Both ask how to keep Redis cache and MySQL consistent on writes."}
+{"id": "d007", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d008", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d009", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d010", "decision": "MERGE", "why": "Same concept, wording differs only by synonymous qualifiers."}
+{"id": "d011", "decision": "MERGE", "why": "Same concept, wording differs only by synonymous qualifiers."}
+{"id": "d012", "decision": "MERGE", "why": "Same concept, wording differs only by synonymous qualifiers."}
+{"id": "d013", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d014", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d015", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d016", "decision": "MERGE", "why": "Same concept, wording differs only by synonymous qualifiers."}
+{"id": "d017", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d018", "decision": "MERGE", "why": "The four necessary conditions are part of explaining deadlock; one answer covers both."}
+{"id": "d019", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d020", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d021", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d022", "decision": "MERGE", "why": "Both ask what volatile guarantees (visibility, ordering)."}
+{"id": "d023", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d024", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d025", "decision": "RELATED", "why": "Generic MQ no-loss versus Kafka-specific mechanisms (acks, ISR); overlapping but Kafka adds core concepts."}
+{"id": "d026", "decision": "MERGE", "why": "Both ask how to handle duplicate consumption via idempotency."}
+{"id": "d027", "decision": "RELATED", "why": "Generic distributed lock versus Redis-specific implementation; Redis answer is narrower with extra specifics."}
+{"id": "d028", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d029", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d030", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d031", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d032", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d033", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d034", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d035", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d036", "decision": "MERGE", "why": "Differences between macro/micro tasks naturally include execution order; one answer covers both."}
+{"id": "d037", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d038", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d039", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d040", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d041", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d042", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d043", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d044", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d045", "decision": "MERGE", "why": "Both ask about document chunking approaches in RAG."}
+{"id": "d046", "decision": "MERGE", "why": "Self-attention explanation includes its computation process."}
+{"id": "d047", "decision": "MERGE", "why": "Both ask how to evaluate agent tool calling."}
+{"id": "d048", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d049", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d050", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "d051", "decision": "MERGE", "why": "Same question asked in English and Chinese; one answer covers both."}
+{"id": "d052", "decision": "MERGE", "why": "Same question asked in English and Chinese; one answer covers both."}
+{"id": "d053", "decision": "MERGE", "why": "Same question asked in English and Chinese; one answer covers both."}
+{"id": "d054", "decision": "MERGE", "why": "Same question asked in English and Chinese; one answer covers both."}
+{"id": "d055", "decision": "MERGE", "why": "Same question asked in English and Chinese; one answer covers both."}
+{"id": "d056", "decision": "MERGE", "why": "Same question asked in English and Chinese; one answer covers both."}
+{"id": "d057", "decision": "MERGE", "why": "Same question asked in English and Chinese; one answer covers both."}
+{"id": "d058", "decision": "MERGE", "why": "Same question asked in English and Chinese; one answer covers both."}
+{"id": "d059", "decision": "RELATED", "why": "B+ tree suitability for indexes versus B+ vs B tree differences; overlapping but distinct focus."}
+{"id": "d060", "decision": "RELATED", "why": "Why Redis is fast versus why single-threaded; single-threading is one factor but a separate question."}
+{"id": "d061", "decision": "RELATED", "why": "Single-thread model versus Redis 6.0 multithreading; version-specific follow-up."}
+{"id": "d062", "decision": "RELATED", "why": "Same TCP connection lifecycle but different phases; separate answers."}
+{"id": "d063", "decision": "RELATED", "why": "Cache penetration solution uses bloom filter but principle is a separate concept."}
+{"id": "d064", "decision": "RELATED", "why": "Isolation levels versus a specific anomaly; connected but separate answers."}
+{"id": "d065", "decision": "RELATED", "why": "Sibling index concepts; connected but different knowledge required."}
+{"id": "d066", "decision": "RELATED", "why": "HashMap structure versus its thread-safety problem; follow-up topic."}
+{"id": "d067", "decision": "RELATED", "why": "GC algorithms overview versus CMS vs G1 collector comparison."}
+{"id": "d068", "decision": "RELATED", "why": "Message loss versus ordering are different guarantees."}
+{"id": "d069", "decision": "RELATED", "why": "CAP and BASE are linked theories but distinct concepts."}
+{"id": "d070", "decision": "RELATED", "why": "Event loop concept versus a Promise output-order code problem."}
+{"id": "d071", "decision": "RELATED", "why": "Key's role is tied to diff, but diff algorithm is a broader separate question."}
+{"id": "d072", "decision": "RELATED", "why": "Closure definition versus its memory-leak implication; follow-up."}
+{"id": "d073", "decision": "RELATED", "why": "RAG definition versus RAG vs fine-tuning comparison."}
+{"id": "d074", "decision": "RELATED", "why": "Chunking versus reranking are different RAG pipeline stages."}
+{"id": "d075", "decision": "RELATED", "why": "Self-attention versus the sqrt(d_k) scaling detail; follow-up."}
+{"id": "d076", "decision": "RELATED", "why": "Docker vs VM versus image layering; related Docker topics."}
+{"id": "d077", "decision": "RELATED", "why": "Seckill design includes overselling prevention but the latter is a focused separate question."}
+{"id": "d078", "decision": "RELATED", "why": "JWT vs Session versus JWT logout; follow-up."}
+{"id": "d079", "decision": "RELATED", "why": "Distributed lock implementation versus lock-expiry edge case; follow-up."}
+{"id": "d080", "decision": "RELATED", "why": "Process/thread versus coroutine/thread; related comparisons with different concepts."}
+{"id": "d081", "decision": "RELATED", "why": "Cache failure modes are siblings with different causes and solutions; keep apart."}
+{"id": "d082", "decision": "RELATED", "why": "Cache failure modes are siblings with different causes and solutions; keep apart."}
+{"id": "d083", "decision": "RELATED", "why": "LRU and LFU are different algorithms."}
+{"id": "d084", "decision": "RELATED", "why": "Coding questions for different algorithms (LRU vs LFU); keep apart."}
+{"id": "d085", "decision": "RELATED", "why": "Same TCP connection lifecycle but different phases; separate answers."}
+{"id": "d086", "decision": "DISTINCT", "why": "TCP/UDP comparison versus HTTP/1.1 vs HTTP/2; different topics."}
+{"id": "d087", "decision": "RELATED", "why": "HTTP/2 versus HTTP/3 features; different versions, linked protocol evolution."}
+{"id": "d088", "decision": "RELATED", "why": "Redis 6.0 multithreading versus Redis 7.0 features; different versions."}
+{"id": "d089", "decision": "RELATED", "why": "RDB versus AOF rewrite internals; sibling persistence topics."}
+{"id": "d090", "decision": "RELATED", "why": "Redis zset versus hash internals; sibling data-structure questions."}
+{"id": "d091", "decision": "RELATED", "why": "Different MySQL logs with different roles; related."}
+{"id": "d092", "decision": "RELATED", "why": "Different MySQL logs with different roles; related."}
+{"id": "d093", "decision": "RELATED", "why": "Isolation levels versus a specific anomaly; connected but separate answers."}
+{"id": "d094", "decision": "RELATED", "why": "Sibling index concepts; connected but different knowledge required."}
+{"id": "d095", "decision": "RELATED", "why": "Row/table lock versus gap lock; related locking topics, different concepts."}
+{"id": "d096", "decision": "DISTINCT", "why": "Optimistic/pessimistic versus fair/unfair locks are different classifications."}
+{"id": "d097", "decision": "DISTINCT", "why": "synchronized lock escalation versus AQS are different mechanisms."}
+{"id": "d098", "decision": "RELATED", "why": "JVM runtime memory areas versus the Java memory model; commonly confused but distinct."}
+{"id": "d099", "decision": "RELATED", "why": "Different GC collectors; flows differ."}
+{"id": "d100", "decision": "RELATED", "why": "Different Map implementations compared; shared base but different answers."}
+{"id": "d101", "decision": "RELATED", "why": "Different sort algorithms and complexities."}
+{"id": "d102", "decision": "RELATED", "why": "Different tree traversals."}
+{"id": "d103", "decision": "RELATED", "why": "Reverse list versus range-reverse variant; different constraints."}
+{"id": "d104", "decision": "RELATED", "why": "Two-sum versus three-sum; variant with different solution."}
+{"id": "d105", "decision": "DISTINCT", "why": "Kafka ordering versus RocketMQ transactional messages are unrelated questions."}
+{"id": "d106", "decision": "RELATED", "why": "Raft log replication versus Paxos; related consensus topics."}
+{"id": "d107", "decision": "RELATED", "why": "2PC versus TCC; related distributed transaction patterns."}
+{"id": "d108", "decision": "RELATED", "why": "XSS versus CSRF are different attacks."}
+{"id": "d109", "decision": "RELATED", "why": "Debounce/throttle difference versus implementing throttle; follow-up."}
+{"id": "d110", "decision": "DISTINCT", "why": "call/apply/bind versus new operator are unrelated."}
+{"id": "d111", "decision": "RELATED", "why": "Vue2 versus Vue3 reactivity differ in implementation (defineProperty vs Proxy)."}
+{"id": "d112", "decision": "RELATED", "why": "useMemo versus useCallback; sibling hooks."}
+{"id": "d113", "decision": "RELATED", "why": "HTTP caching versus Service Worker caching; related but different."}
+{"id": "d114", "decision": "RELATED", "why": "LoRA versus QLoRA improvements; variant."}
+{"id": "d115", "decision": "RELATED", "why": "KV cache versus prompt cache; different mechanisms."}
+{"id": "d116", "decision": "RELATED", "why": "Both LLM-app evaluation but for different systems and metrics; weakly related."}
+{"id": "d117", "decision": "DISTINCT", "why": "BERT vs GPT architecture versus GPT-3 vs GPT-4 are different comparisons."}
+{"id": "d118", "decision": "DISTINCT", "why": "Different Dockerfile instruction comparisons."}
+{"id": "d119", "decision": "RELATED", "why": "Different Kubernetes workload controllers."}
+{"id": "d120", "decision": "RELATED", "why": "IPC methods versus thread synchronization; related OS concurrency topics."}
+{"id": "d121", "decision": "RELATED", "why": "Different I/O model comparisons that overlap conceptually."}
+{"id": "h001", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "h002", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "h003", "decision": "MERGE", "why": "Principle and false-positive rate are compatible sub-points of explaining a Bloom filter."}
+{"id": "h004", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "h005", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "h006", "decision": "MERGE", "why": "Both ask for global unique ID generation schemes; same solutions cover both."}
+{"id": "h007", "decision": "RELATED", "why": "Definition of SQL injection versus prevention measures; related but different required knowledge."}
+{"id": "h008", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "h009", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "h010", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "h011", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "h012", "decision": "MERGE", "why": "Box model answer includes standard vs IE box models."}
+{"id": "h013", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "h014", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "h015", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "h016", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "h017", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "h018", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "h019", "decision": "MERGE", "why": "Same question asked in English and Chinese; one answer covers both."}
+{"id": "h020", "decision": "MERGE", "why": "Same question asked in English and Chinese; one answer covers both."}
+{"id": "h021", "decision": "MERGE", "why": "Same question asked in English and Chinese; one answer covers both."}
+{"id": "h022", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "h023", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}
+{"id": "h024", "decision": "MERGE", "why": "Same core question in synonymous wording; one answer covers both."}

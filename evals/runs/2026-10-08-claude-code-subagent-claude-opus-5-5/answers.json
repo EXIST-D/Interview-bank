@@ -1,0 +1,773 @@
+{
+  "answers": [
+    {
+      "case_id": "a01",
+      "status": "source_backed",
+      "short_answer": "结论：Redis 快主要因为数据在内存、数据结构直接高效、单线程配合 I/O 多路复用。\n内存存储：以数据集不超过内存为代价换取很高的读写速度。\n数据结构：数据类型直接对应基础数据结构，在内存中操作简单、内部复杂度低。\n单线程多路复用：一个线程服务所有客户端、请求顺序执行，且设计上不阻塞在 socket 读写等系统调用上。\n瓶颈多在内存或网络而非 CPU，配合 pipelining 单实例可达百万请求/秒。\n6.0 起可选用 I/O 线程处理网络读写，进一步提升吞吐。",
+      "key_points": [
+        "数据集完全放在内存中，以数据集受内存大小限制为代价换取很高的读写速度",
+        "数据类型直接对应基础数据结构，内存中的数据结构比磁盘上更易操作，内部复杂度低",
+        "Redis 主要是单线程设计：一个进程通过多路复用服务所有客户端请求，请求顺序执行，且不阻塞在 socket 读写等系统调用上",
+        "CPU 通常不是瓶颈，Redis 多受内存或网络限制；使用 pipelining 时普通 Linux 上单实例可达每秒百万请求",
+        "Redis 6.0 起可选地用线程处理网络 I/O，在无法使用 pipelining 时提升单实例吞吐"
+      ],
+      "evidence": [
+        {
+          "key_point": 0,
+          "source": 0,
+          "quote": "Redis is an in-memory but persistent on disk database, so it represents a different trade off where very high write and read speed is achieved with the limitation of data sets that can't be larger than memory."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "Redis data types are closely related to fundamental data structures and are exposed to the programmer as such, without additional abstraction layers."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "the memory representation of complex data structures is much simpler to manipulate compared to the same data structures on disk, so Redis can do a lot with little internal complexity."
+        },
+        {
+          "key_point": 2,
+          "source": 1,
+          "quote": "Redis uses a mostly single threaded design. This means that a single process serves all the client requests, using a technique called multiplexing."
+        },
+        {
+          "key_point": 2,
+          "source": 1,
+          "quote": "primarily because these products are designed to not block on system calls, such as reading data from or writing data to a socket."
+        },
+        {
+          "key_point": 3,
+          "source": 0,
+          "quote": "It's not very frequent that CPU becomes your bottleneck with Redis, as usually Redis is either memory or network bound."
+        },
+        {
+          "key_point": 3,
+          "source": 0,
+          "quote": "when using pipelining a Redis instance running on an average Linux system can deliver 1 million requests per second"
+        },
+        {
+          "key_point": 4,
+          "source": 2,
+          "quote": "Redis can now optionally use threads to handle I/O, allowing to serve 2 times as much operations per second in a single instance when pipelining cannot be used."
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://redis.io/docs/latest/develop/get-started/faq/",
+          "title": "Redis FAQ",
+          "publisher": "Redis",
+          "type": "official_doc",
+          "accessed_at": "2026-10-08"
+        },
+        {
+          "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/optimization/latency/",
+          "title": "Diagnosing latency issues",
+          "publisher": "Redis",
+          "type": "official_doc",
+          "accessed_at": "2026-10-08"
+        },
+        {
+          "url": "https://raw.githubusercontent.com/redis/redis/6.0/00-RELEASENOTES",
+          "title": "Redis 6.0 release notes",
+          "publisher": "Redis (GitHub)",
+          "type": "release_notes",
+          "accessed_at": "2026-10-08"
+        }
+      ],
+      "version_scope": "I/O 线程自 Redis 6.0 起；其余为通用设计，适用于当前 Redis 文档"
+    },
+    {
+      "case_id": "a02",
+      "status": "source_backed",
+      "short_answer": "结论：Redis 持久化可选 RDB、AOF、RDB+AOF 组合，或完全关闭。\nRDB：按间隔生成时间点快照，fork 子进程写盘，文件紧凑、适合备份，大数据集重启更快；但宕机可能丢最近几分钟数据。\nAOF：记录每个写操作，启动时重放；appendfsync 默认 everysec，最多丢约 1 秒；文件更大，会在后台重写，7.0 起为 base+增量的多段 AOF。\n选择：要接近 PostgreSQL 的数据安全就两者都开；能容忍几分钟丢失可只用 RDB。",
+      "key_points": [
+        "Redis 持久化选项包括 RDB、AOF、不持久化以及 RDB 与 AOF 组合",
+        "RDB 按指定间隔做时间点快照，由 fork 出的子进程写盘，文件紧凑适合备份，大数据集重启比 AOF 快",
+        "RDB 不适合要求尽量少丢数据的场景，异常停机可能丢失最近几分钟的数据",
+        "AOF 记录服务器收到的每个写操作并在启动时重放；fsync 策略有 always、everysec、no，默认每秒一次，最多丢约 1 秒写入",
+        "AOF 通常比 RDB 大，过大时可在后台重写；Redis 7.0 起使用 base 文件加增量文件的多段 AOF",
+        "官方建议：需要接近 PostgreSQL 的数据安全时同时使用两者；能容忍几分钟数据丢失时可只用 RDB"
+      ],
+      "evidence": [
+        {
+          "key_point": 0,
+          "source": 0,
+          "quote": "No persistence: You can disable persistence completely. This is sometimes used when caching."
+        },
+        {
+          "key_point": 0,
+          "source": 0,
+          "quote": "RDB + AOF: You can also combine both AOF and RDB in the same instance."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "RDB (Redis Database): RDB persistence performs point-in-time snapshots of your dataset at specified intervals."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "RDB maximizes Redis performances since the only work the Redis parent process needs to do in order to persist is forking a child that will do all the rest."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "RDB allows faster restarts with big datasets compared to AOF."
+        },
+        {
+          "key_point": 2,
+          "source": 0,
+          "quote": "RDB is NOT good if you need to minimize the chance of data loss in case Redis stops working (for example after a power outage)."
+        },
+        {
+          "key_point": 3,
+          "source": 0,
+          "quote": "AOF (Append Only File): AOF persistence logs every write operation received by the server. These operations can then be replayed again at server startup, reconstructing the original dataset."
+        },
+        {
+          "key_point": 3,
+          "source": 0,
+          "quote": "you can have different fsync policies: no fsync at all, fsync every second, fsync at every query. With the default policy of fsync every second, write performance is still great."
+        },
+        {
+          "key_point": 4,
+          "source": 0,
+          "quote": "AOF files are usually bigger than the equivalent RDB files for the same dataset."
+        },
+        {
+          "key_point": 4,
+          "source": 0,
+          "quote": "Since Redis 7.0.0, Redis uses a multi part AOF mechanism."
+        },
+        {
+          "key_point": 5,
+          "source": 0,
+          "quote": "The general indication you should use both persistence methods is if you want a degree of data safety comparable to what PostgreSQL can provide you."
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://redis.io/docs/latest/operate/oss_and_stack/management/persistence/",
+          "title": "Redis persistence",
+          "publisher": "Redis",
+          "type": "official_doc",
+          "accessed_at": "2026-10-08"
+        }
+      ],
+      "version_scope": "多段 AOF 自 Redis 7.0.0 起"
+    },
+    {
+      "case_id": "a03",
+      "status": "source_backed",
+      "short_answer": "结论：InnoDB 支持 SQL:1992 的四种隔离级别，默认 RR。\nRU（读未提交）：可能读到行的早期版本，即脏读。\nRC（读已提交）：每次一致性读建新快照；无间隙锁，可能幻读。\nRR（可重复读）：事务内复用首次读的快照；范围锁定读用间隙锁/next-key 锁阻止插入。\nSERIALIZABLE：关闭 autocommit 时普通 SELECT 隐式变为 FOR SHARE 锁定读。\n用 SET TRANSACTION 或 --transaction-isolation 设置。",
+      "key_points": [
+        "InnoDB 提供 SQL:1992 标准的四种隔离级别：READ UNCOMMITTED、READ COMMITTED、REPEATABLE READ、SERIALIZABLE，默认 REPEATABLE READ",
+        "READ UNCOMMITTED 下普通 SELECT 不加锁，但可能读到行的早期版本，读不一致，即脏读",
+        "READ COMMITTED 下每次一致性读（即使在同一事务内）都建立新快照；锁定读只锁索引记录不锁间隙，可能出现幻读",
+        "REPEATABLE READ 下同一事务内的一致性读读取第一次读建立的快照；范围条件的锁定读使用间隙锁或 next-key 锁阻止其他会话插入",
+        "SERIALIZABLE 类似 REPEATABLE READ，但在关闭 autocommit 时把普通 SELECT 隐式转为 SELECT ... FOR SHARE",
+        "可用 SET TRANSACTION 为会话或后续连接设置隔离级别，用 --transaction-isolation 设置服务器默认值"
+      ],
+      "evidence": [
+        {
+          "key_point": 0,
+          "source": 0,
+          "quote": "InnoDB offers all four transaction isolation levels described by the SQL:1992 standard: READ UNCOMMITTED, READ COMMITTED, REPEATABLE READ, and SERIALIZABLE. The default isolation level for InnoDB is REPEATABLE READ."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "SELECT statements are performed in a nonlocking fashion, but a possible earlier version of a row might be used. Thus, using this isolation level, such reads are not consistent. This is also called a dirty read."
+        },
+        {
+          "key_point": 2,
+          "source": 0,
+          "quote": "Each consistent read, even within the same transaction, sets and reads its own fresh snapshot."
+        },
+        {
+          "key_point": 2,
+          "source": 0,
+          "quote": "Because gap locking is disabled, phantom row problems may occur, as other sessions can insert new rows into the gaps."
+        },
+        {
+          "key_point": 3,
+          "source": 0,
+          "quote": "Consistent reads within the same transaction read the snapshot established by the first read."
+        },
+        {
+          "key_point": 3,
+          "source": 0,
+          "quote": "InnoDB locks the index range scanned, using gap locks or next-key locks to block insertions by other sessions into the gaps covered by the range."
+        },
+        {
+          "key_point": 4,
+          "source": 0,
+          "quote": "This level is like REPEATABLE READ, but InnoDB implicitly converts all plain SELECT statements to SELECT ... FOR SHARE if autocommit is disabled."
+        },
+        {
+          "key_point": 5,
+          "source": 0,
+          "quote": "A user can change the isolation level for a single session or for all subsequent connections with the SET TRANSACTION statement. To set the server's default isolation level for all connections, use the --transaction-isolation option"
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://docs.oracle.com/cd/E17952_01/mysql-8.4-en/innodb-transaction-isolation-levels.html",
+          "title": "MySQL 8.4 Reference Manual 17.7.2.1 Transaction Isolation Levels",
+          "publisher": "Oracle",
+          "type": "official_doc",
+          "accessed_at": "2026-10-08"
+        }
+      ],
+      "version_scope": "MySQL 8.4 InnoDB"
+    },
+    {
+      "case_id": "a04",
+      "status": "source_backed",
+      "short_answer": "结论：聚簇索引是 InnoDB 表中存放行数据的特殊索引，通常就是主键。\n选取：有主键用主键；否则用首个全部列 NOT NULL 的 UNIQUE 索引；都没有则生成隐藏的 GEN_CLUST_INDEX（按 6 字节递增 row ID 排序）。\n优势：查找直接到达存放行数据的页，大表常可省一次磁盘 I/O。\n二级索引：记录中保存主键列，取整行需再到聚簇索引查找（回表），所以主键宜短。\n结构：除空间索引外 InnoDB 索引为 B-tree，记录存于叶子页。",
+      "key_points": [
+        "InnoDB 每张表都有一个存放行数据的特殊索引，即聚簇索引，通常与主键同义",
+        "选取规则：定义了 PRIMARY KEY 就用它；否则用第一个所有键列都为 NOT NULL 的 UNIQUE 索引；都没有则在合成 row ID 列上生成隐藏的 GEN_CLUST_INDEX",
+        "通过聚簇索引访问行很快，因为索引查找直接到达包含行数据的页，大表常可节省一次磁盘 I/O",
+        "二级索引记录包含行的主键列，InnoDB 用该主键值到聚簇索引中查找整行；主键越长二级索引越占空间",
+        "除空间索引外，InnoDB 索引是 B-tree 结构，索引记录存放在叶子页"
+      ],
+      "evidence": [
+        {
+          "key_point": 0,
+          "source": 0,
+          "quote": "Each InnoDB table has a special index called the clustered index that stores row data. Typically, the clustered index is synonymous with the primary key."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "When you define a PRIMARY KEY on a table, InnoDB uses it as the clustered index."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "If you do not define a PRIMARY KEY for a table, InnoDB uses the first UNIQUE index with all key columns defined as NOT NULL as the clustered index."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "InnoDB generates a hidden clustered index named GEN_CLUST_INDEX on a synthetic column that contains row ID values."
+        },
+        {
+          "key_point": 2,
+          "source": 0,
+          "quote": "Accessing a row through the clustered index is fast because the index search leads directly to the page that contains the row data. If a table is large, the clustered index architecture often saves a disk I/O operation"
+        },
+        {
+          "key_point": 3,
+          "source": 0,
+          "quote": "In InnoDB, each record in a secondary index contains the primary key columns for the row, as well as the columns specified for the secondary index. InnoDB uses this primary key value to search for the row in the clustered index."
+        },
+        {
+          "key_point": 3,
+          "source": 0,
+          "quote": "If the primary key is long, the secondary indexes use more space, so it is advantageous to have a short primary key."
+        },
+        {
+          "key_point": 4,
+          "source": 1,
+          "quote": "With the exception of spatial indexes, InnoDB indexes are B-tree data structures."
+        },
+        {
+          "key_point": 4,
+          "source": 1,
+          "quote": "Index records are stored in the leaf pages of their B-tree or R-tree data structure."
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://docs.oracle.com/cd/E17952_01/mysql-8.4-en/innodb-index-types.html",
+          "title": "MySQL 8.4 Reference Manual 17.6.2.1 Clustered and Secondary Indexes",
+          "publisher": "Oracle",
+          "type": "official_doc",
+          "accessed_at": "2026-10-08"
+        },
+        {
+          "url": "https://docs.oracle.com/cd/E17952_01/mysql-8.4-en/innodb-physical-structure.html",
+          "title": "MySQL 8.4 Reference Manual 17.6.2.2 The Physical Structure of an InnoDB Index",
+          "publisher": "Oracle",
+          "type": "official_doc",
+          "accessed_at": "2026-10-08"
+        }
+      ],
+      "version_scope": "MySQL 8.4 InnoDB；“回表”为中文社区对二级索引再查聚簇索引的通称"
+    },
+    {
+      "case_id": "a05",
+      "status": "source_backed",
+      "short_answer": "结论：三次握手让双方交换并确认各自的初始序列号（ISN），从而建立连接。\n① 客户端发 SYN（seq=x），进入 SYN-SENT，服务端由 LISTEN 进入 SYN-RECEIVED。\n② 服务端回 SYN+ACK（seq=y，ack=x+1）。\n③ 客户端回 ACK（ack=y+1），双方进入 ESTABLISHED。\n为何三次：双方都需发送并确认对方 ISN，中间两步合并成一个报文；主要目的是防止历史重复的连接请求造成混乱。\n双方同时发 SYN 也能建立连接。",
+      "key_points": [
+        "建立连接时双方必须同步彼此的初始序列号（ISN），通过携带 SYN 控制位和 ISN 的报文交换完成",
+        "第一步：A 发送 SYN，声明自己的起始序列号，A 进入 SYN-SENT，处于 LISTEN 的 B 收到后进入 SYN-RECEIVED",
+        "第二步：B 发送自己的 SYN 并确认 A 的 SYN，确认号为 A 的序列号加 1",
+        "第三步：A 回复确认 B 的 SYN 的 ACK，双方进入 ESTABLISHED，之后可以发送数据",
+        "之所以是三次：四个逻辑步骤中第 2、3 步可合并为一个报文；三次握手的主要原因是防止旧的重复连接请求造成混乱",
+        "双方同时发起（同时打开）时该过程同样可以建立连接"
+      ],
+      "evidence": [
+        {
+          "key_point": 0,
+          "source": 0,
+          "quote": "For a connection to be established or initialized, the two TCP peers must synchronize on each other's initial sequence numbers."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "2. SYN-SENT --> <SEQ=100><CTL=SYN> --> SYN-RECEIVED"
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "TCP Peer A begins by sending a SYN segment indicating that it will use sequence numbers starting with sequence number 100."
+        },
+        {
+          "key_point": 2,
+          "source": 0,
+          "quote": "TCP Peer B sends a SYN and acknowledges the SYN it received from TCP Peer A. Note that the acknowledgment field indicates TCP Peer B is now expecting to hear sequence 101, acknowledging the SYN that occupied sequence 100."
+        },
+        {
+          "key_point": 3,
+          "source": 0,
+          "quote": "4. ESTABLISHED --> <SEQ=101><ACK=301><CTL=ACK> --> ESTABLISHED"
+        },
+        {
+          "key_point": 3,
+          "source": 0,
+          "quote": "TCP Peer A responds with an empty segment containing an ACK for TCP Peer B's SYN; and in line 5, TCP Peer A sends some data."
+        },
+        {
+          "key_point": 4,
+          "source": 0,
+          "quote": "Because steps 2 and 3 can be combined in a single message this is called the three-way (or three message) handshake (3WHS)."
+        },
+        {
+          "key_point": 4,
+          "source": 0,
+          "quote": "The principal reason for the three-way handshake is to prevent old duplicate connection initiations from causing confusion."
+        },
+        {
+          "key_point": 5,
+          "source": 0,
+          "quote": "The procedure also works if two TCP peers simultaneously initiate the procedure."
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc9293.txt",
+          "title": "RFC 9293: Transmission Control Protocol (TCP)",
+          "publisher": "IETF",
+          "type": "standard",
+          "accessed_at": "2026-10-08"
+        }
+      ],
+      "version_scope": "RFC 9293（2022，取代 RFC 793）"
+    },
+    {
+      "case_id": "a06",
+      "status": "source_backed",
+      "short_answer": "结论：闭包是函数与其声明时所在词法环境的组合，使函数能访问外层作用域。\nJS 中每次创建函数时都会创建闭包。\n外层函数返回后，内部函数仍引用该词法环境，所以其中变量仍可用。\n用途：把数据与操作它的函数关联，如函数工厂、模拟私有方法、实现数据隐藏和封装。\n常见坑：循环中用 var 时多个闭包共享同一变量，可改用 let/const。\n不必要地嵌套创建函数会影响速度和内存。",
+      "key_points": [
+        "闭包是函数与其周围状态（词法环境）的组合，让函数可以访问外层作用域",
+        "在 JavaScript 中，每次创建函数时都会在创建时刻创建闭包",
+        "外层函数执行完后，内部函数实例仍保持对其词法环境的引用，因此外层变量仍然可用",
+        "闭包可把数据与操作它的函数关联，用于函数工厂、模拟私有方法，带来数据隐藏和封装",
+        "循环中用 var 声明变量时，多个闭包共享同一词法环境导致取到最后的值，可用 let/const 或函数工厂解决",
+        "不需要闭包时在函数内创建函数会在处理速度和内存消耗上影响性能"
+      ],
+      "evidence": [
+        {
+          "key_point": 0,
+          "source": 0,
+          "quote": "A closure is the combination of a function bundled together (enclosed) with references to its surrounding state (the lexical environment). In other words, a closure gives a function access to its outer scope."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "In JavaScript, closures are created every time a function is created, at function creation time."
+        },
+        {
+          "key_point": 2,
+          "source": 0,
+          "quote": "The instance of displayName maintains a reference to its lexical environment, within which the variable name exists. For this reason, when myFunc is invoked, the variable name remains available for use"
+        },
+        {
+          "key_point": 3,
+          "source": 0,
+          "quote": "Closures are useful because they let you associate data (the lexical environment) with a function that operates on that data."
+        },
+        {
+          "key_point": 3,
+          "source": 0,
+          "quote": "it was possible to emulate private methods using closures."
+        },
+        {
+          "key_point": 3,
+          "source": 0,
+          "quote": "Using closures in this way provides benefits that are normally associated with object-oriented programming. In particular, data hiding and encapsulation."
+        },
+        {
+          "key_point": 4,
+          "source": 0,
+          "quote": "Three closures have been created by the loop, but each one shares the same single lexical environment, which has a variable with changing values (item)."
+        },
+        {
+          "key_point": 4,
+          "source": 0,
+          "quote": "If you don't want to use more closures, you can use the let or const keyword:"
+        },
+        {
+          "key_point": 5,
+          "source": 0,
+          "quote": "it is unwise to unnecessarily create functions within other functions if closures are not needed for a particular task, as it will negatively affect script performance both in terms of processing speed and memory consumption."
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Closures",
+          "title": "Closures - JavaScript | MDN",
+          "publisher": "MDN Web Docs",
+          "type": "official_doc",
+          "accessed_at": "2026-10-08"
+        }
+      ],
+      "version_scope": "以 JavaScript 为准（MDN）"
+    },
+    {
+      "case_id": "a07",
+      "status": "source_backed",
+      "short_answer": "结论：事件循环是宿主（浏览器按 HTML 规范）调度 JS 任务的机制，让单线程的 JS 处理异步而不阻塞。\n异步操作完成后回调作为任务入队，代理逐个取出执行，每个任务运行到完成、不被抢占。\n任务（宏任务）：脚本启动、事件分发、setTimeout/setInterval 到期等。\n每轮执行最早的一个可运行任务，然后清空微任务队列（Promise 回调、MutationObserver、queueMicrotask），浏览器再视情况渲染。\n微任务中新增的微任务也会在下一个任务前执行完。",
+      "key_points": [
+        "JS 代理是单线程的，异步操作完成后其回调作为作业放入作业队列，HTML 中称为事件循环，使 JS 不阻塞",
+        "代理每次从队列取一个作业执行，每个作业完整执行完后才处理下一个（运行至完成），不会被抢占",
+        "任务包括程序开始运行、异步分发的事件、定时器 setTimeout/setInterval 触发等，都进入任务队列",
+        "每轮事件循环执行任务队列中最早的可运行任务，之后执行微任务直到微任务队列为空，然后浏览器可能更新渲染，再进入下一轮",
+        "Promise 和 MutationObserver 使用微任务队列，也可用 queueMicrotask() 加入；微任务优先级高于任务",
+        "微任务执行中新加入的微任务会在下一个任务之前全部执行完"
+      ],
+      "evidence": [
+        {
+          "key_point": 0,
+          "source": 0,
+          "quote": "this is known in HTML (and also commonly) as the event loop which enables asynchronous programming in JavaScript while being single-threaded."
+        },
+        {
+          "key_point": 0,
+          "source": 0,
+          "quote": "This callback defines a job, which gets placed into a job queue—or, in HTML terminology, an event loop—once the action is completed."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "Each job is processed completely before any other job is processed."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "whenever a function runs, it cannot be preempted and will run entirely before any other code runs"
+        },
+        {
+          "key_point": 2,
+          "source": 1,
+          "quote": "A task is anything which is scheduled to be run by the standard mechanisms such as initially starting to run a program, an event being dispatched asynchronously, or an interval or timeout being fired. These all get scheduled on the task queue."
+        },
+        {
+          "key_point": 3,
+          "source": 1,
+          "quote": "The oldest runnable task in the task queue will be executed during a single iteration of the event loop. After that, microtasks will be executed until the microtask queue is empty, and then the browser may choose to update rendering."
+        },
+        {
+          "key_point": 4,
+          "source": 1,
+          "quote": "JavaScript promises and the Mutation Observer API both use the microtask queue to run their callbacks"
+        },
+        {
+          "key_point": 4,
+          "source": 0,
+          "quote": "Microtasks have higher priority and the microtask queue is drained first before the task queue is pulled."
+        },
+        {
+          "key_point": 5,
+          "source": 1,
+          "quote": "If a microtask adds more microtasks to the queue by calling queueMicrotask(), those newly-added microtasks execute before the next task is run."
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Execution_model",
+          "title": "JavaScript execution model - JavaScript | MDN",
+          "publisher": "MDN Web Docs",
+          "type": "official_doc",
+          "accessed_at": "2026-10-08"
+        },
+        {
+          "url": "https://developer.mozilla.org/en-US/docs/Web/API/HTML_DOM_API/Microtask_guide",
+          "title": "Using microtasks in JavaScript with queueMicrotask() - Web APIs | MDN",
+          "publisher": "MDN Web Docs",
+          "type": "official_doc",
+          "accessed_at": "2026-10-08"
+        }
+      ],
+      "version_scope": "浏览器（HTML 规范）事件循环；Node.js 另有阶段与 process.nextTick，不在此范围"
+    },
+    {
+      "case_id": "a08",
+      "status": "source_backed",
+      "short_answer": "结论：key 告诉 React 列表中每个元素对应哪一项，以便重渲染时正确匹配并更新 DOM。\n项目排序、插入、删除时，key 让 React 推断发生了什么。\n规则：兄弟间唯一、不能变化，最好用数据自带 ID。\n不写 key 时默认用索引，顺序变化易出 bug；随机 key 会每次重建组件和 DOM、丢失输入。\nkey 也决定状态归属：不同 key 被视为不同组件，状态会重置。\nkey 不会作为 prop 传给组件。",
+      "key_points": [
+        "key 告诉 React 每个数组项对应哪个组件，以便之后匹配；当项目会移动、插入或删除时尤其重要，好的 key 帮 React 做出正确的 DOM 更新",
+        "key 必须在兄弟节点中唯一，且不能变化，不要在渲染时生成；数据库数据可直接用其 ID",
+        "不指定 key 时 React 使用数组索引，插入、删除或重排后容易出 bug；随机 key 会让组件和 DOM 每次重建并丢失用户输入",
+        "key 会作为位置的一部分：React 把不同 key 的组件视为不同组件，不共享状态，切换时状态被重置",
+        "组件不会收到 key 这个 prop，它只是 React 自己使用的提示"
+      ],
+      "evidence": [
+        {
+          "key_point": 0,
+          "source": 0,
+          "quote": "Keys tell React which array item each component corresponds to, so that it can match them up later. This becomes important if your array items can move (e.g. due to sorting), get inserted, or get deleted."
+        },
+        {
+          "key_point": 0,
+          "source": 0,
+          "quote": "A well-chosen key helps React infer what exactly has happened, and make the correct updates to the DOM tree."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "Keys must be unique among siblings. However, it’s okay to use the same keys for JSX nodes in different arrays."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "Keys must not change or that defeats their purpose! Don’t generate them while rendering."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "Data from a database: If your data is coming from a database, you can use the database keys/IDs, which are unique by nature."
+        },
+        {
+          "key_point": 2,
+          "source": 0,
+          "quote": "You might be tempted to use an item’s index in the array as its key. In fact, that’s what React will use if you don’t specify a key at all."
+        },
+        {
+          "key_point": 2,
+          "source": 0,
+          "quote": "This will cause keys to never match up between renders, leading to all your components and DOM being recreated every time. Not only is this slow, but it will also lose any user input inside the list items."
+        },
+        {
+          "key_point": 3,
+          "source": 1,
+          "quote": "Specifying a key tells React to use the key itself as part of the position, instead of their order within the parent."
+        },
+        {
+          "key_point": 3,
+          "source": 1,
+          "quote": "React sees them as two different counters, and so they will never share state."
+        },
+        {
+          "key_point": 4,
+          "source": 0,
+          "quote": "Note that your components won’t receive key as a prop. It’s only used as a hint by React itself."
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://react.dev/learn/rendering-lists",
+          "title": "Rendering Lists – React",
+          "publisher": "React (Meta)",
+          "type": "official_doc",
+          "accessed_at": "2026-10-08"
+        },
+        {
+          "url": "https://react.dev/learn/preserving-and-resetting-state",
+          "title": "Preserving and Resetting State – React",
+          "publisher": "React (Meta)",
+          "type": "official_doc",
+          "accessed_at": "2026-10-08"
+        }
+      ],
+      "version_scope": "React 官方文档（react.dev）"
+    },
+    {
+      "case_id": "a09",
+      "status": "source_backed",
+      "short_answer": "结论：Pod 是 Kubernetes 中可创建和管理的最小部署单元，由一个或多个容器及共享的存储、网络和运行规格组成。\n同一 Pod 的容器共同调度、共享 Linux 命名空间和 cgroups 等上下文，相当于“逻辑主机”。\n每个 Pod 有唯一 IP，容器共享网络命名空间、用 localhost 互访，可挂共享卷。\n常见为一 Pod 一容器；多容器仅用于紧耦合场景。\nPod 短暂可丢弃，通常由 Deployment、Job 等工作负载资源创建。",
+      "key_points": [
+        "Pod 是 Kubernetes 中可以创建和管理的最小可部署计算单元",
+        "Pod 是一个或多个容器的组合，带有共享存储、网络资源以及如何运行容器的规格；内容总是共同部署、共同调度",
+        "Pod 的共享上下文是一组 Linux 命名空间、cgroups 等隔离设施，Pod 建模了一个应用专属的“逻辑主机”",
+        "每个 Pod 被分配唯一 IP，Pod 内容器共享网络命名空间（IP 和端口），可通过 localhost 通信；也可共享存储卷",
+        "一 Pod 一容器是最常见用法；多个紧耦合、需共享资源的容器才放在同一 Pod，属于相对高级的用法",
+        "Pod 被设计为相对短暂、可丢弃的实体，通常不直接创建，而由 Deployment、Job 等工作负载资源通过 Pod 模板创建"
+      ],
+      "evidence": [
+        {
+          "key_point": 0,
+          "source": 0,
+          "quote": "Pods are the smallest deployable units of computing that you can create and manage in Kubernetes."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "is a group of one or more containers, with shared storage and network resources, and a specification for how to run the containers. A Pod's contents are always co-located and co-scheduled, and run in a shared context."
+        },
+        {
+          "key_point": 2,
+          "source": 0,
+          "quote": "The shared context of a Pod is a set of Linux namespaces, cgroups, and potentially other facets of isolation - the same things that isolate a container."
+        },
+        {
+          "key_point": 2,
+          "source": 0,
+          "quote": "A Pod models an application-specific \"logical host\": it contains one or more application containers which are relatively tightly coupled."
+        },
+        {
+          "key_point": 3,
+          "source": 0,
+          "quote": "Each Pod is assigned a unique IP address for each address family. Every container in a Pod shares the network namespace, including the IP address and network ports."
+        },
+        {
+          "key_point": 3,
+          "source": 0,
+          "quote": "All containers in the Pod can access the shared volumes, allowing those containers to share data."
+        },
+        {
+          "key_point": 4,
+          "source": 0,
+          "quote": "The \"one-container-per-Pod\" model is the most common Kubernetes use case"
+        },
+        {
+          "key_point": 4,
+          "source": 0,
+          "quote": "Grouping multiple co-located and co-managed containers in a single Pod is a relatively advanced use case."
+        },
+        {
+          "key_point": 5,
+          "source": 0,
+          "quote": "Pods are designed as relatively ephemeral, disposable entities."
+        },
+        {
+          "key_point": 5,
+          "source": 0,
+          "quote": "Usually you don't need to create Pods directly, even singleton Pods. Instead, create them using workload resources such as Deployment or Job."
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://kubernetes.io/docs/concepts/workloads/pods/",
+          "title": "Pods | Kubernetes",
+          "publisher": "Kubernetes",
+          "type": "official_doc",
+          "accessed_at": "2026-10-08"
+        }
+      ],
+      "version_scope": "Kubernetes 当前文档（kubernetes.io）"
+    },
+    {
+      "case_id": "a10",
+      "status": "source_backed",
+      "short_answer": "结论：HTTP/2 保留 HTTP 语义，通过优化到连接的映射降低延迟。\n二进制分帧：帧是基本协议单元。\n多路复用：每个请求/响应占一个独立流，在同一连接上交错传输，一个流受阻不影响其他流，可减少连接数。\n头部压缩：HPACK 用首部表索引和 Huffman 编码消除冗余首部。\n服务器推送：可用 PUSH_PROMISE 预先推送资源（可选）。\n另有流控与优先级；但 TCP 层队头阻塞仍未解决。",
+      "key_points": [
+        "HTTP/2 支持 HTTP 全部核心特性，通过优化 HTTP 语义到底层连接的映射提升效率；HTTP/1.1 管线化仍有应用层队头阻塞",
+        "HTTP/2 的基本协议单元是帧，使用二进制消息分帧提高处理效率",
+        "多路复用：每个请求/响应交换关联到独立的流，流之间基本独立，一个请求受阻不影响其他流；所需 TCP 连接更少",
+        "首部压缩：含首部的帧会被压缩，HPACK 通过可增量更新的首部表引用和静态 Huffman 编码消除冗余首部",
+        "服务器推送（可选）：服务器合成请求并通过 PUSH_PROMISE 帧发送，再在另一个流上推送响应",
+        "流量控制与优先级支撑多路复用；RFC 9113 废弃了 RFC 7540 的优先级信令方案；TCP 层队头阻塞未被解决"
+      ],
+      "evidence": [
+        {
+          "key_point": 0,
+          "source": 0,
+          "quote": "HTTP/2 supports all of the core features of HTTP but aims to be more efficient than HTTP/1.1."
+        },
+        {
+          "key_point": 0,
+          "source": 0,
+          "quote": "HTTP/1.1 [HTTP/1.1] added request pipelining, but this only partially addressed request concurrency and still suffers from application- layer head-of-line blocking."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "The basic protocol unit in HTTP/2 is a frame (Section 4.1)."
+        },
+        {
+          "key_point": 1,
+          "source": 0,
+          "quote": "Finally, HTTP/2 also enables more efficient processing of messages through use of binary message framing."
+        },
+        {
+          "key_point": 2,
+          "source": 0,
+          "quote": "Multiplexing of requests is achieved by having each HTTP request/ response exchange associated with its own stream (Section 5). Streams are largely independent of each other, so a blocked or stalled request or response does not prevent progress on other streams."
+        },
+        {
+          "key_point": 2,
+          "source": 0,
+          "quote": "The resulting protocol is more friendly to the network because fewer TCP connections can be used in comparison to HTTP/1.x."
+        },
+        {
+          "key_point": 3,
+          "source": 0,
+          "quote": "Because HTTP fields used in a connection can contain large amounts of redundant data, frames that contain them are compressed (Section 4.3)."
+        },
+        {
+          "key_point": 3,
+          "source": 1,
+          "quote": "This specification defines HPACK, a new compressor that eliminates redundant header fields, limits vulnerability to known security attacks, and has a bounded memory requirement for use in constrained environments."
+        },
+        {
+          "key_point": 3,
+          "source": 1,
+          "quote": "Literal values are either encoded directly or use a static Huffman code."
+        },
+        {
+          "key_point": 4,
+          "source": 0,
+          "quote": "The server does this by synthesizing a request, which it sends as a PUSH_PROMISE frame. The server is then able to send a response to the synthetic request on a separate stream."
+        },
+        {
+          "key_point": 5,
+          "source": 0,
+          "quote": "Effective use of multiplexing depends on flow control and prioritization."
+        },
+        {
+          "key_point": 5,
+          "source": 0,
+          "quote": "This revision of HTTP/2 deprecates the priority signaling scheme from [RFC7540]."
+        },
+        {
+          "key_point": 5,
+          "source": 0,
+          "quote": "Note, however, that TCP head-of-line blocking is not addressed by this protocol."
+        }
+      ],
+      "sources": [
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc9113.txt",
+          "title": "RFC 9113: HTTP/2",
+          "publisher": "IETF",
+          "type": "standard",
+          "accessed_at": "2026-10-08"
+        },
+        {
+          "url": "https://www.rfc-editor.org/rfc/rfc7541.txt",
+          "title": "RFC 7541: HPACK: Header Compression for HTTP/2",
+          "publisher": "IETF",
+          "type": "standard",
+          "accessed_at": "2026-10-08"
+        }
+      ],
+      "version_scope": "RFC 9113（2022，取代 RFC 7540）与 RFC 7541"
+    }
+  ]
+}

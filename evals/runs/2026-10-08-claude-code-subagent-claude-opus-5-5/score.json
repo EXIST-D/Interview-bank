@@ -1,0 +1,89 @@
+{
+  "triggers": "not run",
+  "extraction": "not run",
+  "dedupe": {
+    "scored": 121,
+    "unscored": 0,
+    "false_merge_rate": 0.0,
+    "missed_merge_rate": 0.0345,
+    "label_accuracy": 0.7107,
+    "false_merges": [],
+    "confusion": {
+      "DISTINCT->DISTINCT": 8,
+      "DISTINCT->RELATED": 33,
+      "MERGE->MERGE": 56,
+      "MERGE->RELATED": 2,
+      "RELATED->RELATED": 22
+    }
+  },
+  "answers": {
+    "answers": 10,
+    "unscored_cases": [],
+    "automatic_pass_rate": 0.8,
+    "automatic": {
+      "a01": {
+        "short_answer_length_ok": true,
+        "every_key_point_has_evidence": true,
+        "no_duplicate_urls": true,
+        "cites_a_reference_domain": true
+      },
+      "a02": {
+        "short_answer_length_ok": true,
+        "every_key_point_has_evidence": true,
+        "no_duplicate_urls": true,
+        "cites_a_reference_domain": true
+      },
+      "a03": {
+        "short_answer_length_ok": true,
+        "every_key_point_has_evidence": true,
+        "no_duplicate_urls": true,
+        "cites_a_reference_domain": false
+      },
+      "a04": {
+        "short_answer_length_ok": true,
+        "every_key_point_has_evidence": true,
+        "no_duplicate_urls": true,
+        "cites_a_reference_domain": false
+      },
+      "a05": {
+        "short_answer_length_ok": true,
+        "every_key_point_has_evidence": true,
+        "no_duplicate_urls": true,
+        "cites_a_reference_domain": true
+      },
+      "a06": {
+        "short_answer_length_ok": true,
+        "every_key_point_has_evidence": true,
+        "no_duplicate_urls": true,
+        "cites_a_reference_domain": true
+      },
+      "a07": {
+        "short_answer_length_ok": true,
+        "every_key_point_has_evidence": true,
+        "no_duplicate_urls": true,
+        "cites_a_reference_domain": true
+      },
+      "a08": {
+        "short_answer_length_ok": true,
+        "every_key_point_has_evidence": true,
+        "no_duplicate_urls": true,
+        "cites_a_reference_domain": true
+      },
+      "a09": {
+        "short_answer_length_ok": true,
+        "every_key_point_has_evidence": true,
+        "no_duplicate_urls": true,
+        "cites_a_reference_domain": true
+      },
+      "a10": {
+        "short_answer_length_ok": true,
+        "every_key_point_has_evidence": true,
+        "no_duplicate_urls": true,
+        "cites_a_reference_domain": true
+      }
+    },
+    "judged": 10,
+    "mean_score": 1.7,
+    "unsupported_claims": 0
+  }
+}

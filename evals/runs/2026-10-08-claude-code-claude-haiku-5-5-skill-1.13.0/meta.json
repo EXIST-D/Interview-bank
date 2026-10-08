@@ -1,0 +1,7 @@
+{
+  "date": "2026-10-08",
+  "host": "Claude Code 2.1.263 (Claude Code)",
+  "model": "claude-haiku-5-5",
+  "method": "claude -p, fresh session per case, project settings only, one turn, Skill tool call = triggered",
+  "skill_version": "1.13.0"
+}

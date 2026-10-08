@@ -1,0 +1,32 @@
+{
+  "triggers": {
+    "precision": 0.9302,
+    "recall": 1.0,
+    "tp": 40,
+    "tn": 37,
+    "fp": 3,
+    "by_language": {
+      "en": {
+        "precision": 0.9524,
+        "recall": 1.0,
+        "tp": 20,
+        "tn": 19,
+        "fp": 1
+      },
+      "zh": {
+        "precision": 0.9091,
+        "recall": 1.0,
+        "tp": 20,
+        "tn": 18,
+        "fp": 2
+      }
+    },
+    "unscored_cases": [],
+    "false_triggers": [
+      "t-en-29",
+      "t-zh-29",
+      "t-zh-36"
+    ],
+    "missed_triggers": []
+  }
+}
