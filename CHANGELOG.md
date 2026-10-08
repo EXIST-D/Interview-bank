@@ -2,6 +2,57 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.14.0] - 2026-10-08
+
+Fixes from the first real-environment evaluation: the Skill installed in Claude Code, screenshots organised end to end
+by fresh Opus and Sonnet agents that read only the Skill, blind dedupe and answer suites, and the trigger suite in real
+`claude -p` sessions. Data stays V1/V2; no migration is needed.
+
+Evaluation results: dedupe retrieval recall@10 1.00; blind dedupe judgments 0 % false merges and 3.4 % missed merges
+(Opus, Sonnet); blind answers 1.7 / 2 from a separate judge with no unsupported claims; triggers pass with Sonnet
+(recall 1.00), while Haiku's recall (0.73–0.80) stays below the gate. See evals/README.md.
+
+### Added
+- Dedupe review sheet: every dedupe task writes `review-sheet.md`, incoming questions grouped by report topic with their
+  candidates and the bank's existing questions of the same topic, so paraphrases with no shared wording are compared.
+- Short refs (`n1`… incoming, `e1`… existing) accepted in decisions; `default_action: "KEEP_DISTINCT"` covers unlisted
+  questions; `ingest submit --top-k`; `dedupe --decisions` (alias of `--input`).
+- `--defer-review` on `ingest finalize` and `dedupe`: REVIEW items no longer block the whole stage; they stay separate
+  questions and wait for the user in the Web reader (合并裁决). `dedupe --resolve` applies decisions on a committed run's
+  deferred items as a new stage; undecided items stay queued.
+- `page-text <url>…`: saves the readable text of cited pages under cache/pages/ and returns a file for
+  `answer --page-texts`, for hosts whose web tool returns summaries (the second command that goes online); pages that
+  redirected elsewhere are flagged.
+- Extraction rules for phone screenshots: overlapping scrolls, questions cut across images, very tall images, the same
+  interview posted twice, abbreviations as company evidence and platform evidence.
+- Dedupe judgment table (generic vs implementation, definition vs countermeasure, supersets, languages, project questions,
+  follow-ups vs siblings) with examples that are not in the evaluation set.
+- Role track `ai-agent.application` (AI 应用开发); technologies `agent-skills`, `claude-code`, `codex`, `cursor`,
+  `github-copilot`, `ragas` (catalog 1.2.0).
+- Rule for “the N most frequent” when place N is tied.
+- `tools/run_trigger_eval.py --max-turns`; run directories record the Skill version.
+
+### Changed
+- A merge or related target may be any active question of the bank or stage, not only a retrieved candidate; such
+  targets are audited as `outside_candidates`, and unknown targets fail with the ID named. Committed questions can be
+  linked or merged later with `dedupe-candidates --question`.
+- `dedupe-candidates` returns the same compact shape as `ingest submit` (counts, review sheet path, a 15-item preview with
+  refs and scores), not the task file; `run-show` pages the full task. Output trimming also reaches lists nested one
+  level down, so a 400-question `ingest submit` no longer prints 456 KB.
+- Dedupe tasks store only ID and wording for candidates (a 400-question import wrote 4.5 MB of task files).
+- Candidate ranking keeps the real score for same-topic questions instead of flooring them to one value, so the top-k
+  cut among them is no longer arbitrary.
+- `ingest finalize --task` refuses a decisions file that names another task.
+- Report topics are ordered by question count.
+- SKILL.md description lists more Chinese trigger phrases and excludes self-introductions, salary negotiation and
+  post-interview emails. Rarely needed detail moved out of the end-to-end reading set (export formats, answer recheck,
+  merge audit), which stays under 30K characters.
+- The Python version error explains how to find a newer interpreter.
+
+### Fixed
+- `tools/run_trigger_eval.py` counted API errors (for example an unresolvable model alias) as “not triggered” and aborted
+  on harmless CLI warnings; it now judges each case by the session's own result events.
+
 ## [1.13.0] - 2026-10-02
 
 Stages 3 and 4 of the improvement plan: the Skill text, evaluations, human-only actions, composite commands,

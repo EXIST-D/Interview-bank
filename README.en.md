@@ -4,18 +4,17 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.13.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.14.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## What's new: 1.13 fewer calls, checkable research, human checkpoints
+## What's new: 1.14 fixes from a real-environment evaluation
 
-- **Composite commands:** `ingest images → ingest submit → ingest finalize` imports screenshots in three calls (was six); `answer --commit`, `interview turn/review` and `study record --commit` halve the calls for answers, mock interviews and practice.
-- **Human checkpoints are structural:** "human-reviewed" can only come from the user pressing the button in the local Web reader or confirming in their own interactive terminal; ratings relayed by the agent must keep the user's words; uncertain merges can be decided by the user under "Merge decisions" and applied with `dedupe --resolve`.
-- **Checkable research:** citations may carry an `evidence_quote` that the CLI checks against the page text the agent read; `verify-citations` checks on request that cited links still respond (the only command that goes online).
-- **Evaluations:** `evals/` holds trigger, screenshot-extraction, dedupe and answer suites with a scorer; dedupe retrieval recall is checked in CI (recall@10 = 1.00, 0.948 before this release).
-- **New sources:** `web-intake` imports a page body with paragraph-level provenance; Bilibili subtitle JSON and YouTube rolling captions are parsed.
-- **Learning loop:** Anki export, optional FSRS scheduling, problem links, daily study plans as .ics calendars.
-- **Onboarding and UI:** `demo` builds a sample bank; the Web reader has English, dark mode, resumable practice rounds and `localhost` access; reports can be English.
-- **Leaner SKILL.md:** body from 19.5K to about 6.9K characters; the end-to-end reading set stays under 30K.
+1.14 comes from the first real-environment evaluation: the Skill installed in Claude Code, screenshots organised end to end by fresh Opus and Sonnet agents that read only the Skill, and the trigger, dedupe-judgment and answer suites run in real `claude -p` sessions (results under "Verification" below).
+
+- **Dedupe review sheet:** every dedupe task writes a topic-grouped `review-sheet.md` with incoming questions, their candidates and the bank's questions of the same topic, so paraphrases with no shared wording are compared. Any active question may be a merge target (audited as `outside_candidates`); decisions accept `n3`/`e7` refs and a `default_action`.
+- **Uncertain merges no longer block an import:** `ingest finalize --defer-review` commits what is decided and leaves the uncertain merges to the user under "Merge decisions" in the Web reader; `dedupe --resolve` applies them.
+- **Quotes that can be checked verbatim:** `page-text` saves the text of cited pages for `answer --page-texts`, and flags redirects to other pages.
+- **Phone screenshots:** rules for overlapping scrolls, questions cut across images, very tall images, the same interview posted twice, and evidence for abbreviated company names and platforms.
+- **Also:** large imports stay within the 32 KB output cap with smaller task files; a role for AI application development and tags such as Claude Code and Codex; report topics ordered by size; a rule for ties among the most frequent questions.
 
 Details are in the [CHANGELOG](CHANGELOG.md). The local Web interface is described in [local Web usage](skills/interview-bank/references/web.md).
 
@@ -73,7 +72,7 @@ The Skill uses the agent's vision, reasoning and web tools and is not tied to on
 - The agent must view local images, read and write the files the user allows, and run Python; sourced answers need web search and page reading.
 - Installing with `npx` needs Node.js/npm; the Python core does not.
 - Keep banks and outputs outside the installed Skill directory.
-- The CLI does not go online by default; only `verify-citations`, run on request, contacts cited links.
+- The CLI does not go online by default; only `verify-citations` (link checks, on request) and `page-text` (saving cited pages while researching answers) make network requests.
 
 ## Installation
 
@@ -172,7 +171,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 ## Status and plans
 
-**v1.13.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
+**v1.14.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
 
 **Not implemented yet:**
 
@@ -185,7 +184,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 **Other limits:** review queues are generated on demand with no background reminders; exact token and cost figures depend on the host; splitting an arbitrary historical merge is not supported, only undoing the latest eligible operation.
 
-**Verification:** v1.13.0 passes 287 automated tests in CI (Windows, macOS and Linux; Python 3.10–3.13), runs them again in the legacy snapshot format, and adds lint and a packaged-install check; run them with `python -B -m unittest discover -s tests`. Evaluation results and host checks are in [evals](evals/README.md): dedupe retrieval recall@10 is 1.00 (including a held-out set written after the change); the first recorded screenshot-extraction run on Claude Code was fully correct but not blind. The trigger suite has not yet been run in real host sessions. Extracted content and reference answers still need checking against the original material, sources and scope.
+**Verification:** v1.14.0 passes 298 automated tests in CI (Windows, macOS and Linux; Python 3.10–3.13), runs them again in the legacy snapshot format, and adds lint and a packaged-install check; run them with `python -B -m unittest discover -s tests`. Evaluation results and host checks are in [evals](evals/README.md): dedupe retrieval recall@10 is 1.00; blind dedupe judgments made 0 % false merges and 3.4 % missed merges (Opus and Sonnet); blind answers scored 1.7 / 2 from a separate judge with no unsupported claims; on Claude Code the trigger suite passes with Sonnet, while Haiku's recall (0.73–0.80) is below the gate. Extracted content and reference answers still need checking against the original material, sources and scope.
 
 The repository contains the Skill, tests, evaluations and development tools, documentation, license and the README image. Personal material, banks, research ledgers and local environments are not published; test and evaluation data are synthetic.
 
