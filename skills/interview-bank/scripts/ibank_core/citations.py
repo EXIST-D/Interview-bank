@@ -181,6 +181,8 @@ def page_texts(bank, urls: Iterable[str], allow_private: bool = False, opener: O
             atomic_write(path, fetched["text"] + "\n")
             mapping[url] = str(path)
             moved = fetched["final_url"].rstrip("/") != url.rstrip("/")
+            if moved:
+                mapping[fetched["final_url"]] = str(path)  # either URL may be cited; both find the saved text
             results.append({"url": url, "ok": True, "path": str(path), "characters": len(fetched["text"]),
                             "final_url": fetched["final_url"], **({"redirected": True} if moved else {})})
         else:
@@ -191,7 +193,8 @@ def page_texts(bank, urls: Iterable[str], allow_private: bool = False, opener: O
     return {"saved": len(mapping), "failed": len(results) - len(mapping), "results": results, "page_texts": str(index),
             **({"redirected": redirected,
                 "warning": "These URLs redirected elsewhere (often an old link landing on an overview page). Read the saved "
-                           "text before quoting it; cite final_url if it is the document you meant, otherwise find the right page."}
+                           "text before quoting it; if it is the document you meant, cite final_url (both URLs map to the "
+                           "saved text), otherwise find the right page."}
                if redirected else {}),
             "network_request_performed": True,
             "next": f"Quote evidence_quote verbatim from these texts, then answer --page-texts {index}. "

@@ -165,11 +165,14 @@ class PageText(unittest.TestCase):
         self.assertEqual(list(mapping), [f"{self.base}/article"])
 
     def test_redirects_are_flagged(self):
+        from pathlib import Path
         from ibank_core.citations import page_texts
         result = page_texts(self.bank.path, [f"{self.base}/old-link"], allow_private=True)
         self.assertTrue(result["results"][0]["redirected"])
         self.assertEqual(result["redirected"], [f"{self.base}/old-link"])
         self.assertIn("redirected elsewhere", result["warning"])
+        mapping = json.loads(Path(result["page_texts"]).read_text(encoding="utf-8"))
+        self.assertEqual(mapping[f"{self.base}/old-link"], mapping[f"{self.base}/article"])
 
     def test_private_addresses_are_refused_by_default(self):
         from ibank_core.citations import page_texts
