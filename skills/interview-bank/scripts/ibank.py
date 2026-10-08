@@ -106,10 +106,13 @@ def parser():
     submit = ingest_sub.add_parser("submit", parents=[common], help="extract-save + stage + dedupe candidates")
     submit.add_argument("--intake", required=True)
     submit.add_argument("--extraction", type=Path, required=True)
+    submit.add_argument("--top-k", type=positive_int, help="Candidates per incoming question (default: bank dedupe.top_k)")
     finalize = ingest_sub.add_parser("finalize", parents=[common], help="dedupe decisions + commit (+ optional workflow)")
     finalize.add_argument("--task", required=True)
     finalize.add_argument("--decisions", type=Path, help="Host decisions; omitted = exact matches only, others need review")
     finalize.add_argument("--workflow", help="Also create and commit a V2 research workflow over this intake")
+    finalize.add_argument("--defer-review", action="store_true",
+                          help="Commit the decided questions; REVIEW items stay separate and wait for the user in the Web reader")
     save = sub.add_parser("extract-save", parents=[common], help="Save partial vision results and resume a batch")
     save.add_argument("--run", required=True)
     save.add_argument("--input", type=Path, required=True)
@@ -137,15 +140,17 @@ def parser():
     curate.add_argument("--input", type=Path, required=True)
     config = sub.add_parser("config", parents=[common], help="Inspect config or stage a validated config patch")
     config.add_argument("--input", type=Path)
-    candidates = sub.add_parser("dedupe-candidates", parents=[common])
+    candidates = sub.add_parser("dedupe-candidates", parents=[common],
+                                help="Candidates and a topic-grouped review sheet for a stage (--run) or existing questions (--question)")
     candidates.add_argument("--run")
     candidates.add_argument("--question", action="append")
     candidates.add_argument("--top-k", type=positive_int, help="Candidate count (default: bank dedupe.top_k)")
     judge = sub.add_parser("dedupe", parents=[common], help="Stage host judgments or automatic exact decisions")
     decision_source = judge.add_mutually_exclusive_group(required=True)
-    decision_source.add_argument("--input", type=Path)
+    decision_source.add_argument("--input", "--decisions", dest="input", type=Path, help="Host decisions (refs n…/e… accepted)")
     decision_source.add_argument("--task", help="Apply exact matches; non-exact candidates become REVIEW")
-    decision_source.add_argument("--resolve", metavar="RUN", help="Re-stage a dedupe run with the user's Web decisions on its review items")
+    decision_source.add_argument("--resolve", metavar="RUN", help="Stage the user's Web decisions on a run's review or deferred items")
+    judge.add_argument("--defer-review", action="store_true", help="REVIEW items do not block the stage; the user decides them later")
     show = sub.add_parser("show", parents=[common])
     show.add_argument("question_id")
     research = sub.add_parser("research", parents=[common], help="Prepare host web-research tasks; no automatic bulk answering")
@@ -264,8 +269,9 @@ def dispatch(args):
             run = flows.ingest_images if args.ingest_action == "images" else flows.ingest_media
             return run(bank, args.paths, retention=args.retention, recursive=args.recursive, reprocess=args.reprocess)
         if args.ingest_action == "submit":
-            return flows.ingest_submit(bank, args.intake, read_json(args.extraction))
-        return flows.ingest_finalize(bank, args.task, read_json(args.decisions) if args.decisions else None, args.workflow)
+            return flows.ingest_submit(bank, args.intake, read_json(args.extraction), args.top_k)
+        return flows.ingest_finalize(bank, args.task, read_json(args.decisions) if args.decisions else None, args.workflow,
+                                     defer_review=args.defer_review)
     if args.command == "extract-save":
         return save_extraction(bank, args.run, read_json(args.input))
     if args.command == "gc":
@@ -294,12 +300,13 @@ def dispatch(args):
     if args.command == "config":
         return configure(bank, read_json(args.input) if args.input else None)
     if args.command == "dedupe-candidates":
-        return candidate_task(bank, args.run, args.top_k, args.question)
+        from ibank_core.dedupe import task_summary
+        return task_summary(bank, candidate_task(bank, args.run, args.top_k, args.question))
     if args.command == "dedupe":
         if args.resolve:
             from ibank_core.dedupe import resolve_with_human_decisions
             return resolve_with_human_decisions(bank, args.resolve)
-        return stage_decisions(bank, read_json(args.input) if args.input else None, args.task)
+        return stage_decisions(bank, read_json(args.input) if args.input else None, args.task, defer_review=args.defer_review)
     if args.command == "research":
         return research_task(bank, args.question, args.limit, **{k: getattr(args, k) for k in ("query", "company", "role", "technology", "answer_status")})
     if args.command == "answer":

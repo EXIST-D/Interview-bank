@@ -120,7 +120,7 @@ def _write_stage(bank, addition, run_id=None, duplicate_sources=0, metadata=None
     atomic_write(path / "run.json", dumps(run) + "\n")
     return {"run_id": run_id, "status": "staged", "counts": {t: len(addition[t]) for t in TABLES},
             "duplicate_sources": duplicate_sources, "review": run.get("review", []),
-            "summary": run.get("summary", {})}
+            "summary": run.get("summary", {}), **({"deferred_review": run["deferred_review"]} if run.get("deferred_review") else {})}
 
 
 def stage_text(bank, input_path, *, run_id=None, company=None, roles=(), domains=(),

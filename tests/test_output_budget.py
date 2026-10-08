@@ -27,13 +27,19 @@ class OutputBudget(unittest.TestCase):
         return json.loads(proc.stdout)["result"]
 
     def test_large_results_are_paged_and_saved_whole(self):
-        for args in (("classify",), ("dedupe-candidates",), ("search", "--limit", "200")):
+        for args in (("classify",), ("search", "--limit", "200")):
             with self.subTest(command=args[0]):
                 result = self.run_json(*args)
                 page = result["_page"]
                 self.assertLess(page["returned"], page["total"])
                 full = json.loads(Path(page["full_output"]).read_text(encoding="utf-8"))
                 self.assertEqual(len(full[page["field"]]), page["total"])
+
+    def test_dedupe_candidates_preview_and_point_to_the_full_task(self):
+        result = self.run_json("dedupe-candidates")
+        self.assertLess(result["previewed"], result["incoming"])
+        self.assertTrue(result["full_task"].startswith("run-show --run "))
+        self.assertTrue(Path(result["review_sheet"]).is_file())
 
     def test_classification_reference_blocks_are_omitted_from_stdout_only(self):
         result = self.run_json("classify")

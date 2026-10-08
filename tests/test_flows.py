@@ -29,7 +29,7 @@ def decide(bank, submitted, action="KEEP_DISTINCT", **overrides):
     """Host decisions for every incoming question of an ingest submit result."""
     dedupe = submitted["dedupe"]
     decisions = [{"question_id": item["question_id"], "action": action, "confidence": 0.95, "reason": "Different core question",
-                  **({"target_id": item["candidates"][0]["id"]} if action != "KEEP_DISTINCT" else {}),
+                  **({"target_id": item["candidates"][0]["ref"]} if action != "KEEP_DISTINCT" else {}),
                   **overrides.get(item["question_id"], {})} for item in dedupe["items"]]
     path = bank.root / "decisions.json"
     path.write_text(json.dumps({"schema_version": 1, "task_id": dedupe["task_id"], "decisions": decisions}, ensure_ascii=False), encoding="utf-8")
