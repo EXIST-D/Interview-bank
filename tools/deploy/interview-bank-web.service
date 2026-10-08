@@ -1,0 +1,22 @@
+# systemd unit for the read-only Web reader behind a reverse proxy.
+# Install as /etc/systemd/system/interview-bank-web.service; replace https://example.com with your site's origin.
+[Unit]
+Description=Interview Bank Web reader (loopback, behind a reverse proxy)
+After=network.target
+
+[Service]
+User=ibank
+Group=ibank
+ExecStart=/usr/bin/python3 -B /opt/interview-bank/interview-bank/scripts/ibank.py web --bank /srv/interview-bank/bank \
+    --port 8765 --read-only --token-file /etc/interview-bank/token --public-origin https://example.com
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/srv/interview-bank
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

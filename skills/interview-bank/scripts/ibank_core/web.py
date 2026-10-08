@@ -211,9 +211,12 @@ class LocalServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = False
 
-    def __init__(self, app, port=0):
+    def __init__(self, app, port=0, token=None, public_origins=()):
         self.app = app
-        self.token = secrets.token_urlsafe(32)
+        self.token = token or secrets.token_urlsafe(32)
+        # Hosting behind a reverse proxy: the proxy authenticates the person and adds the token header; the
+        # browser's Origin is the public site. The server itself still binds to loopback only.
+        self.public_origins = tuple(public_origins)
         super().__init__(('127.0.0.1', port), Handler)
         self.origin = f'http://127.0.0.1:{self.server_port}'
 
@@ -257,7 +260,7 @@ class Handler(BaseHTTPRequestHandler):
         port = self.server.server_port
         hosts = [f'127.0.0.1:{port}', f'localhost:{port}']
         if len(self.headers.get_all('Host') or []) != 1 or self.headers.get('Host') not in hosts \
-                or self.headers.get('Origin') not in (None, *(f'http://{h}' for h in hosts)):
+                or self.headers.get('Origin') not in (None, *(f'http://{h}' for h in hosts), *self.server.public_origins):
             return self.send(403, {'error': f'仅支持本机访问：请打开 Agent 提供的 http://127.0.0.1:{port}/ 链接。'})
         path = urlsplit(self.path).path
         assets = {'/': ('index.html', 'text/html; charset=utf-8'), '/app.js': ('app.js', 'text/javascript; charset=utf-8'), '/app.css': ('app.css', 'text/css; charset=utf-8')}
@@ -315,10 +318,27 @@ class Handler(BaseHTTPRequestHandler):
         self.handle_route(True)
 
 
-def serve(bank, port=0, read_only=False, open_browser=False):
+def _read_token(path):
+    from pathlib import Path
+    token = Path(path).read_text(encoding='utf-8').strip()
+    require(len(token) >= 32 and token.isascii() and token.isprintable() and ' ' not in token,
+            'The token file must hold one printable token of at least 32 characters')
+    return token
+
+
+def serve(bank, port=0, read_only=False, open_browser=False, token_file=None, public_origins=()):
     require(0 <= port <= 65535, 'Port must be 0..65535')
-    server = LocalServer(WebApp(bank, read_only), port)
-    print(json.dumps({'ok': True, 'command': 'web', 'result': {'url': server.url, 'pid': __import__('os').getpid(), 'read_only': read_only, 'version': __version__}}, ensure_ascii=False), flush=True)
+    for origin in public_origins:
+        parsed = urlsplit(origin)
+        require(parsed.scheme == 'https' and parsed.netloc and not parsed.path.strip('/') and not parsed.query,
+                'A public origin is https://host[:port] without a path')
+    require(not public_origins or token_file, 'A public origin needs --token-file: the reverse proxy must add the token')
+    server = LocalServer(WebApp(bank, read_only), port, _read_token(token_file) if token_file else None,
+                         [o.rstrip('/') for o in public_origins])
+    # A fixed token lives in a file the proxy also reads; never print it into service logs.
+    url = server.origin + '/' if token_file else server.url
+    print(json.dumps({'ok': True, 'command': 'web', 'result': {'url': url, 'pid': __import__('os').getpid(), 'read_only': read_only,
+                      'public_origins': list(server.public_origins), 'version': __version__}}, ensure_ascii=False), flush=True)
     if open_browser:
         webbrowser.open(server.url)
     try:

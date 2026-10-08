@@ -238,7 +238,8 @@ function richText(text) {
 // ---------------------------------------------------------------- API
 
 async function api(path, body) {
-  const response = await fetch(path, {
+  // Relative to the page, so the reader also works behind a reverse proxy under a path such as /ibank/.
+  const response = await fetch(path.replace(/^\//, ''), {
     method: body ? 'POST' : 'GET',
     headers: { 'X-Interview-Token': token || '', ...(body ? { 'Content-Type': 'application/json' } : {}) },
     body: body ? JSON.stringify(body) : undefined,
