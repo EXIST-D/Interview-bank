@@ -6,23 +6,26 @@
 
 适用于校招、实习、秋招和社招。当前版本为 **1.15.0**。详见 [更新记录](CHANGELOG.md) 与 [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases)。
 
-## 本次更新：1.14 真实环境测评后的修复
+## 本次更新：1.15 手机和电脑上的在线阅读与练习
 
-1.14 来自第一次真实环境测评：Skill 安装到 Claude Code，由只读 Skill 文档的全新 Opus、Sonnet Agent 端到端完成截图整理，并在真实 `claude -p` 会话中跑触发、去重判断与答案评测（结果见下方“验证情况”）。
-
-- **去重审阅表**：每个去重任务生成按主题分组的 `review-sheet.md`，列出新题、候选和同主题已有题，字面不同的同义题也能被对照到。合并目标可以是题库中任意有效题目（审计中标记 `outside_candidates`），决策可用 `n3`/`e7` 简写，`default_action` 省去逐条写"不重复"。
-- **不确定的合并不再卡住整批**：`ingest finalize --defer-review` 先提交确定的部分，拿不准的合并留给用户在 Web“合并裁决”里决定，再由 `dedupe --resolve` 应用。
-- **答案引用可逐字核对**：新增 `page-text`，把引用页面的正文存下来供 `answer --page-texts` 校验摘录；重定向到其他页面会提示。
-- **手机截图规则**：滚动截图重叠、跨图断题、超长图、同一面经发两次，以及缩写公司名与平台的证据规则。
-- **其他**：大批量导入的输出不再超出 32 KB 上限、任务文件更小；新增“AI 应用开发”岗位与 Claude Code、Codex 等技术标签；报告按题量排列主题；并列高频题有明确规则。
+- **为碎片时间重新设计的网页**：手机上是列表 + 全屏阅读，底部"上一题 / 下一题"、左右滑动、返回手势回到列表；电脑上是三栏（导航、列表、阅读），键盘 ←/→ 切换。答案下方列出"要点与出处"，每个要点都能点开它依据的原始资料；可开启"先想再看"。
+- **放到自己的服务器上**：只读阅读器可以部署在你自己的 HTTPS 服务器后面，带独立登录页（密码只存摘要、会话 14 天、连续输错锁定）；`--banks-dir` 支持多人各用一个账号、只看到自己的题库。题库由 `tools/deploy/sync.sh` 从本机同步过去（不含截图），每日自动备份并校验。
+- **部署模板**：`tools/deploy/` 提供 systemd 服务、nginx 配置、账号管理、同步和备份脚本；步骤见 [本地 Web 说明](skills/interview-bank/references/web.md)。
+- 本地使用不受影响：`web` 命令仍只在本机打开，同样是新界面，不需要登录。
 
 详见 [更新记录](CHANGELOG.md)。本地 Web 用法见 [本地 Web 说明](skills/interview-bank/references/web.md)。
 
 ## 界面示例
 
-![Interview Bank 本地 Web 界面：多维筛选、题目列表与参考答案阅读](assets/readme/web-preview.png)
+电脑上：导航、题目列表和阅读区三栏。
 
-上图由 `demo` 示例题库生成（合成题目与虚构公司），任何人都可以用 `demo --bank <新目录>` 和 `web` 复现。
+![Interview Bank 网页（电脑）：左侧导航与主题，中间题目列表，右侧参考答案与出处](assets/readme/web-preview.png)
+
+手机上：题目列表与全屏阅读，底部切换上一题 / 下一题。
+
+![Interview Bank 网页（手机）：题目列表与阅读页](assets/readme/mobile-preview.png)
+
+两张图都由 `demo` 示例题库生成（合成题目与虚构公司），任何人都可以用 `demo --bank <新目录>` 和 `web` 复现。
 
 ## 仓库结构
 
@@ -35,7 +38,7 @@ Interview-bank/
 ├── .github/workflows/ci.yml      # Windows/macOS/Linux × Python 3.10–3.13 测试、lint、旧格式回归与安装包检查
 ├── tests/                        # 标准库 unittest 测试（不随 Skill 安装）
 ├── evals/                        # 评测数据集、打分脚本、评测记录与宿主验证记录
-├── tools/                        # 打包、发布检查、合成夹具、度量与评测运行器
+├── tools/                        # 打包、发布检查、合成夹具、度量、评测运行器与服务器部署模板（deploy/）
 ├── examples/                     # 结构化答案样例
 ├── assets/readme/                # 主页示意图，不随 Skill 安装
 └── skills/
@@ -204,7 +207,7 @@ python -B <Skill目录>/scripts/ibank.py web --bank <已有题库目录> --open
 
 **其他边界：**复习队列按需生成，没有后台提醒；精确 Token 和费用统计依赖宿主；任意历史合并的拆分尚不支持，仅支持满足条件的最近操作撤销。
 
-**验证情况：** v1.15.0 在 CI 中通过 300 项自动化测试（Windows、macOS、Linux；Python 3.10–3.13），另以旧快照格式回归一遍，并做 lint 与安装包检查；可用 `python -B -m unittest discover -s tests` 自行运行。评测结果与宿主验证见 [evals](evals/README.md)：去重召回 recall@10 为 1.00；盲测的去重判断误合并 0%、漏合并 3.4%（Opus、Sonnet）；盲测答案经独立评审平均 1.7/2，无无依据断言；Claude Code 上 Sonnet 的触发评测达标，Haiku 召回 0.73–0.80 未达标。识别结果与参考答案仍需结合原文、来源和适用条件核对。
+**验证情况：** v1.15.0 在 CI 中通过 308 项自动化测试（Windows、macOS、Linux；Python 3.10–3.13），另以旧快照格式回归一遍，并做 lint 与安装包检查；可用 `python -B -m unittest discover -s tests` 自行运行。评测结果与宿主验证见 [evals](evals/README.md)：去重召回 recall@10 为 1.00；盲测的去重判断误合并 0%、漏合并 3.4%（Opus、Sonnet）；盲测答案经独立评审平均 1.7/2，无无依据断言；Claude Code 上 Sonnet 的触发评测达标，Haiku 召回 0.73–0.80 未达标。识别结果与参考答案仍需结合原文、来源和适用条件核对。
 
 仓库包含 Skill、测试、评测与开发工具、介绍、许可证及本页示意图。个人素材、题库、答案研究记录和本地依赖环境不随仓库发布；测试与评测数据均为合成数据。
 
