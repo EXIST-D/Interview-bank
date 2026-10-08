@@ -2,6 +2,22 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.15.0] - 2026-10-08
+
+Optional reading on a phone through the user's own server. Data stays V1/V2; no migration is needed.
+
+### Added
+- `web --token-file <file> --public-origin https://<site>`: the reader still binds to loopback, takes a fixed token from a
+  root-readable file (never printed to logs) and accepts the public site's Origin, for use behind an HTTPS reverse proxy
+  that asks for a login and adds the token.
+- `tools/deploy/`: a hardened systemd unit (unprivileged user, read-only filesystem except the bank), an nginx location
+  with `auth_basic`, `set-password.sh` (the person types the password on the server) and `sync.sh`, which copies only a
+  bank's data, config and manifest to the server.
+- web.md: “Reading on your own server”.
+
+### Changed
+- The Web page loads its assets and calls its API by relative paths, so it also works under a path such as `/ibank/`.
+
 ## [1.14.0] - 2026-10-08
 
 Fixes from the first real-environment evaluation: the Skill installed in Claude Code, screenshots organised end to end
