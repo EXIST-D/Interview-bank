@@ -19,14 +19,16 @@ class DefaultWorkflow(unittest.TestCase):
         try:
             bank.add_questions("backend.cache", "Redis 为什么快？", "Redis 高性能的原因是什么？")
             task = bank.result("dedupe-candidates")
-            items = {item["incoming"]["canonical"]: item for item in task["items"]}
-            target = next(m["question"]["id"] for m in items["Redis 高性能的原因是什么？"]["matches"]
-                          if m["question"]["canonical"] == "Redis 为什么快？")
-            decisions = [{"question_id": item["incoming"]["id"], "action": "KEEP_DISTINCT", "confidence": 0.95, "reason": "无候选"}
+            items = {item["canonical"]: item for item in task["items"]}
+            # Candidates come as refs; the sheet and the candidates map carry their wording.
+            wording = {**task["candidates"], **{item["ref"]: name for name, item in items.items()}}
+            target = next(c["ref"] for c in items["Redis 高性能的原因是什么？"]["candidates"] if wording[c["ref"]] == "Redis 为什么快？")
+            decisions = [{"question_id": item["ref"], "action": "KEEP_DISTINCT", "confidence": 0.95, "reason": "无候选"}
                          for name, item in items.items() if name != "Redis 高性能的原因是什么？"]
-            decisions.append({"question_id": items["Redis 高性能的原因是什么？"]["incoming"]["id"], "action": "MERGE_VARIANT",
+            decisions.append({"question_id": items["Redis 高性能的原因是什么？"]["ref"], "action": "MERGE_VARIANT",
                               "target_id": target, "confidence": 0.95, "reason": "同一考点"})
-            bank.stage_commit("dedupe", payload={"schema_version": 1, "task_id": task["id"], "decisions": decisions})
+            self.assertTrue(Path(task["review_sheet"]).is_file())
+            bank.stage_commit("dedupe", payload={"schema_version": 1, "task_id": task["task_id"], "decisions": decisions})
             staged = bank.answer_all()
             self.assertEqual(staged.returncode, 0, staged.stderr)
             bank.result("commit", "--run", json.loads(staged.stdout)["result"]["run_id"])

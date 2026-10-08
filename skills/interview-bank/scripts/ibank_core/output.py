@@ -76,4 +76,22 @@ def fit(command, result, bank=None, limit=None):
     page["hint"] = (f"Read the remaining items with: run-show --run {result['id']} --offset {page['next_offset']} --limit 20"
                     if is_task else "Narrow the query (--limit/--offset or filters) or read full_output")
     trimmed["_page"] = page
+    # Composite results nest their lists one level down (ingest submit → dedupe.items); trim those too.
+    for key in sorted((k for k, v in trimmed.items() if isinstance(v, dict) and k != "_page"), key=lambda k: -size(trimmed[k])):
+        if size(trimmed) <= limit:
+            break
+        inner = dict(trimmed[key])
+        nested = [k for k, v in inner.items() if isinstance(v, list) and v]
+        if not nested:
+            continue
+        name = max(nested, key=lambda k: size(inner[k]))
+        items, low, high = inner[name], 0, len(inner[name])
+        while low < high:
+            middle = (low + high + 1) // 2
+            if size({**trimmed, key: {**inner, name: items[:middle]}}) <= limit:
+                low = middle
+            else:
+                high = middle - 1
+        trimmed[key] = {**inner, name: items[:low]}
+        page.setdefault("nested", []).append({"field": f"{key}.{name}", "returned": low, "total": len(items)})
     return trimmed
