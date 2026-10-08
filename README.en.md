@@ -6,23 +6,26 @@ English | [简体中文](README.md)
 
 Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.15.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## What's new: 1.14 fixes from a real-environment evaluation
+## What's new: 1.15 reading and practice online, on a phone or a computer
 
-1.14 comes from the first real-environment evaluation: the Skill installed in Claude Code, screenshots organised end to end by fresh Opus and Sonnet agents that read only the Skill, and the trigger, dedupe-judgment and answer suites run in real `claude -p` sessions (results under "Verification" below).
-
-- **Dedupe review sheet:** every dedupe task writes a topic-grouped `review-sheet.md` with incoming questions, their candidates and the bank's questions of the same topic, so paraphrases with no shared wording are compared. Any active question may be a merge target (audited as `outside_candidates`); decisions accept `n3`/`e7` refs and a `default_action`.
-- **Uncertain merges no longer block an import:** `ingest finalize --defer-review` commits what is decided and leaves the uncertain merges to the user under "Merge decisions" in the Web reader; `dedupe --resolve` applies them.
-- **Quotes that can be checked verbatim:** `page-text` saves the text of cited pages for `answer --page-texts`, and flags redirects to other pages.
-- **Phone screenshots:** rules for overlapping scrolls, questions cut across images, very tall images, the same interview posted twice, and evidence for abbreviated company names and platforms.
-- **Also:** large imports stay within the 32 KB output cap with smaller task files; a role for AI application development and tags such as Claude Code and Codex; report topics ordered by size; a rule for ties among the most frequent questions.
+- **A Web reader redesigned for short sessions:** on a phone, a list and a full-screen reader with previous/next at the bottom, swipe and the back gesture; on a computer, three columns (navigation, list, reader) with ←/→. Each answer lists its key points with links to the sources behind them; an optional think-first mode hides answers.
+- **On your own server:** the read-only reader can sit behind your own HTTPS server with its own login page (hashed passwords, 14-day sessions, lockout after repeated failures); `--banks-dir` gives several people one account and one bank each. `tools/deploy/sync.sh` copies the bank there from your computer (no screenshots), with daily verified backups.
+- **Deployment templates:** `tools/deploy/` holds the systemd units, nginx snippets and the account, sync and backup scripts; steps are in [local Web usage](skills/interview-bank/references/web.md).
+- Local use is unchanged: `web` still opens on your computer only, with the same new interface and no login.
 
 Details are in the [CHANGELOG](CHANGELOG.md). The local Web interface is described in [local Web usage](skills/interview-bank/references/web.md).
 
 ## Interface preview
 
-![Interview Bank local Web interface: filters, question list and reference answer](assets/readme/web-preview.png)
+On a computer: navigation, question list and reader in three columns.
 
-The screenshot comes from the `demo` sample bank (synthetic questions, fictional companies); anyone can reproduce it with `demo --bank <new dir>` and `web`.
+![Interview Bank on a computer: navigation and topics, question list, reference answer with sources](assets/readme/web-preview.png)
+
+On a phone: the question list and the full-screen reader with previous/next.
+
+![Interview Bank on a phone: question list and reader](assets/readme/mobile-preview.png)
+
+Both come from the `demo` sample bank (synthetic questions, fictional companies); anyone can reproduce them with `demo --bank <new dir>` and `web`.
 
 ## Repository layout
 
@@ -35,7 +38,7 @@ Interview-bank/
 ├── .github/workflows/ci.yml      # tests on Windows/macOS/Linux × Python 3.10–3.13, lint, legacy-format run, package check
 ├── tests/                        # standard-library unittest suite (not installed with the Skill)
 ├── evals/                        # evaluation datasets, scorer, recorded runs, host verification
-├── tools/                        # packaging, release checks, synthetic fixtures, measurements, eval runners
+├── tools/                        # packaging, release checks, synthetic fixtures, measurements, eval runners, server deployment (deploy/)
 ├── examples/                     # sample structured answer
 ├── assets/readme/                # README images, not installed
 └── skills/
@@ -186,7 +189,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 **Other limits:** review queues are generated on demand with no background reminders; exact token and cost figures depend on the host; splitting an arbitrary historical merge is not supported, only undoing the latest eligible operation.
 
-**Verification:** v1.15.0 passes 300 automated tests in CI (Windows, macOS and Linux; Python 3.10–3.13), runs them again in the legacy snapshot format, and adds lint and a packaged-install check; run them with `python -B -m unittest discover -s tests`. Evaluation results and host checks are in [evals](evals/README.md): dedupe retrieval recall@10 is 1.00; blind dedupe judgments made 0 % false merges and 3.4 % missed merges (Opus and Sonnet); blind answers scored 1.7 / 2 from a separate judge with no unsupported claims; on Claude Code the trigger suite passes with Sonnet, while Haiku's recall (0.73–0.80) is below the gate. Extracted content and reference answers still need checking against the original material, sources and scope.
+**Verification:** v1.15.0 passes 308 automated tests in CI (Windows, macOS and Linux; Python 3.10–3.13), runs them again in the legacy snapshot format, and adds lint and a packaged-install check; run them with `python -B -m unittest discover -s tests`. Evaluation results and host checks are in [evals](evals/README.md): dedupe retrieval recall@10 is 1.00; blind dedupe judgments made 0 % false merges and 3.4 % missed merges (Opus and Sonnet); blind answers scored 1.7 / 2 from a separate judge with no unsupported claims; on Claude Code the trigger suite passes with Sonnet, while Haiku's recall (0.73–0.80) is below the gate. Extracted content and reference answers still need checking against the original material, sources and scope.
 
 The repository contains the Skill, tests, evaluations and development tools, documentation, license and the README image. Personal material, banks, research ledgers and local environments are not published; test and evaluation data are synthetic.
 
