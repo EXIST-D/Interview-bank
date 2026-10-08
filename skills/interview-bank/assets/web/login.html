@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Interview Bank · 登录</title>
+  <link rel="stylesheet" href="app.css">
+  <script src="login.js" defer></script>
+</head>
+<body class="login-page">
+<main class="login-shell">
+  <form id="login-form" class="login-card" novalidate>
+    <div class="login-brand">
+      <span class="brand-mark" aria-hidden="true">iB</span>
+      <span>Interview Bank<small data-login="tagline">每一次积累，都算数。</small></span>
+    </div>
+    <h1 data-login="title">登录你的题库</h1>
+    <p class="login-lead" data-login="lead">题目、参考答案和练习进度，只对你本人可见。</p>
+    <label class="login-field">
+      <span data-login="username">用户名</span>
+      <input id="login-username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+    </label>
+    <label class="login-field">
+      <span data-login="password">密码</span>
+      <span class="login-password">
+        <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+        <button id="login-reveal" class="login-reveal" type="button" data-login="show" aria-pressed="false">显示</button>
+      </span>
+    </label>
+    <p id="login-error" class="login-error" role="alert" hidden></p>
+    <button id="login-submit" class="button primary login-submit" type="submit" data-login="submit">登录</button>
+    <p class="login-foot"><span class="status-dot" aria-hidden="true"></span><span data-login="foot">HTTPS 加密连接 · 连续输错会暂时锁定</span></p>
+  </form>
+</main>
+</body>
+</html>

@@ -10,13 +10,16 @@ Optional reading on a phone through the user's own server. Data stays V1/V2; no 
 - `web --token-file <file> --public-origin https://<site>`: the reader still binds to loopback, takes a fixed token from a
   root-readable file (never printed to logs) and accepts the public site's Origin, for use behind an HTTPS reverse proxy
   that asks for a login and adds the token.
-- `tools/deploy/`: a hardened systemd unit (unprivileged user, read-only filesystem except the bank), an nginx location
-  with `auth_basic`, `set-password.sh` (the person types the password on the server) and `sync.sh`, which copies only a
-  bank's data, config and manifest to the server.
+- `web --login-file`: a login page for the hosted reader (one account, scrypt hash, signed HttpOnly/Secure/SameSite=Strict
+  session cookie for 14 days, sign-out button, lockout after repeated failures; a new password signs every device out).
+- `tools/deploy/`: a hardened systemd unit (unprivileged user, read-only filesystem except the bank, starts only once a
+  login exists), nginx snippets that add the token and client address and rate-limit logins, `set-login.py` (the person
+  types the password on the server) and `sync.sh`, which copies only a bank's data, config and manifest.
 - web.md: “Reading on your own server”.
 
 ### Changed
-- The Web page loads its assets and calls its API by relative paths, so it also works under a path such as `/ibank/`.
+- The Web page loads its assets and calls its API by relative paths, so it also works under a path such as `/ibank/`;
+  the brand link stays inside the reader, and a read-only notice takes precedence over the V1 notice.
 
 ## [1.14.0] - 2026-10-08
 

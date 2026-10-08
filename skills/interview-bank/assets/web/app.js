@@ -9,7 +9,7 @@ const TEXT = {
     skip: '跳到题库', sidebar: '题库导航', tagline: '每一次积累，都算数。', space: '个人空间',
     view_all: '全部题目', view_due: '待复习', view_weak: '待巩固', view_unseen: '尚未练习',
     note: '把收集的题目，<br>变成自己的知识。', note_small: '先想一想，再看答案。', local_bank: '本地题库',
-    subtitle: '将零散的问题，整理成清晰的思路。', merges: '合并裁决', refresh: '刷新题库', refresh_title: '重新读取题库',
+    subtitle: '将零散的问题，整理成清晰的思路。', merges: '合并裁决', refresh: '刷新题库', refresh_title: '重新读取题库', logout: '退出登录',
     start_practice: '开始练习', resume: '继续练习', discard: '放弃', summary: '题库概览',
     stat_total: '积累题目', stat_answered: '已收录参考答案', stat_domains: '知识领域', stat_due: '待复习 · 含未练习',
     controls: '搜索和筛选', search: '搜索题目或原始问法…', sort: '排序',
@@ -66,7 +66,7 @@ const TEXT = {
     skip: 'Skip to the bank', sidebar: 'Bank navigation', tagline: 'Every question counts.', space: 'Your space',
     view_all: 'All questions', view_due: 'Due for review', view_weak: 'Needs work', view_unseen: 'Not practised',
     note: 'Turn collected questions<br>into your own knowledge.', note_small: 'Think first, then read the answer.', local_bank: 'Local bank',
-    subtitle: 'Scattered questions, organised into clear thinking.', merges: 'Merge decisions', refresh: 'Refresh', refresh_title: 'Reload the bank',
+    subtitle: 'Scattered questions, organised into clear thinking.', merges: 'Merge decisions', refresh: 'Refresh', refresh_title: 'Reload the bank', logout: 'Sign out',
     start_practice: 'Practise', resume: 'Resume', discard: 'Discard', summary: 'Bank overview',
     stat_total: 'Questions', stat_answered: 'With reference answers', stat_domains: 'Topics', stat_due: 'Due · incl. unpractised',
     controls: 'Search and filters', search: 'Search questions or original wording…', sort: 'Sort',
@@ -247,6 +247,8 @@ async function api(path, body) {
   });
   let result;
   try { result = await response.json(); } catch (_) { throw new Error(t('unreachable')); }
+  // A hosted reader whose session ended shows its login page again.
+  if (response.status === 401 && result.login) { location.reload(); return new Promise(() => {}); }
   if (!response.ok) throw new Error(result.error || t('failed'));
   return result;
 }
@@ -302,13 +304,14 @@ async function loadLibrary(reset = false) {
     $('bank-name').textContent = data.name;
     $('bank-name').title = data.name;
     $('version').textContent = 'v' + data.version;
+    $('logout').hidden = !data.can_logout;
     $('stat-total').textContent = data.summary.questions;
     $('stat-answered').textContent = data.summary.answer_count;
     $('stat-answered').parentElement.title = t('answered_tip', { a: data.summary.answered, s: data.summary.stale });
     $('stat-domains').textContent = data.summary.domains;
     $('stat-due').textContent = data.summary.due;
     for (const key of ['all', 'due', 'weak', 'unseen']) $('nav-' + key).textContent = data.summary[key === 'all' ? 'questions' : key];
-    message('notice', data.schema_version === 1 ? t('notice_v1') : data.read_only ? t('notice_read_only') : '');
+    message('notice', data.read_only ? t('notice_read_only') : data.schema_version === 1 ? t('notice_v1') : '');
     $('result-count').textContent = t('count', { n: data.total });
     $('page-number').textContent = data.total ? t('page', { p: Math.floor(state.offset / state.limit) + 1, t: Math.ceil(data.total / state.limit) }) : '0 / 0';
     $('previous').disabled = state.offset === 0;
@@ -734,6 +737,7 @@ $('clear-filters').addEventListener('click', () => {
   loadLibrary(true);
 });
 $('refresh').addEventListener('click', async () => { await loadLibrary(); if ($('error').hidden) toast(t('reloaded')); });
+$('logout').addEventListener('click', async () => { try { await api('/api/logout', {}); } finally { location.reload(); } });
 $('previous').addEventListener('click', () => { state.offset = Math.max(0, state.offset - state.limit); loadLibrary(); });
 $('next').addEventListener('click', () => { state.offset += state.limit; loadLibrary(); });
 $('start-practice').addEventListener('click', preparePractice);

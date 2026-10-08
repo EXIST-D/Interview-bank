@@ -159,3 +159,80 @@ class WebTests(BankFixture):
             responses=list(executor.map(lambda _:self.request('/api/practice',p),range(2)))
         self.assertTrue(all(r[0]==200 for r in responses))
         self.assertEqual(len(load_data(self.bank)['_state']['events']),1)
+
+
+class HostedLoginTests(BankFixture):
+    """The optional login page of a reader hosted behind the user's own HTTPS proxy."""
+
+    def setUp(self):
+        super().setUp()
+        from ibank_core.weblogin import make_login
+        self.seed()
+        self.token = 'proxy-token-' + 'y' * 40
+        self.server = LocalServer(WebApp(self.bank, True), 0, self.token, ['https://exist.example'],
+                                  make_login('me', 'correct horse battery'))
+        self.thread = threading.Thread(target=self.server.serve_forever, kwargs={'poll_interval': .01}, daemon=True)
+        self.thread.start()
+        self.addCleanup(self.stop)
+
+    def stop(self):
+        self.server.shutdown(); self.server.server_close(); self.thread.join(timeout=2)
+
+    def request(self, path, body=None, cookie=None, ip='203.0.113.7'):
+        conn = http.client.HTTPConnection('127.0.0.1', self.server.server_port, timeout=10)
+        headers = {'X-Interview-Token': self.token, 'Origin': 'https://exist.example', 'X-Real-IP': ip,
+                   'X-Forwarded-Prefix': '/ibank', 'Content-Type': 'application/json', **({'Cookie': cookie} if cookie else {})}
+        conn.request('POST' if body is not None else 'GET', path, json.dumps(body) if body is not None else None, headers)
+        response = conn.getresponse()
+        result = (response.status, response.getheader('Set-Cookie'), response.read())
+        conn.close()
+        return result
+
+    def sign_in(self, password='correct horse battery', ip='203.0.113.7'):
+        return self.request('/api/login', {'username': 'me', 'password': password}, ip=ip)
+
+    def test_login_page_until_signed_in_then_reader(self):
+        status, _, body = self.request('/')
+        self.assertEqual(status, 200)
+        self.assertIn(b'login-form', body)
+        status, _, body = self.request('/api/library')
+        self.assertEqual((status, json.loads(body)['login']), (401, True))
+        self.assertNotIn(b'q_demo', body)
+        status, cookie, _ = self.sign_in()
+        self.assertEqual(status, 200)
+        for flag in ('HttpOnly', 'Secure', 'SameSite=Strict', 'Path=/ibank'):
+            self.assertIn(flag, cookie)
+        session = cookie.split(';')[0]
+        status, _, body = self.request('/', cookie=session)
+        self.assertIn(b'page-title', body)
+        status, _, body = self.request('/api/library', cookie=session)
+        self.assertEqual(status, 200)
+        self.assertTrue(json.loads(body)['can_logout'])
+        status, cleared, _ = self.request('/api/logout', {}, cookie=session)
+        self.assertIn('Max-Age=0', cleared)
+
+    def test_wrong_password_tampered_cookie_and_lockout(self):
+        status, cookie, body = self.sign_in('wrong password!')
+        self.assertEqual((status, cookie), (401, None))
+        _, cookie, _ = self.sign_in()
+        name, value = cookie.split(';')[0].split('=', 1)
+        tampered = f"{name}={value[:-1]}{'0' if value[-1] != '0' else '1'}"
+        self.assertEqual(self.request('/api/library', cookie=tampered)[0], 401)
+        for _ in range(5):
+            self.sign_in('still wrong!!', ip='198.51.100.9')
+        self.assertEqual(self.sign_in(ip='198.51.100.9')[0], 429)
+        self.assertEqual(self.sign_in(ip='203.0.113.8')[0], 200)
+
+    def test_sessions_expire_and_die_with_a_new_password(self):
+        from ibank_core.weblogin import Sessions, make_login
+        login = make_login('me', 'first password!')
+        sessions = Sessions(self.token, login)
+        value = sessions.issue(now=1000)
+        self.assertTrue(sessions.valid(value, now=2000))
+        self.assertFalse(sessions.valid(value, now=1000 + 15 * 24 * 3600))
+        self.assertFalse(Sessions(self.token, make_login('me', 'second password!')).valid(value, now=2000))
+
+    def test_login_requires_hosting_options(self):
+        from ibank_core.web import serve
+        with self.assertRaises(ValidationError):
+            serve(self.bank, 0, True, False, None, [], 'login.json')
