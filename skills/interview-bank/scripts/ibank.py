@@ -166,6 +166,8 @@ def parser():
     citations.add_argument("--question", action="append", default=[])
     citations.add_argument("--workflow")
     citations.add_argument("--limit", type=positive_int, default=50)
+    pages = sub.add_parser("page-text", parents=[common], help="Save the text of pages you cite so answer --page-texts can check quotes (network)")
+    pages.add_argument("urls", nargs="+")
     recheck = sub.add_parser("answer-recheck", parents=[common], help="Rebind source-backed answers to reworded questions after a coverage check")
     recheck.add_argument("--input", type=Path, required=True)
     review = sub.add_parser("answer-review", parents=[common])
@@ -309,6 +311,9 @@ def dispatch(args):
         return stage_decisions(bank, read_json(args.input) if args.input else None, args.task, defer_review=args.defer_review)
     if args.command == "research":
         return research_task(bank, args.question, args.limit, **{k: getattr(args, k) for k in ("query", "company", "role", "technology", "answer_status")})
+    if args.command == "page-text":
+        from ibank_core.citations import page_texts
+        return page_texts(bank, args.urls)
     if args.command == "answer":
         pages = {}
         if args.page_texts:

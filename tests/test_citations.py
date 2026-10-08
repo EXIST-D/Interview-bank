@@ -110,3 +110,68 @@ class LinkCheck(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Article(BaseHTTPRequestHandler):
+    def log_message(self, *_):
+        pass
+
+    def do_GET(self):
+        if self.path == "/old-link":
+            self.send_response(301)
+            self.send_header("Location", "/article")
+            self.end_headers()
+            return
+        pages = {"/article": ("text/html; charset=utf-8", "<html><head><title>t</title><script>var x = 1;</script></head><body>"
+                              "<nav>menu</nav><p>Redis is an <b>in-memory</b> data store &amp; it is fast.</p>"
+                              "<style>p{}</style><li>RDB</li><li>AOF</li></body></html>"),
+                 "/binary": ("image/png", "PNG")}
+        if self.path not in pages:
+            self.send_response(403)
+            self.end_headers()
+            return
+        kind, body = pages[self.path]
+        data = body.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", kind)
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
+
+class PageText(unittest.TestCase):
+    def setUp(self):
+        self.bank = Bank()
+        self.server = ThreadingHTTPServer(("127.0.0.1", 0), Article)
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        self.base = f"http://127.0.0.1:{self.server.server_port}"
+
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self.bank.close()
+
+    def test_saves_readable_text_and_reports_failures(self):
+        from pathlib import Path
+        from ibank_core.citations import page_texts
+        result = page_texts(self.bank.path, [f"{self.base}/article", f"{self.base}/blocked", f"{self.base}/binary"], allow_private=True)
+        self.assertEqual((result["saved"], result["failed"]), (1, 2))
+        text = Path(result["results"][0]["path"]).read_text(encoding="utf-8")
+        self.assertIn("Redis is an in-memory data store & it is fast.", text)
+        self.assertNotIn("var x", text)
+        self.assertNotIn("p{}", text)
+        self.assertEqual(result["results"][1]["error"], "HTTP 403")
+        mapping = json.loads(Path(result["page_texts"]).read_text(encoding="utf-8"))
+        self.assertEqual(list(mapping), [f"{self.base}/article"])
+
+    def test_redirects_are_flagged(self):
+        from ibank_core.citations import page_texts
+        result = page_texts(self.bank.path, [f"{self.base}/old-link"], allow_private=True)
+        self.assertTrue(result["results"][0]["redirected"])
+        self.assertEqual(result["redirected"], [f"{self.base}/old-link"])
+        self.assertIn("redirected elsewhere", result["warning"])
+
+    def test_private_addresses_are_refused_by_default(self):
+        from ibank_core.citations import page_texts
+        result = page_texts(self.bank.path, [f"{self.base}/article"])
+        self.assertEqual(result["results"][0]["error"], "refused: not a public address")
