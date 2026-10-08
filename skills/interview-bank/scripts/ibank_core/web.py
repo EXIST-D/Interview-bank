@@ -223,8 +223,10 @@ class LocalServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = False
 
-    def __init__(self, app, port=0, token=None, public_origins=(), login=None):
+    def __init__(self, app, port=0, token=None, public_origins=(), login=None, banks_dir=None, read_only=True):
+        # One bank for everyone (app), or one bank per account under banks_dir (hosting several people).
         self.app = app
+        self.banks_dir, self.read_only, self.apps, self.apps_lock = banks_dir, read_only, {}, threading.Lock()
         self.token = token or secrets.token_urlsafe(32)
         # Optional login page (hosting only): one account, signed session cookie, limited failed attempts.
         self.login = login
@@ -286,7 +288,7 @@ class Handler(BaseHTTPRequestHandler):
                   '/app.css': ('app.css', 'text/css; charset=utf-8'), '/login.js': ('login.js', 'text/javascript; charset=utf-8')}
         if path in assets and not post:
             name, mime = assets[path]
-            if path == '/' and self.server.login and not self.signed_in():
+            if path == '/' and self.server.login and not self.user():
                 name = 'login.html'
             return self.send(200, (ASSETS / name).read_bytes(), mime)
         supplied = self.headers.get('X-Interview-Token', '')
@@ -295,8 +297,9 @@ class Handler(BaseHTTPRequestHandler):
         if self.server.login:
             if post and path in ('/api/login', '/api/logout'):
                 return self.login(path)
-            if not self.signed_in():
+            if not self.user():
                 return self.send(401, {'error': '请先登录。', 'login': True})
+        app = self.app()
         query = parse_qs(urlsplit(self.path).query, keep_blank_values=True)
         require(all(len(v) == 1 for v in query.values()), 'Duplicate query parameters')
         params = {k: v[0] for k, v in query.items()}
@@ -304,21 +307,20 @@ class Handler(BaseHTTPRequestHandler):
             if path not in ('/api/practice', '/api/review', '/api/dedupe-decision'):
                 return self.send(404, {'error': 'Unknown endpoint'})
             body = self.json_body()
-            handler = {'/api/practice': self.server.app.record, '/api/review': self.server.app.review,
-                       '/api/dedupe-decision': self.server.app.dedupe_decision}[path]
+            handler = {'/api/practice': app.record, '/api/review': app.review, '/api/dedupe-decision': app.dedupe_decision}[path]
             result = handler(body)
         elif path == '/api/library':
-            result = self.server.app.library(params)
+            result = app.library(params)
             if self.server.login:
-                result = {**result, 'can_logout': True}
+                result = {**result, 'can_logout': True, 'account': self.user()}
         elif path == '/api/practice':
-            result = self.server.app.library(params, practice=True)
+            result = app.library(params, practice=True)
         elif path == '/api/dedupe-reviews':
             from .dedupe import review_queue
-            result = {'items': review_queue(self.server.app.bank)}
+            result = {'items': review_queue(app.bank)}
         elif path == '/api/question':
             require(set(params) == {'id'}, 'Expected question ID')
-            result = self.server.app.question(params['id'])
+            result = app.question(params['id'])
         else:
             return self.send(404, {'error': 'Unknown endpoint'})
         self.send(200, result)
@@ -342,8 +344,20 @@ class Handler(BaseHTTPRequestHandler):
         from .weblogin import COOKIE
         return jar[COOKIE].value if COOKIE in jar else None
 
-    def signed_in(self):
-        return self.server.sessions.valid(self.cookie())
+    def user(self):
+        return self.server.sessions.user(self.cookie())
+
+    def app(self):
+        """The signed-in account's bank when each account has its own; otherwise the one bank."""
+        if not self.server.banks_dir:
+            return self.server.app
+        name = self.server.login['users'][self.user()]['bank']
+        with self.server.apps_lock:
+            if name not in self.server.apps:
+                bank = Path(self.server.banks_dir) / name
+                require((bank / 'manifest.json').is_file(), '这个账号的题库还没有同步到服务器。')
+                self.server.apps[name] = WebApp(bank, self.server.read_only)
+            return self.server.apps[name]
 
     def client(self):
         # Behind the proxy every connection comes from loopback; the proxy names the real client.
@@ -365,11 +379,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(429, {'error': '尝试次数过多，请 15 分钟后再试。'})
         body = self.json_body()
         require(isinstance(body, dict) and set(body) == {'username', 'password'}, 'Expected username and password')
-        if not verify(self.server.login, body['username'], body['password']):
+        account = verify(self.server.login, body['username'], body['password'])
+        if not account:
             self.server.attempts.failed(client)
             return self.send(401, {'error': '用户名或密码不正确。'})
         self.server.attempts.succeeded(client)
-        return self.send(200, {'signed_in': True}, headers=[self.session_cookie(self.server.sessions.issue(), SESSION_SECONDS)])
+        return self.send(200, {'signed_in': True}, headers=[self.session_cookie(self.server.sessions.issue(account), SESSION_SECONDS)])
 
     def handle_route(self, post=False):
         try:
@@ -398,7 +413,7 @@ def _read_token(path):
     return token
 
 
-def serve(bank, port=0, read_only=False, open_browser=False, token_file=None, public_origins=(), login_file=None):
+def serve(bank, port=0, read_only=False, open_browser=False, token_file=None, public_origins=(), login_file=None, banks_dir=None):
     require(0 <= port <= 65535, 'Port must be 0..65535')
     for origin in public_origins:
         parsed = urlsplit(origin)
@@ -410,8 +425,12 @@ def serve(bank, port=0, read_only=False, open_browser=False, token_file=None, pu
     if login_file:
         from .weblogin import load_login
         login = load_login(login_file)
-    server = LocalServer(WebApp(bank, read_only), port, _read_token(token_file) if token_file else None,
-                         [o.rstrip('/') for o in public_origins], login)
+    require(not banks_dir or login, 'One bank per account (--banks-dir) needs --login-file')
+    if banks_dir:
+        banks_dir = Path(banks_dir).expanduser().resolve()
+        require(banks_dir.is_dir(), f'Not a directory: {banks_dir}')
+    server = LocalServer(None if banks_dir else WebApp(bank, read_only), port, _read_token(token_file) if token_file else None,
+                         [o.rstrip('/') for o in public_origins], login, banks_dir, read_only)
     # A fixed token lives in a file the proxy also reads; never print it into service logs.
     url = server.origin + '/' if token_file else server.url
     print(json.dumps({'ok': True, 'command': 'web', 'result': {'url': url, 'pid': __import__('os').getpid(), 'read_only': read_only,

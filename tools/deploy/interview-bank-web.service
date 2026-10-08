@@ -9,7 +9,7 @@ ConditionPathExists=/etc/interview-bank/login
 [Service]
 User=ibank
 Group=ibank
-ExecStart=/usr/bin/python3 -B /opt/interview-bank/interview-bank/scripts/ibank.py web --bank /srv/interview-bank/bank \
+ExecStart=/usr/bin/python3 -B /opt/interview-bank/interview-bank/scripts/ibank.py web --banks-dir /srv/interview-bank/banks \
     --port 8765 --read-only --token-file /etc/interview-bank/token --public-origin https://example.com \
     --login-file /etc/interview-bank/login
 Restart=on-failure

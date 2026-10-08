@@ -6,7 +6,8 @@ from unittest.mock import patch
 
 from test_foundation import BankFixture
 from ibank_core.web import LocalServer, WebApp
-from ibank_core.storage import load_data, fingerprint, open_bank
+from pathlib import Path
+from ibank_core.storage import load_data, fingerprint, open_bank, initialize
 from ibank_core.migrations import migrate
 from ibank_core.errors import ValidationError, LockConflict
 from ibank_core.normalize import normalize_question_text
@@ -227,7 +228,7 @@ class HostedLoginTests(BankFixture):
         from ibank_core.weblogin import Sessions, make_login
         login = make_login('me', 'first password!')
         sessions = Sessions(self.token, login)
-        value = sessions.issue(now=1000)
+        value = sessions.issue('me', now=1000)
         self.assertTrue(sessions.valid(value, now=2000))
         self.assertFalse(sessions.valid(value, now=1000 + 15 * 24 * 3600))
         self.assertFalse(Sessions(self.token, make_login('me', 'second password!')).valid(value, now=2000))
@@ -236,3 +237,77 @@ class HostedLoginTests(BankFixture):
         from ibank_core.web import serve
         with self.assertRaises(ValidationError):
             serve(self.bank, 0, True, False, None, [], 'login.json')
+
+
+class AccountsTests(BankFixture):
+    """Hosting several people: each account reads only its own bank."""
+
+    def setUp(self):
+        super().setUp()
+        from ibank_core.weblogin import make_user
+        self.seed()
+        self.banks = Path(self.bank).parent / 'banks'
+        self.banks.mkdir()
+        import shutil
+        shutil.copytree(self.bank, self.banks / 'alice')
+        initialize(self.banks / 'bob')
+        self.token = 'proxy-token-' + 'z' * 40
+        login = {'schema_version': 2, 'users': {'alice': make_user('alice', 'alice password 1'),
+                                                 'bob': make_user('bob', 'bob password 22'),
+                                                 'carol': make_user('carol', 'carol password 3')}}
+        self.server = LocalServer(None, 0, self.token, ['https://exist.example'], login, self.banks, True)
+        self.thread = threading.Thread(target=self.server.serve_forever, kwargs={'poll_interval': .01}, daemon=True)
+        self.thread.start()
+        self.addCleanup(self.stop)
+
+    def stop(self):
+        self.server.shutdown(); self.server.server_close(); self.thread.join(timeout=2)
+
+    def request(self, path, body=None, cookie=None):
+        conn = http.client.HTTPConnection('127.0.0.1', self.server.server_port, timeout=10)
+        headers = {'X-Interview-Token': self.token, 'Origin': 'https://exist.example', 'X-Real-IP': '192.0.2.1',
+                   'Content-Type': 'application/json', **({'Cookie': cookie} if cookie else {})}
+        conn.request('POST' if body is not None else 'GET', path, json.dumps(body) if body is not None else None, headers)
+        response = conn.getresponse()
+        result = (response.status, response.getheader('Set-Cookie'), json.loads(response.read() or b'null'))
+        conn.close()
+        return result
+
+    def session(self, name, password):
+        status, cookie, _ = self.request('/api/login', {'username': name, 'password': password})
+        self.assertEqual(status, 200)
+        return cookie.split(';')[0]
+
+    def test_each_account_sees_only_its_bank(self):
+        alice = self.request('/api/library', cookie=self.session('alice', 'alice password 1'))[2]
+        bob = self.request('/api/library', cookie=self.session('bob', 'bob password 22'))[2]
+        self.assertEqual((alice['account'], alice['name'], bob['account'], bob['name']), ('alice', 'alice', 'bob', 'bob'))
+        self.assertGreater(alice['total'], 0)
+        self.assertEqual(bob['total'], 0)
+        alice_id = alice['ids'][0]
+        status, _, body = self.request('/api/question?id=' + alice_id, cookie=self.session('bob', 'bob password 22'))
+        self.assertEqual(status, 400)
+
+    def test_account_without_a_synced_bank_gets_a_clear_message(self):
+        status, _, body = self.request('/api/library', cookie=self.session('carol', 'carol password 3'))
+        self.assertEqual(status, 400)
+        self.assertIn('还没有同步', body['error'])
+
+    def test_a_cookie_of_one_account_cannot_be_relabelled(self):
+        import base64
+        cookie = self.session('bob', 'bob password 22')
+        name, value = cookie.split('=', 1)
+        payload, signature = value.split('.')
+        data = json.loads(base64.urlsafe_b64decode(payload + '=' * (-len(payload) % 4)))
+        data[0] = 'alice'
+        forged = base64.urlsafe_b64encode(json.dumps(data).encode()).decode().rstrip('=')
+        self.assertEqual(self.request('/api/library', cookie=f'{name}={forged}.{signature}')[0], 401)
+
+    def test_version_one_login_file_still_loads(self):
+        from ibank_core.weblogin import load_login, make_user
+        record = make_user('exist', 'old single password')
+        old = {'schema_version': 1, 'username': 'exist', **{k: record[k] for k in ('salt', 'n', 'r', 'p', 'hash')}}
+        path = Path(self.bank).parent / 'login-v1.json'
+        path.write_text(json.dumps(old), encoding='utf-8')
+        login = load_login(path)
+        self.assertEqual(login['users']['exist']['bank'], 'exist')
