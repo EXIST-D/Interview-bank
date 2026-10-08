@@ -27,6 +27,9 @@ Switch to a restored bank only when intended. All normal state mutations return 
 do not forget to commit workflow creation before requesting a batch. Migration is the explicit journaled exception that applies directly.
 `next` writes an inspectable task packet, not answers.
 
+JSON errors carry `error_type` (InvalidInput, StaleInput, Compacted, PrivacyRejected, NeedsMigration, AlreadyExists,
+LockConflict, ReviewRequired, BankUnavailable, OSError) and a `hint` naming the next step.
+
 ## Durable research
 
 After committing intake plus classification/merging, create a workflow scoped to the final committed run using `from_run`.
@@ -152,3 +155,26 @@ It removes change sets, table snapshots and before-images from committed, supers
 their run.json audit, commit.json and report.md stay. Expired task packets and spilled outputs under cache/outputs are deleted.
 It always keeps pending stages, the latest undo point (and the import stage a merge undo restores) and every intake, because media intakes hold the only full transcripts.
 A compacted run can no longer seed `workflow create --from_run`; scope by question_ids instead.
+
+## Merge audit and undo
+
+- The dedupe stage contains the whole final state; commit only it (its import stage becomes superseded).
+  Review items of the import carry forward: fix them in the extraction, not in the decisions.
+- Occurrences move to the target with original text, sequence, parents and sources intact. The merged question
+  stays (status merged, `merged_into` the active target); aliases are redirected; answers keep content and IDs and
+  get versions after the target's; relations are redirected and self-relations removed, all audited.
+- `undo --run <latest dedupe>` works while nothing changed afterwards. For an import plus merge it restores the
+  import (summary `dedupe_only_preserve_import`), keeping every imported question and source. Never delete lines.
+
+## Answer recheck
+
+When the reason is `wording_changed` and the new wording asks nothing the answer does not cover:
+
+```json
+{"schema_version": 1, "rechecks": [{"question_id": "q_ID", "reason": "only the wording changed",
+  "checks": ["compared sub-questions A and B with key_points 0-3"], "covers_current_wording": true}]}
+```
+
+`answer-recheck --input <file>` stages a version with the same content, sources and `verified_at`, bound to the
+current wording, with your checks appended. A reviewed answer returns as source_backed. Refused for drafts,
+uncited answers, evidence older than `answer_stale_days` and V1 banks. New sub-question or scope: research it.
