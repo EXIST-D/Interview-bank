@@ -204,7 +204,7 @@ class HostedLoginTests(BankFixture):
             self.assertIn(flag, cookie)
         session = cookie.split(';')[0]
         status, _, body = self.request('/', cookie=session)
-        self.assertIn(b'page-title', body)
+        self.assertIn(b'question-list', body)
         status, _, body = self.request('/api/library', cookie=session)
         self.assertEqual(status, 200)
         self.assertTrue(json.loads(body)['can_logout'])

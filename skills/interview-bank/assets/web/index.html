@@ -2,91 +2,90 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="color-scheme" content="light dark">
-  <title>Interview Bank · 我的题库</title>
+  <meta name="robots" content="noindex, nofollow">
+  <title>Interview Bank</title>
   <link rel="stylesheet" href="app.css">
   <script src="app.js" defer></script>
 </head>
 <body>
-<a class="skip" href="#main" data-i18n="skip">跳到题库</a>
-<div class="app-shell">
-  <aside class="sidebar" aria-label="题库导航" data-i18n-aria="sidebar">
-    <a class="brand" href="./" aria-label="Interview Bank 首页"><span class="brand-mark" aria-hidden="true">iB</span><span>Interview Bank<small data-i18n="tagline">每一次积累，都算数。</small></span></a>
-    <p class="nav-caption" data-i18n="space">个人空间</p>
-    <nav id="views" class="nav-list">
-      <button data-view="all" class="nav-item active"><span class="nav-symbol" aria-hidden="true">▦</span><span data-i18n="view_all">全部题目</span><span id="nav-all" class="nav-count">—</span></button>
-      <button data-view="due" class="nav-item"><span class="nav-symbol" aria-hidden="true">◷</span><span data-i18n="view_due">待复习</span><span id="nav-due" class="nav-count">—</span></button>
-      <button data-view="weak" class="nav-item"><span class="nav-symbol" aria-hidden="true">◇</span><span data-i18n="view_weak">待巩固</span><span id="nav-weak" class="nav-count">—</span></button>
-      <button data-view="unseen" class="nav-item"><span class="nav-symbol" aria-hidden="true">○</span><span data-i18n="view_unseen">尚未练习</span><span id="nav-unseen" class="nav-count">—</span></button>
-    </nav>
-    <div class="sidebar-note"><span class="note-line"></span><p data-i18n-html="note">把收集的题目，<br>变成自己的知识。</p><small data-i18n="note_small">先想一想，再看答案。</small></div>
-    <div class="local-info"><span class="status-dot"></span><span><span data-i18n="local_bank">本地题库</span><small id="bank-name">正在连接…</small></span><span id="version" class="version"></span></div>
-  </aside>
-  <main id="main" tabindex="-1">
-    <header class="page-header">
-      <div>
-        <p class="eyebrow">YOUR KNOWLEDGE, GROWING.</p>
-        <h1 id="page-title">我的题库<span class="title-dot">.</span></h1>
-        <p id="page-subtitle" class="subtitle" data-i18n="subtitle">将零散的问题，整理成清晰的思路。</p>
-      </div>
-      <div class="header-actions">
-        <button id="open-merges" class="button quiet" hidden><span data-i18n="merges">合并裁决</span> <span id="merge-count" class="nav-count"></span></button>
-        <button id="refresh" class="button quiet" title="重新读取题库" data-i18n="refresh" data-i18n-title="refresh_title">刷新题库</button>
-        <button id="logout" class="button quiet" hidden data-i18n="logout">退出登录</button>
-        <button id="start-practice" class="button primary" disabled><span data-i18n="start_practice">开始练习</span> <span aria-hidden="true">↗</span></button>
+<div class="app">
+  <section class="library" aria-label="题目列表" data-i18n-aria="library">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Interview Bank"><span class="brand-mark" aria-hidden="true">iB</span><span class="bank-name" data-i18n="titles_all">我的题库</span></a>
+      <div class="topbar-actions">
+        <button id="open-filters" class="chip-button" type="button"><span data-i18n="filters">筛选</span> <span id="filter-count" class="count-dot" hidden></span></button>
+        <button id="open-menu" class="icon-button" type="button" aria-haspopup="menu" aria-label="更多" data-i18n-aria="more">⋯</button>
       </div>
     </header>
-    <div id="notice" class="notice" role="status" hidden></div>
-    <div id="resume-bar" class="notice" role="status" hidden><span id="resume-text"></span> <button id="resume-round" class="text-button" data-i18n="resume">继续练习</button> <button id="discard-round" class="text-button" data-i18n="discard">放弃</button></div>
+    <div id="menu" class="menu" role="menu" hidden>
+      <button id="start-practice" role="menuitem" type="button" data-i18n="practice">练习一组</button>
+      <button id="open-merges" role="menuitem" type="button" hidden><span data-i18n="merges">合并裁决</span> <span id="merge-count"></span></button>
+      <label class="menu-switch"><input id="think-first" type="checkbox"> <span data-i18n="think_first">先想再看（默认隐藏答案）</span></label>
+      <button id="refresh" role="menuitem" type="button" data-i18n="refresh">刷新</button>
+      <button id="logout" role="menuitem" type="button" hidden data-i18n="logout">退出登录</button>
+      <small id="notice" class="menu-version" hidden></small>
+      <small id="version" class="menu-version"></small>
+    </div>
+    <label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="搜索题目…" aria-label="搜索题目" data-i18n-placeholder="search" data-i18n-aria="search_label"></label>
+    <nav id="groups" class="chips" aria-label="主题" data-i18n-aria="topics"></nav>
+    <div class="list-head">
+      <span id="result-count" aria-live="polite"></span>
+      <button id="answered-only" class="toggle" type="button" aria-pressed="false" data-i18n="answered_only">只看有答案</button>
+    </div>
     <div id="error" class="error" role="alert" hidden></div>
-    <section class="summary" aria-label="题库概览" data-i18n-aria="summary">
-      <div><span id="stat-total">—</span><small data-i18n="stat_total">积累题目</small></div>
-      <div><span id="stat-answered">—</span><small data-i18n="stat_answered">已收录参考答案</small></div>
-      <div><span id="stat-domains">—</span><small data-i18n="stat_domains">知识领域</small></div>
-      <div class="summary-end"><span id="stat-due">—</span><small data-i18n="stat_due">待复习 · 含未练习</small></div>
-    </section>
-    <section class="library-controls" aria-label="搜索和筛选" data-i18n-aria="controls">
-      <div class="search-row">
-        <label class="search-box"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="搜索题目或原始问法…" aria-label="搜索题目" data-i18n-placeholder="search"><kbd>/</kbd></label>
-        <label class="sort-label"><span data-i18n="sort">排序</span><select id="sort"><option value="frequency" data-i18n="sort_frequency">出现频次</option><option value="recent" data-i18n="sort_recent">最近更新</option><option value="title" data-i18n="sort_title">题目名称</option></select></label>
-      </div>
-      <div class="filter-row">
-        <label><span data-i18n="f_domain">领域</span><select id="domain" aria-label="领域"><option value="">全部领域</option></select></label>
-        <label><span data-i18n="f_role">岗位</span><select id="role" aria-label="岗位"><option value="">全部岗位</option></select></label>
-        <label><span data-i18n="f_technology">技术栈</span><select id="technology" aria-label="技术栈"><option value="">全部技术栈</option></select></label>
-        <label><span data-i18n="f_company">公司</span><select id="company" aria-label="公司"><option value="">全部公司</option></select></label>
-        <label><span data-i18n="f_industry">行业</span><select id="industry" aria-label="行业"><option value="">全部行业</option></select></label>
-        <label><span data-i18n="f_answer">答案</span><select id="answer_status" aria-label="答案状态"><option value="" data-i18n="answer_any">全部答案状态</option><option value="source_backed" data-i18n="status_source_backed">有来源</option><option value="reviewed" data-i18n="status_reviewed">人工审阅</option><option value="missing" data-i18n="status_missing">待补写</option><option value="ai_draft" data-i18n="status_ai_draft">AI 草稿</option><option value="stale" data-i18n="status_stale">待重新核验</option></select></label>
-        <button id="clear-filters" class="text-button" data-i18n="reset">重置</button>
-      </div>
-    </section>
-    <section class="workspace" aria-label="题库阅读区" data-i18n-aria="workspace">
-      <div class="question-column">
-        <div class="list-heading"><span data-i18n="list">题目清单</span><small id="result-count" aria-live="polite">正在读取</small></div>
-        <div id="question-list" class="question-list" aria-busy="true"></div>
-        <div class="pagination"><button id="previous" class="button small" disabled data-i18n="previous">上一页</button><span id="page-number">—</span><button id="next" class="button small" disabled data-i18n="next">下一页</button></div>
-      </div>
-      <article id="reader" class="reader" aria-label="题目详情"><div class="reader-placeholder"><span class="placeholder-icon" aria-hidden="true">↗</span><h2>从一个问题开始。</h2><p>选择左侧题目，查看参考答案与出处。<br>也可以开始一组练习，检验自己的理解。</p></div></article>
-    </section>
-    <footer class="page-footer"><span data-i18n="footer_left">思考在先，参考在后。</span><span data-i18n="footer_right">出现次数按收集记录统计</span></footer>
-  </main>
+    <button id="continue" class="continue" type="button" hidden></button>
+    <div id="resume-bar" class="notice" role="status" hidden><span id="resume-text"></span> <button id="resume-round" class="link" type="button" data-i18n="resume">继续练习</button> <button id="discard-round" class="link" type="button" data-i18n="discard">放弃</button></div>
+    <ol id="question-list" class="questions" aria-busy="true"></ol>
+    <button id="more" class="more" type="button" hidden data-i18n="more_questions">加载更多</button>
+  </section>
+
+  <section id="reader" class="reader" aria-label="阅读" data-i18n-aria="reader" hidden>
+    <header class="reader-bar">
+      <button id="back" class="icon-button" type="button" aria-label="返回列表" data-i18n-aria="back">‹</button>
+      <span id="position" class="position"></span>
+      <button id="toggle-answer" class="chip-button" type="button" data-i18n="hide_answer">隐藏答案</button>
+    </header>
+    <article id="reading" class="reading" tabindex="-1"></article>
+    <nav class="reader-nav" aria-label="切换题目" data-i18n-aria="navigation">
+      <button id="previous" class="nav-button" type="button"><span aria-hidden="true">‹</span> <span data-i18n="previous">上一题</span></button>
+      <button id="next" class="nav-button" type="button"><span data-i18n="next">下一题</span> <span aria-hidden="true">›</span></button>
+    </nav>
+  </section>
+  <div id="empty-reader" class="empty-reader" aria-hidden="true"><span class="brand-mark">iB</span><p data-i18n="pick">选一道题开始阅读</p></div>
 </div>
-<dialog id="practice-dialog" aria-labelledby="practice-title">
-  <div class="practice-top"><div><p class="eyebrow">A LITTLE PRACTICE, EVERY DAY.</p><h2 id="practice-title" data-i18n="practice_title">专注练习</h2></div><button id="close-practice" class="icon-button" aria-label="结束并关闭练习" data-i18n-aria="close_practice">×</button></div>
-  <div id="practice-setup">
-    <p class="subtitle" data-i18n="practice_intro">从当前筛选结果中选题。先独立作答，再对照参考答案。</p>
-    <div class="practice-options"><label><span data-i18n="round_size">本轮题数</span><select id="practice-limit"><option value="5" data-i18n="round_5">5 题 · 轻量热身</option><option value="10" selected data-i18n="round_10">10 题 · 专注一轮</option><option value="20" data-i18n="round_20">20 题 · 深入练习</option></select></label></div>
-    <p id="practice-mode" class="hint"></p>
-    <button id="begin-round" class="button primary"><span data-i18n="begin_round">开始这一轮</span> <span aria-hidden="true">→</span></button>
+
+<dialog id="filter-dialog" class="sheet" aria-labelledby="filter-title">
+  <header class="sheet-head"><h2 id="filter-title" data-i18n="filters">筛选</h2><button id="close-filters" class="icon-button" type="button" aria-label="关闭" data-i18n-aria="close">×</button></header>
+  <div class="sheet-body">
+    <label><span data-i18n="f_view">练习状态</span><select id="view"><option value="all" data-i18n="view_all">全部</option><option value="due" data-i18n="view_due">待复习</option><option value="weak" data-i18n="view_weak">待巩固</option><option value="unseen" data-i18n="view_unseen">尚未练习</option></select></label>
+    <label><span data-i18n="f_domain">领域</span><select id="domain"><option value="">—</option></select></label>
+    <label><span data-i18n="f_technology">技术栈</span><select id="technology"><option value="">—</option></select></label>
+    <label><span data-i18n="f_company">公司</span><select id="company"><option value="">—</option></select></label>
+    <label><span data-i18n="f_role">岗位</span><select id="role"><option value="">—</option></select></label>
+    <label><span data-i18n="f_industry">行业</span><select id="industry"><option value="">—</option></select></label>
+    <label><span data-i18n="f_answer">答案</span><select id="answer_status"><option value="" data-i18n="answer_any">全部</option><option value="answered" data-i18n="status_answered">有答案</option><option value="source_backed" data-i18n="status_source_backed">有来源</option><option value="reviewed" data-i18n="status_reviewed">人工审阅</option><option value="missing" data-i18n="status_missing">待补写</option><option value="stale" data-i18n="status_stale">待重新核验</option></select></label>
+    <label><span data-i18n="sort">排序</span><select id="sort"><option value="frequency" data-i18n="sort_frequency">出现次数</option><option value="recent" data-i18n="sort_recent">最近更新</option><option value="title" data-i18n="sort_title">题目名称</option></select></label>
   </div>
-  <div id="practice-body" hidden></div>
+  <footer class="sheet-foot"><button id="clear-filters" class="button" type="button" data-i18n="reset">重置</button><button id="apply-filters" class="button primary" type="button" data-i18n="apply">完成</button></footer>
+</dialog>
+
+<dialog id="practice-dialog" class="sheet wide" aria-labelledby="practice-title">
+  <header class="sheet-head"><h2 id="practice-title" data-i18n="practice_title">练习</h2><button id="close-practice" class="icon-button" type="button" aria-label="结束练习" data-i18n-aria="close_practice">×</button></header>
+  <div id="practice-setup" class="sheet-body">
+    <label><span data-i18n="round_size">本轮题数</span><select id="practice-limit"><option value="5">5</option><option value="10" selected>10</option><option value="20">20</option></select></label>
+    <p id="practice-mode" class="hint"></p>
+    <button id="begin-round" class="button primary" type="button" data-i18n="begin_round">开始</button>
+  </div>
+  <div id="practice-body" class="sheet-body" hidden></div>
   <div id="practice-error" class="error" role="alert" hidden></div>
 </dialog>
-<dialog id="merge-dialog" aria-labelledby="merge-title">
-  <div class="practice-top"><div><p class="eyebrow">YOUR CALL.</p><h2 id="merge-title" data-i18n="merge_title">合并裁决</h2></div><button id="close-merges" class="icon-button" aria-label="关闭" data-i18n-aria="close">×</button></div>
-  <p class="subtitle" data-i18n="merge_intro">Agent 不确定这些题是否相同。请逐条判断；裁决会先保存，由 Agent 应用后才写入题库。</p>
-  <div id="merge-list"></div>
+
+<dialog id="merge-dialog" class="sheet wide" aria-labelledby="merge-title">
+  <header class="sheet-head"><h2 id="merge-title" data-i18n="merges">合并裁决</h2><button id="close-merges" class="icon-button" type="button" aria-label="关闭" data-i18n-aria="close">×</button></header>
+  <p class="hint sheet-note" data-i18n="merge_intro">这些题 Agent 不确定是否相同，请逐条判断；由 Agent 应用后才写入题库。</p>
+  <div id="merge-list" class="sheet-body"></div>
   <div id="merge-error" class="error" role="alert" hidden></div>
 </dialog>
 <div id="toast" class="toast" role="status" hidden></div>
