@@ -4,7 +4,7 @@
 
 `interview-bank` 是一个面向 Claude Code、Codex 等支持 Agent Skills 的 Agent 的面试题整理 Skill。它可以帮助用户从碎片化搜集的面试题目截图、已选好的文字、网页、音视频中的语音或字幕转写稿中提取面试题，按岗位、技术领域、技术栈、公司和行业分类，合并同义问法，研究有来源支持的参考答案，并生成适合阅读和自测的两份报告，帮助用户将碎片化的面试题目积累成个人的面试题目参考库。
 
-适用于校招、实习、秋招和社招。当前版本为 **1.14.0**。详见 [更新记录](CHANGELOG.md) 与 [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases)。
+适用于校招、实习、秋招和社招。当前版本为 **1.15.0**。详见 [更新记录](CHANGELOG.md) 与 [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases)。
 
 ## 本次更新：1.14 真实环境测评后的修复
 
@@ -156,6 +156,8 @@ python -B <Skill目录>/scripts/ibank.py web --bank <已有题库目录> --open
 
 服务只监听本机（`127.0.0.1` 与 `localhost` 均可），使用启动时返回的完整链接；终端中按 Ctrl+C 停止，`--read-only` 禁用所有写入。页面支持：多维筛选与搜索、答案与原始问法阅读、练习自评（V2 题库保存，刷新后可继续本轮）、**人工审阅**（只有你本人能点击）、**合并裁决**（Agent 不确定的合并由你判断）、中英文与暗色模式。Web 不调用 AI，也不自动判分。
 
+**在手机上看（可选）**：可以把只读阅读器部署到自己的 HTTPS 服务器上，经反向代理登录后访问，题库由 `tools/deploy/sync.sh` 从本机同步过去（只同步题库数据，不含截图）。步骤与模板见 [本地 Web 说明](skills/interview-bank/references/web.md) 和 `tools/deploy/`。
+
 ## 处理策略
 
 默认流程：**提取 → 分类 → 去重 → 提交 → 研究参考答案 → 导出两版报告**。
@@ -189,7 +191,7 @@ python -B <Skill目录>/scripts/ibank.py web --bank <已有题库目录> --open
 
 ## 当前状态与计划
 
-**v1.14.0** 已实现上面“功能范围”表中的全部能力。已有 V1 题库可继续使用提取、分类、去重、答案研究与导出；保存专题、持久研究工作流和复习状态需要先备份并升级到 V2。更新 Skill 不会自动迁移个人题库，也不会把旧答案标记为重新核验。
+**v1.15.0** 已实现上面“功能范围”表中的全部能力。已有 V1 题库可继续使用提取、分类、去重、答案研究与导出；保存专题、持久研究工作流和复习状态需要先备份并升级到 V2。更新 Skill 不会自动迁移个人题库，也不会把旧答案标记为重新核验。
 
 **尚未实现：**
 
@@ -202,7 +204,7 @@ python -B <Skill目录>/scripts/ibank.py web --bank <已有题库目录> --open
 
 **其他边界：**复习队列按需生成，没有后台提醒；精确 Token 和费用统计依赖宿主；任意历史合并的拆分尚不支持，仅支持满足条件的最近操作撤销。
 
-**验证情况：** v1.14.0 在 CI 中通过 298 项自动化测试（Windows、macOS、Linux；Python 3.10–3.13），另以旧快照格式回归一遍，并做 lint 与安装包检查；可用 `python -B -m unittest discover -s tests` 自行运行。评测结果与宿主验证见 [evals](evals/README.md)：去重召回 recall@10 为 1.00；盲测的去重判断误合并 0%、漏合并 3.4%（Opus、Sonnet）；盲测答案经独立评审平均 1.7/2，无无依据断言；Claude Code 上 Sonnet 的触发评测达标，Haiku 召回 0.73–0.80 未达标。识别结果与参考答案仍需结合原文、来源和适用条件核对。
+**验证情况：** v1.15.0 在 CI 中通过 300 项自动化测试（Windows、macOS、Linux；Python 3.10–3.13），另以旧快照格式回归一遍，并做 lint 与安装包检查；可用 `python -B -m unittest discover -s tests` 自行运行。评测结果与宿主验证见 [evals](evals/README.md)：去重召回 recall@10 为 1.00；盲测的去重判断误合并 0%、漏合并 3.4%（Opus、Sonnet）；盲测答案经独立评审平均 1.7/2，无无依据断言；Claude Code 上 Sonnet 的触发评测达标，Haiku 召回 0.73–0.80 未达标。识别结果与参考答案仍需结合原文、来源和适用条件核对。
 
 仓库包含 Skill、测试、评测与开发工具、介绍、许可证及本页示意图。个人素材、题库、答案研究记录和本地依赖环境不随仓库发布；测试与评测数据均为合成数据。
 
