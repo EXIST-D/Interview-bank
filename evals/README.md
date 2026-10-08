@@ -94,6 +94,13 @@ in `answer_scores.jsonl`:
 |---|---|---|---|
 | CI, every commit | retrieval | recall@10 1.00 (holdout 1.00, cross-language 1.00); before the 1.13 retrieval glossary: 0.948 (holdout 0.917) | — |
 | [2026-10-02, Claude Code, Opus 5.5](runs/2026-10-02-claude-code-claude-opus-5-5/meta.json) | extraction | precision 1.00, recall 1.00, parents 1.00, metadata 1.00, injection 0 | Same session wrote the gold, so not blind |
-| — | triggers, dedupe judgments, answers | not run yet | Nested `claude -p` could not authenticate; judgments need a blind run |
+| [2026-10-08, Claude Code, Sonnet 5.5, Skill 1.13](runs/2026-10-08-claude-code-claude-sonnet-5-5-skill-1.13.0/meta.json) | triggers | precision 0.93, recall 1.00 (3 turns: 0.89 / 1.00) | One run per case |
+| [2026-10-08, Claude Code, Haiku 5.5, Skill 1.13](runs/2026-10-08-claude-code-claude-haiku-5-5-skill-1.13.0/meta.json) | triggers | precision 1.00, recall 0.775, zh 0.65 (3 turns: recall 0.80) | **Below gate.** Haiku looks for the files first and asks the user when none exist |
+| [2026-10-08, Claude Code, Sonnet 5.5, Skill 1.14](runs/2026-10-08-claude-code-claude-sonnet-5-5-skill-1.14.0/meta.json) | triggers | precision 0.87, recall 1.00 | Repeated runs of the disagreeing cases show the 1.13 and 1.14 descriptions behave the same; the gap is run-to-run noise |
+| [2026-10-08, Claude Code, Haiku 5.5, Skill 1.14](runs/2026-10-08-claude-code-claude-haiku-5-5-skill-1.14.0/meta.json) | triggers | precision 1.00, recall 0.725 | **Below gate**, same behaviour; description wording does not change it |
+| [2026-10-08, subagent, Opus 5.5](runs/2026-10-08-claude-code-subagent-claude-opus-5-5/meta.json) | dedupe judgments, answers | false merges 0 %, missed merges 3.4 % (holdout 0 %); answers 1.7 / 2, unsupported claims 0, 96/96 quotes verbatim | Blind to labels; gold written by the Skill author. Two answers cite Oracle's mirror of the MySQL manual (dev.mysql.com returned 403) |
+| [2026-10-08, subagent, Sonnet 5.5](runs/2026-10-08-claude-code-subagent-claude-sonnet-5-5/meta.json) | dedupe judgments | false merges 0 %, missed merges 3.4 % (holdout 4.2 %) | Both models label ~33 DISTINCT pairs RELATED (harmless: both keep the questions) |
 
 These synthetic templates are easy and controlled. They do not measure accuracy on real, messy screenshots.
+
+Trigger runs use `tools/run_trigger_eval.py`: one fresh `claude -p` session per case, project settings only.

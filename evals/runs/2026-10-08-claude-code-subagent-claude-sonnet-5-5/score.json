@@ -1,0 +1,20 @@
+{
+  "triggers": "not run",
+  "extraction": "not run",
+  "dedupe": {
+    "scored": 121,
+    "unscored": 0,
+    "false_merge_rate": 0.0,
+    "missed_merge_rate": 0.0345,
+    "label_accuracy": 0.7025,
+    "false_merges": [],
+    "confusion": {
+      "DISTINCT->DISTINCT": 7,
+      "DISTINCT->RELATED": 34,
+      "MERGE->MERGE": 56,
+      "MERGE->RELATED": 2,
+      "RELATED->RELATED": 22
+    }
+  },
+  "answers": "not run"
+}

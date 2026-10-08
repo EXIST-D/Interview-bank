@@ -1,0 +1,14 @@
+{
+  "date": "2026-10-08",
+  "host": "Claude Code 2.1.263 (desktop app), general-purpose subagent",
+  "model": "claude-sonnet-5-5",
+  "os": "macOS 26 (Darwin 25.6.0)",
+  "suites": [
+    "dedupe"
+  ],
+  "method": "Fresh subagent with no conversation context; it read the installed Skill (SKILL.md, dedupe.md, answer-policy.md) and label-free inputs (pairs without labels, questions without rubrics). Gold files were not readable to it by instruction.",
+  "caveats": [
+    "The gold labels were written by the same author session that wrote the Skill, so they encode the Skill's own reading of MERGE/RELATED/DISTINCT.",
+    "The subagent was asked for MERGE/RELATED/DISTINCT; dedupe.md uses five actions, mapped by the subagent."
+  ]
+}

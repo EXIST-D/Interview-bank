@@ -1,0 +1,8 @@
+{
+  "date": "2026-10-08",
+  "host": "Claude Code 2.1.263 (Claude Code)",
+  "model": "claude-haiku-5-5",
+  "max_turns": 3,
+  "method": "claude -p, fresh session per case, project settings only, Skill tool call within 3 turn(s) = triggered",
+  "skill_version": "1.13.0"
+}
