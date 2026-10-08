@@ -7,7 +7,8 @@ sys.dont_write_bytecode = True
 
 if sys.version_info < (3, 10):
     MESSAGE = (f"Interview Bank requires Python 3.10+, but {sys.executable} is {sys.version.split()[0]}. "
-               "Run this CLI with a newer interpreter (for example python3.12).")
+               "Run this CLI with a newer interpreter. To find one: macOS/Linux `ls /opt/homebrew/bin/python3.1* "
+               "/usr/local/bin/python3.1* ~/.local/bin/python3.1* /usr/bin/python3.1*`; Windows `py -0p`, then `py -3.12`.")
     if "--json" in sys.argv:
         import json
         print(json.dumps({"ok": False, "command": None, "error": MESSAGE, "code": 1}), file=sys.stderr)

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "catalog_version": "1.1.0",
+  "catalog_version": "1.2.0",
   "role_tracks": [
     {
       "id": "frontend",
@@ -182,6 +182,17 @@
         "中间件开发"
       ],
       "parent": "backend"
+    },
+    {
+      "id": "ai-agent.application",
+      "label": "AI 应用开发",
+      "aliases": [
+        "AI应用开发",
+        "大模型应用开发",
+        "LLM应用开发",
+        "AI应用工程师"
+      ],
+      "parent": "ai-agent"
     },
     {
       "id": "mobile.android",
@@ -2753,6 +2764,45 @@
       "label": "Model Context Protocol",
       "aliases": [
         "MCP"
+      ]
+    },
+    {
+      "id": "agent-skills",
+      "label": "Agent Skills",
+      "aliases": [
+        "Skills",
+        "SKILL.md"
+      ]
+    },
+    {
+      "id": "claude-code",
+      "label": "Claude Code",
+      "aliases": []
+    },
+    {
+      "id": "codex",
+      "label": "Codex",
+      "aliases": [
+        "Codex CLI"
+      ]
+    },
+    {
+      "id": "cursor",
+      "label": "Cursor",
+      "aliases": []
+    },
+    {
+      "id": "github-copilot",
+      "label": "GitHub Copilot",
+      "aliases": [
+        "Copilot"
+      ]
+    },
+    {
+      "id": "ragas",
+      "label": "Ragas",
+      "aliases": [
+        "RAGAS"
       ]
     },
     {
