@@ -8,6 +8,7 @@ Snippets, link titles and recollection are not verification (core rule 4).
 
 ```text
 python -B <cli> research --question <id> [--question <id> …] --bank <bank> --json   # or a filter plus --limit
+python -B <cli> page-text <url> [<url> …] --bank <bank> --json                     # save the text of pages you cite
 python -B <cli> answer --input <answers.json> [--page-texts <pages.json>] --commit --bank <bank> --json
 ```
 
@@ -17,14 +18,11 @@ clean batch at once; a batch with review items stays staged.
 
 ## Scope and ledger
 
-- Cover every question in the agreed scope (normally `report.question_ids` of the requested filter).
-  Skip report-hidden personal questions unless named explicitly; never research unrelated banks.
-- Keep a ledger outside the Skill: per question pending / verified / blocked, sources, version scope,
-  checks done and why anything is unresolved. Resume from it instead of starting over.
-- Group 5–10 questions by topic. Read a shared primary page once and reuse it only where it supports each claim.
-- Reuse an existing answer only when it is current (source_backed or reviewed) and still covers the wording,
-  version and every constraint. Age alone does not prove applicability; never refresh dates without new reading.
-- With a user budget, honour it and report real coverage. Do not invent token or cost figures.
+- Cover the agreed scope (normally `report.question_ids` of the requested filter); skip report-hidden personal
+  questions unless named. Keep a ledger outside the Skill (pending / verified / blocked, sources, checks) and resume
+  from it. Group 5–10 questions by topic; a shared primary page is read once and reused only where it supports a claim.
+- Reuse an answer only when it is current (source_backed or reviewed) and still covers the wording, version and
+  every constraint; never refresh dates without new reading. Honour a user budget; do not invent cost figures.
 
 ## Verifying one question
 
@@ -64,9 +62,6 @@ One answer or one skip per task question. Placeholders below document fields onl
     "status": "source_backed",
     "short_answer": "直接回应问题的简洁答案",
     "key_points": ["一个有来源支持的要点"],
-    "spoken_answer": "适合面试口述的连贯回答",
-    "follow_up_questions": ["进一步追问"],
-    "common_mistakes": ["容易混淆的说法及纠正"],
     "sources": [{
       "title": "实际读取的文档标题",
       "url": "https://example.org/actual-page",
@@ -89,37 +84,27 @@ One answer or one skip per task question. Placeholders below document fields onl
 
 ## Quotes and link checks
 
-- `evidence_quote` (≤ 300 characters) is a verbatim excerpt. Save the page text you read and pass
-  `--page-texts pages.json` (`{"https://…": "redis-faq.txt"}`, paths relative to the file). A quote found in its
-  page (case, width and whitespace folded) is stored with `quote_verified: true`; without page text it is kept
-  as `false`; a quote missing from its page is refused. This proves you read the page, not that it supports the claim.
-- `verify-citations [--question <id>]… [--workflow <id>] [--limit 50]` is the only online command, run only when
-  the user asks. HEAD (GET fallback), 3 redirects, 10 s timeout, private and loopback addresses refused.
-  It reports status, final URL and time, logs to logs/ and changes no data. A broken link means re-check, not wrong.
+- `evidence_quote` (≤ 300 characters) is a verbatim excerpt. Pass the page texts with `--page-texts pages.json`
+  (`{"https://…": "redis-faq.txt"}`, paths relative to the file). A quote found in its page (case, width and
+  whitespace folded) is stored with `quote_verified: true`; without page text it is kept as `false`; a quote
+  missing from its page is refused. This proves you read the page, not that it supports the claim.
+- Many web tools return a summary, not the page. Then run `page-text <url>…` on the pages you cite: it saves their
+  readable text under cache/pages/ and returns a `page_texts` file to pass as `--page-texts`. Copy quotes from those
+  texts, never from a summary. Pages that refuse it (HTTP 403, JavaScript-only) can still be cited unverified;
+  an official mirror of the same document is a fine substitute (say so in `evidence_note`).
+- `verify-citations [--question <id>]… [--workflow <id>]` checks links, only when the user asks; it changes no
+  data, and a broken link means re-check, not wrong.
 
 ## States and versions
 
-| State | Meaning |
-|---|---|
-| ai_draft | Written without research; no sources or evidence |
-| source_backed | Researched, cited, every key point mapped; not human-approved |
-| reviewed | A person checked it: the Web 人工审阅通过 button, or `answer-review --status reviewed` typed by the user in an interactive terminal (piped input is refused) |
-| stale | Marked outdated, evidence older than `answer_stale_days`, or (V2) written for other wording |
-| missing | No answer yet |
-
-- Every write appends a version; content is never overwritten. `verified_at` is the oldest cited access date.
-- You may mark an answer stale: `answer-review --status stale --reason …`. You can never mark it reviewed.
-- `search` and `research` give `answer_stale_reason`: `marked_stale`, `evidence_age` or `wording_changed`.
+- `ai_draft` no research; `source_backed` researched, cited, every key point mapped, not human-approved;
+  `reviewed` a person checked it (Web 人工审阅通过, or `answer-review --status reviewed` typed by the user in an
+  interactive terminal); `stale` marked outdated, evidence older than `answer_stale_days`, or written for other
+  wording (V2); `missing` none yet.
+- Every write appends a version. You may mark an answer stale (`answer-review --status stale --reason …`), never
+  reviewed. `search` and `research` give `answer_stale_reason`: `marked_stale`, `evidence_age` or `wording_changed`.
 
 ## Recheck instead of research
 
-When the reason is `wording_changed` and the new wording asks nothing the answer does not cover:
-
-```json
-{"schema_version": 1, "rechecks": [{"question_id": "q_ID", "reason": "only the wording changed",
-  "checks": ["compared sub-questions A and B with key_points 0-3"], "covers_current_wording": true}]}
-```
-
-`answer-recheck --input <file>` stages a version with the same content, sources and `verified_at`, bound to the
-current wording, with your checks appended. A reviewed answer returns as source_backed. Refused for drafts,
-uncited answers, evidence older than `answer_stale_days` and V1 banks. New sub-question or scope: research it.
+When `answer_stale_reason` is `wording_changed` (for example after a merge rewrote the canonical) and the new
+wording asks nothing new, use `answer-recheck` instead of researching again: see [maintenance](maintenance.md#answer-recheck).

@@ -20,26 +20,12 @@ constraints, operators, complexity limits and output requirements.
 
 ## Layout (rendered by code)
 
-```text
-# 面试题整理报告
+Title, an honest coverage line, a topic overview table, then H2 per topic and H3 per question with
+答案（参考） and a metadata line (出现 N 次 · 公司 · 标签).
 
-## 领域概览
-
-| 领域 | 题目数 |
-|---|---:|
-| Agent 架构与工作流 | 1 |
-
-## Agent 架构与工作流（1 题）
-
-### 1. LangChain Chain 与 LangGraph 状态机有何区别？复杂 Agent 场景如何选型？
-
-答案（参考）：待检索与核验。
-
-出现 4 次 · 公司：寒武纪、淘宝闪购 · 标签：智能体工作流 / LangGraph
-```
-
-- Group by the first recognised domain (put the primary topic first); number from 1 within each group by
-  frequency, ties by wording. Numbers are per report, not IDs; overview counts add up to the total.
+- Group by the first recognised domain (put the primary topic first); topics are ordered by question count. Number
+  from 1 within each group by frequency, ties by wording. Numbers are per report, not IDs; overview counts add up to
+  the total.
 - Answer edition: every question has 答案（参考）. Only current sourced or reviewed answers with citations show their
   short answer and links; others say 待检索与核验 or that they need a recheck. An honest coverage line opens the report.
 - At most six labels per metadata line; years only (面试年份, else 资料年份, never import time); unknown metadata is

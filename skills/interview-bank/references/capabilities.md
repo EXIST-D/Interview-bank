@@ -9,7 +9,7 @@ Who does what. Version history lives in the repository CHANGELOG, not here.
 | See screenshots (M1) | Required: actual image viewing | Hashes, deduplicates and stores sources; never reads pixels |
 | Understand meaning (M2/M3, JD mapping, feedback) | Required: reasoning | Validates labels, decisions and confidence gates; no semantic inference |
 | Research answers (M5) | Required: actual search and page reading | Validates citations, key-point evidence and quotes against supplied page text; never browses |
-| Check cited links | — | `verify-citations`, only on request: the one CLI command that makes network requests |
+| Check cited links, save cited pages | — | `verify-citations` (only on request) and `page-text` (pages the host cites, for quote checks): the two CLI commands that make network requests |
 | Transcribe audio/video | Optional host tool, or local faster-whisper | `media-transcribe` runs the optional local model; supplied SRT/VTT/TXT/JSON need nothing |
 | Store, query, export, recover | — | Transactions, change-set runs, audit, undo, search, statistics, reports, `gc`, `backup` |
 | Local Web reader and practice | User's browser | Loopback-only server; self-ratings saved only in V2 banks |

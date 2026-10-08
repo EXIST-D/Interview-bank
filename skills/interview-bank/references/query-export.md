@@ -11,6 +11,8 @@
 - Company, industry, profile, role, round, type and date conditions must hold for the **same occurrence**.
 - `frequency` counts matching occurrences, `total_frequency` all of them. Counts describe the collected
   material, not interview participants or hiring odds; say so when you report them.
+- “The N most frequent”: `search` and `stats` order by frequency, then wording. When place N is tied, include the
+  tie if that adds at most N more (say why there are more than N); otherwise take it in order and name those left out.
 - Dates keep their precision (YYYY, YYYY-MM); filters match overlapping intervals and drop unknown dates only
   when a date filter is set. `--recent-days N` covers today and N−1 earlier UTC days; `--as-of` fixes "today".
 
@@ -21,22 +23,14 @@
   records with matching occurrences and answer history. `--limit` / `--offset` page.
 - `show <id>`: occurrences, sources, relations, merged variants and answer history; merged IDs resolve.
 - `stats`: distributions by company, role, domain, technology, month, round, type and answer status, with
-  explicit unknown and imprecise date counts. Multi-label totals can exceed the number of occurrences.
-- The latest version decides the answer status; `missing` is derived. Age past `answer_stale_days` (180)
-  makes an answer stale without rewriting history.
+  unknown and imprecise date counts (multi-label totals can exceed the occurrences).
 
 ## Export
 
 `export --format markdown|json|jsonl|csv|viewer|anki --output <name>` writes under bank/exports only (traversal
 and symlink escapes are refused) and always covers the full selection, not one search page.
 
-| Format | Content |
-|---|---|
-| markdown | Two reader editions plus `<output>.details.json` (below) |
-| json / viewer | Snapshot: questions with occurrences and answer history, referenced sources, companies, relations |
-| jsonl | One question envelope per line with its related records |
-| csv | UTF-8 BOM, formula-safe cells, JSON columns for occurrences, citations and companies |
-| anki | Tab-separated notes for Anki's File → Import (front, back, tags) |
+Formats beyond Markdown (json, viewer, jsonl, csv, anki) and the report language: [export formats](export-formats.md).
 
 - Local source paths are left out unless `--include-paths`; citation and source URLs stay (they are evidence).
 - Exports are for reading and exchange, not `stage --input` bundles; backups are `backup create`.
@@ -54,15 +48,3 @@ and symlink escapes are refused) and always covers the full selection, not one s
   controls the 口述版 · 常见追问 · 易错点 block. The question edition shows no answers at all.
 - `answered_questions` / `pending_answers` in the result give real coverage. Export never browses or calls a model:
   in the default flow, research and commit answers first.
-
-## Anki
-
-Front: the question. Back: the current sourced short answer with source links (and the problem link when set).
-Questions without one get an empty back and the tag 待核验. Tags are domain and technology IDs. Report-excluded
-questions are left out.
-
-## Report language
-
-`config.language` `zh-CN` (default) or `en` (`config --input '{"language": "en"}'`, then commit) switches headings,
-answer states, the practice block, topic names, tags and Anki cards; question wording is never translated.
-The Web reader follows the same setting.
