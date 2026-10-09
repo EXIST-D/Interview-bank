@@ -28,6 +28,8 @@ A 八股 notes section beside the bank's own questions. Data stays V1/V2; no mig
 
 ### Changed
 - Backups and `tools/deploy/sync.sh` include `collections/`.
+- README: the Web reader section rewritten (two sections, reading aids, shortcuts, and three ways to use it: locally,
+  on your own server, or testing with the author); new screenshots from the demo bank, including the notes section.
 
 ## [1.15.0] - 2026-10-08
 
