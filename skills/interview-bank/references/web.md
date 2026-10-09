@@ -51,6 +51,9 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
   The person sees both questions and the agent's reason, chooses 是同一题 / 相关但不同 / 不同的题 with a required note, and the choice is saved next to the stage
   (`runs/<run>/human-decisions.json`, actor local_web).
   Nothing canonical changes until the agent runs `dedupe --resolve <run>`, which re-stages the run with those decisions, and commits it.
+- 八股 notes: once a collection is imported, a 面经 / 八股 switch appears. Notes read in chapter order (key-only, asked-only,
+  most-asked views), show the collection's answer with its source, and link both ways to interview questions.
+  See [notes](notes.md).
 - Language and theme: the page follows `config.language` (Chinese or English) and the operating system's light/dark setting.
 
 The page fetches bank data on navigation, refresh and after practice; it does not automatically poll, research answers or watch directories.

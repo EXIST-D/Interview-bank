@@ -1,6 +1,6 @@
 """Verified, self-describing bank backups that restore into a new directory.
 
-An archive holds the canonical bank (manifest, config, data/, media/) and, optionally, runs/.
+An archive holds the canonical bank (manifest, config, data/, media/, collections/) and, optionally, runs/.
 ``_BACKUP_MANIFEST.json`` lists the SHA-256 of every entry; a ``.sha256`` sidecar covers the archive.
 Restoring never touches an existing directory: it unpacks next to the destination, validates the
 result as a bank and only then renames it into place.
@@ -21,7 +21,7 @@ from .schema import require
 from .storage import atomic_write, bank_file, dumps, guard_bank_path, load_bank, open_bank
 
 MANIFEST_NAME = "_BACKUP_MANIFEST.json"
-CANONICAL = ("manifest.json", "config.json", "data", "media")
+CANONICAL = ("manifest.json", "config.json", "data", "media", "collections")
 
 
 def bank_files(bank: Path, include_runs: bool = False) -> list[Path]:

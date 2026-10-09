@@ -24,12 +24,14 @@ from .study import event
 from .studysets import select
 from .selection import apply_expression
 from .messages import group_title, label, language
+from . import notes as notebook
 from .timestamps import parse_timestamp
 
 ASSETS = Path(__file__).resolve().parents[2] / 'assets' / 'web'
 FILTERS = {'query', 'domain', 'role', 'technology', 'company', 'industry', 'answer_status', 'group'}
 ANSWERED = ('source_backed', 'reviewed')
 VIEWS = {'all', 'due', 'weak', 'unseen'}
+NOTE_FILTERS = {'collection', 'chapter', 'query', 'marked', 'asked', 'sort', 'offset', 'limit'}
 
 
 def progress(data, rows):
@@ -91,8 +93,16 @@ class WebApp:
         self.bank = guard_bank_path(bank)
         self.read_only = read_only
         self.mutation_lock = threading.Lock()
+        self.notes_cache = (None, None)
         with open_bank(self.bank, shared=True):
             pass
+
+    def _notes(self, data):
+        """Collections and links, parsed once per change. The caller holds the bank lock."""
+        key = notebook.signature(self.bank)
+        if self.notes_cache[0] != key:
+            self.notes_cache = (key, notebook.load_notes(self.bank))
+        return notebook.resolve_links(self.notes_cache[1], data)
 
     def library(self, params, practice=False):
         require(set(params) <= FILTERS | {'view', 'sort', 'offset', 'limit'}, 'Unknown filter')
@@ -120,6 +130,7 @@ class WebApp:
             company_counts = Counter(c['id'] for q in rows for c in q['companies'] if c['id'])
             facets['company'] = [{'value': c['id'], 'label': c['name'], 'count': company_counts[c['id']]} for c in data['companies'] if company_counts[c['id']]]
             used = [c for c in data['companies'] if company_counts[c['id']]]
+            bundle = self._notes(data)
             facets['industry'] = [{'value': v, 'label': display('industries', v)} for v in sorted({v for c in used for v in c['industries']})]
             return {
                 'name': self.bank.name, 'version': __version__, 'schema_version': manifest['schema_version'],
@@ -130,6 +141,7 @@ class WebApp:
                             'answer_count': sum(q['answer'] is not None for q in rows), 'stale': sum(q['answer_status'] == 'stale' for q in rows),
                             'due': sum(s['due'] for s in states.values()), 'weak': sum(s['state'] in ('weak', 'changed') for s in states.values()),
                             'unseen': sum(s['state'] == 'unseen' for s in states.values()), 'domains': len(facets['domain'])},
+                'notes': {'total': len(bundle['notes']), 'collections': len(bundle['collections'])},
                 'total': len(found), 'total_answered': sum(q['answer_status'] in ANSWERED for q in found),
                 'offset': offset, 'limit': limit, 'facets': facets,
                 # The whole filtered order, so the reader can step to the previous or next question across pages.
@@ -145,6 +157,15 @@ class WebApp:
             sources = {s['id']: s for s in data['sources']}
             result = card(q, progress(data, rows)[q['id']], language(config))
             result['answer'] = q['answer']
+            bundle = self._notes(data)
+            collections = {c['name']: c for c in bundle['collections']}
+            notes = {n['id']: n for n in bundle['notes']}
+            result['notes'] = [{'id': link['note_id'], 'relation': link['relation'], 'title': notes[link['note_id']]['title'],
+                                'marked': bool(notes[link['note_id']]['marks']),
+                                'where': f"{collections[notes[link['note_id']]['collection']]['title']} › "
+                                         f"{notebook.chapter_title(collections[notes[link['note_id']]['collection']], notes[link['note_id']])}"}
+                               for link in sorted(bundle['links'], key=lambda l: (l['relation'] != 'answers', notes[l['note_id']]['order']))
+                               if link['question_id'] == q['id']]
             result['occurrences'] = [{
                 'text': o['original_text'], 'year': o['event_date'][:4] if o['event_date'] else None,
                 'type': sources[o['source_id']]['type'], 'platform': sources[o['source_id']].get('platform'),
@@ -153,6 +174,58 @@ class WebApp:
             history = [e for e in data.get('_state', {}).get('events', {}).values() if resolve(data, e['question_id']) == q['id']]
             result['history'] = [{k: e[k] for k in ('rating', 'occurred_at', 'next_review_at', 'note')} for e in sorted(history, key=lambda e: (e['occurred_at'], e['id']), reverse=True)[:20]]
             return result
+
+    def notes(self, params):
+        """八股 collections: chapters, filters and one page of note cards in reading order."""
+        require(set(params) <= NOTE_FILTERS, 'Unknown filter')
+        limit, offset = int(params.get('limit', 30)), int(params.get('offset', 0))
+        require(1 <= limit <= 100 and offset >= 0, 'Invalid pagination (limit 1..100)')
+        with open_bank(self.bank, shared=True) as (_, config, data):
+            bundle = self._notes(data)
+            rows = select(data, config, self.bank)
+        linked = notebook.linked_questions(bundle, rows)
+        collections = {c['name']: c for c in bundle['collections']}
+        found = bundle['notes']
+        # A collection remembered by the browser may have been removed since: show everything instead.
+        if params.get('collection') in collections:
+            found = [n for n in found if n['collection'] == params['collection']]
+            if params.get('chapter', '') != '':
+                found = [n for n in found if str(n['chapter']) == params['chapter']]
+        if params.get('query', '').strip():
+            needle = params['query'].strip().casefold()
+            found = [n for n in found if needle in n['title'].casefold()] + \
+                    [n for n in found if needle not in n['title'].casefold() and needle in n['body'].casefold()]
+        if params.get('marked') == '1':
+            found = [n for n in found if n['marks']]
+        if params.get('asked') == '1':
+            found = [n for n in found if n['id'] in linked]
+        require(params.get('sort', 'order') in ('order', 'asked'), 'Unknown sort order')
+        if params.get('sort') == 'asked':
+            found = sorted(found, key=lambda n: -sum(q['frequency'] for q, _ in linked.get(n['id'], [])))
+        card = lambda n: notebook.note_card(n, collections[n['collection']], [q for q, _ in linked.get(n['id'], [])])
+        return {
+            'collections': [{'name': c['name'], 'title': c['title'], 'origin': c.get('origin', ''), 'total': len(c['notes']),
+                             'chapters': [{'index': ch['index'], 'title': ch['title'], 'count': ch['notes'], 'intro': ch['intro']}
+                                          for ch in c['chapters']]} for c in bundle['collections']],
+            'summary': {'notes': len(bundle['notes']), 'marked': sum(bool(n['marks']) for n in bundle['notes']),
+                        'asked': sum(n['id'] in linked for n in bundle['notes'])},
+            'total': len(found), 'offset': offset, 'limit': limit, 'ids': [n['id'] for n in found],
+            'notes': [card(n) for n in found[offset:offset + limit]],
+        }
+
+    def note(self, note_id):
+        with open_bank(self.bank, shared=True) as (_, config, data):
+            bundle = self._notes(data)
+            rows = select(data, config, self.bank)
+        note = next((n for n in bundle['notes'] if n['id'] == note_id), None)
+        require(note is not None, 'This note is no longer available; refresh the list')
+        collection = next(c for c in bundle['collections'] if c['name'] == note['collection'])
+        linked = notebook.linked_questions(bundle, rows).get(note_id, [])
+        linked.sort(key=lambda pair: (pair[1]['relation'] != 'answers', -pair[0]['frequency']))
+        return {**notebook.note_card(note, collection, [q for q, _ in linked]), 'body': note['body'],
+                'source': notebook.source_of(note, collection),
+                'questions': [{'id': q['id'], 'canonical': q['canonical'], 'frequency': q['frequency'], 'relation': link['relation'],
+                               'answered': q['answer_status'] in ANSWERED} for q, link in linked]}
 
     def record(self, payload):
         require(not self.read_only, 'This server is in read-only mode')
@@ -318,6 +391,11 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/dedupe-reviews':
             from .dedupe import review_queue
             result = {'items': review_queue(app.bank)}
+        elif path == '/api/notes':
+            result = app.notes(params)
+        elif path == '/api/note':
+            require(set(params) == {'id'}, 'Expected note ID')
+            result = app.note(params['id'])
         elif path == '/api/question':
             require(set(params) == {'id'}, 'Expected question ID')
             result = app.question(params['id'])
