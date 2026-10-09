@@ -1243,7 +1243,16 @@ body[data-size="2"] .reading {
   }
 
   .reader-bar #back {
-    visibility: hidden;
+    display: none;
+  }
+
+  /* The list folds away while a question is open; the reader keeps its comfortable line length. */
+  body.list-collapsed.reading-open .library {
+    display: none;
+  }
+
+  body.list-collapsed.reading-open .app {
+    grid-template-columns: 1fr;
   }
 
   .reading {
@@ -1283,8 +1292,14 @@ body[data-size="2"] .reading {
 
 /* ------------------------------------------------------------ sidebar and inline filters (three columns from 1100px) */
 
-.sidebar, .wide-only {
+.sidebar, .wide-only, .wide-up, .side-hide, .show-side {
   display: none;
+}
+
+.reader-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .reader-actions {
@@ -1511,6 +1526,76 @@ body[data-size="2"] .reading {
 
   .empty-reader {
     grid-column: 3;
+  }
+
+  .sidebar {
+    position: relative;
+  }
+
+  .side-hide {
+    position: absolute;
+    top: 14px;
+    right: 8px;
+    display: inline-grid;
+    color: var(--muted);
+  }
+
+  .sidebar .brand {
+    padding-right: 40px;
+  }
+
+  /* Navigation folded: its section switch, chips and menu come back above the list. */
+  body.side-collapsed .sidebar {
+    display: none;
+  }
+
+  body.side-collapsed .app {
+    grid-template-columns: minmax(340px, 400px) 1fr;
+  }
+
+  body.side-collapsed .empty-reader {
+    grid-column: auto;
+  }
+
+  body.side-collapsed .show-side, body.side-collapsed #open-menu {
+    display: inline-grid;
+  }
+
+  body.side-collapsed .topbar {
+    position: sticky;
+    justify-content: flex-start;
+    height: auto;
+    padding: 12px 16px;
+  }
+
+  body.side-collapsed .topbar .topbar-actions {
+    position: static;
+    margin-left: auto;
+  }
+
+  body.side-collapsed .library .brand {
+    display: flex;
+  }
+
+  body.side-collapsed .library .modes {
+    display: grid;
+  }
+
+  body.side-collapsed .library .search {
+    margin-top: 2px;
+    margin-right: 16px;
+  }
+
+  body.side-collapsed .chips {
+    display: flex;
+  }
+
+  body.list-collapsed.reading-open .app {
+    grid-template-columns: 232px 1fr;
+  }
+
+  body.side-collapsed.list-collapsed.reading-open .app {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -1753,4 +1838,11 @@ body[data-size="2"] .reading {
 
 :root[data-theme="light"] {
   color-scheme: light;
+}
+
+/* After the hidden-by-default rule above: the layout buttons show from two columns up. */
+@media (min-width: 900px) {
+  .wide-up {
+    display: inline-flex;
+  }
 }

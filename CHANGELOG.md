@@ -22,6 +22,8 @@ A 八股 notes section beside the bank's own questions. Data stays V1/V2; no mig
   first); search words highlighted in titles; text size (Aa) and a reading progress bar in the reader; foldable
   sidebar sections; a light / dark / system theme choice; a back-to-top button. Read marks, folds, theme and text size
   stay in the browser.
+- Wide screens: the navigation and the list fold away (« / », 收起列表 or L, 专注 or F for both, Esc to leave), so the
+  reader can fill the window at a comfortable line length; the choice is remembered on the device.
 - references/notes.md.
 
 ### Changed

@@ -58,6 +58,9 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
   chapter headers in the notes list fold and show how many were read (全部折叠 turns the list into a table of contents).
   随机一题 opens a random question of the current list, unread ones first. In the reader, Aa changes the text size
   and a thin bar shows how far you have read. Sidebar sections fold; the choices are remembered on the device.
+- Wide screens: « folds the navigation (its section switch, chips and menu move above the list; » brings it back),
+  收起列表 (L) folds the list while a question is open, and 专注 (F) folds both so the reader fills the window;
+  Esc leaves focus. Phones keep the list and the full-screen reader.
 - Language and theme: the page follows `config.language` (Chinese or English); the theme follows the operating
   system unless the reader picks light or dark (外观).
 

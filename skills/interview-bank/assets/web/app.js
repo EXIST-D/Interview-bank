@@ -68,6 +68,7 @@ const TEXT = {
     random: '随机一题', random_hint: '优先未读', random_none: '当前列表是空的。', fold_all: '全部折叠', unfold_all: '全部展开',
     to_top: '回到顶部', text_size: '字号', size_0: '字号：标准', size_1: '字号：大', size_2: '字号：特大',
     theme_auto: '外观：跟随系统', theme_light: '外观：浅色', theme_dark: '外观：深色',
+    hide_side: '收起导航', show_side: '展开导航', hide_list: '收起列表', show_list: '展开列表', focus: '专注', focus_exit: '退出专注',
     peek: '速览答案', read_all: '阅读全文 ›', read_mark: '已读', group_count: '{n} 条 · 已读 {r}',
   },
   en: {
@@ -133,6 +134,7 @@ const TEXT = {
     random: 'Random pick', random_hint: 'unread first', random_none: 'The list is empty.', fold_all: 'Collapse all', unfold_all: 'Expand all',
     to_top: 'Back to top', text_size: 'Text size', size_0: 'Text: normal', size_1: 'Text: large', size_2: 'Text: larger',
     theme_auto: 'Theme: system', theme_light: 'Theme: light', theme_dark: 'Theme: dark',
+    hide_side: 'Hide navigation', show_side: 'Show navigation', hide_list: 'Hide list', show_list: 'Show list', focus: 'Focus', focus_exit: 'Exit focus',
     peek: 'Peek at the answer', read_all: 'Read all ›', read_mark: 'Read', group_count: '{n} · {r} read',
   },
 };
@@ -153,6 +155,7 @@ function applyLanguage(code) {
   document.title = 'Interview Bank · ' + t('titles_all');
   $('search').placeholder = t(state.mode === 'notes' ? 'search_notes' : 'search');
   applyTheme(stored('ibank-theme', 'auto'));
+  applyLayout();
   offerResume();
 }
 
@@ -1115,6 +1118,32 @@ function updateProgress() {
   $('read-progress').style.transform = `scaleX(${room > 0 ? Math.min(1, reading.scrollTop / room) : 0})`;
 }
 
+// Wide screens: the navigation and the list fold away so the reader can take the whole window.
+const layout = { side: false, list: false, ...stored('ibank-layout', {}) };
+
+function focused() {
+  return layout.list && (layout.side || !roomy.matches);
+}
+
+function applyLayout() {
+  document.body.classList.toggle('side-collapsed', layout.side);
+  document.body.classList.toggle('list-collapsed', layout.list);
+  $('toggle-list').textContent = t(layout.list ? 'show_list' : 'hide_list');
+  $('focus').textContent = t(focused() ? 'focus_exit' : 'focus');
+  $('focus').setAttribute('aria-pressed', String(focused()));
+}
+
+function setLayout(changes) {
+  Object.assign(layout, changes);
+  store('ibank-layout', layout);
+  applyLayout();
+  updateProgress();
+}
+
+function toggleFocus() {
+  setLayout(focused() ? { side: false, list: false } : { side: true, list: true });
+}
+
 function listScrolled() {
   return wide.matches ? document.querySelector('.library').scrollTop : window.scrollY;
 }
@@ -1467,6 +1496,9 @@ document.addEventListener('keydown', event => {
   if (event.key === 'ArrowLeft' || event.key === 'k') step(-1);
   if (event.key === ' ' && !state.revealed) { event.preventDefault(); setReveal(true); }
   if (event.key === 'Escape' && !wide.matches) $('back').click();
+  if (wide.matches && (event.key === 'f' || event.key === 'F')) toggleFocus();
+  if (wide.matches && (event.key === 'l' || event.key === 'L')) setLayout({ list: !layout.list });
+  if (wide.matches && event.key === 'Escape' && focused()) setLayout({ side: false, list: false });
 });
 
 $('start-practice').addEventListener('click', preparePractice);
@@ -1476,6 +1508,11 @@ $('theme').addEventListener('click', () => { $('menu').hidden = true; cycleTheme
 $('side-theme').addEventListener('click', cycleTheme);
 $('fold-all').addEventListener('click', () => foldAll(true));
 $('unfold-all').addEventListener('click', () => foldAll(false));
+$('hide-side').addEventListener('click', () => setLayout({ side: true }));
+$('show-side').addEventListener('click', () => setLayout({ side: false }));
+$('toggle-list').addEventListener('click', () => setLayout({ list: !layout.list }));
+$('focus').addEventListener('click', toggleFocus);
+roomy.addEventListener('change', applyLayout);
 $('text-size').addEventListener('click', () => {
   const size = (Number(stored('ibank-text-size', 0)) + 1) % 3;
   store('ibank-text-size', size);
@@ -1523,6 +1560,7 @@ window.addEventListener('beforeunload', event => {
 });
 
 applyTheme(stored('ibank-theme', 'auto'));
+applyLayout();
 document.body.dataset.size = String(stored('ibank-text-size', 0));
 $('think-first').checked = stored('ibank-think-first', false);
 $('side-think-first').checked = $('think-first').checked;
