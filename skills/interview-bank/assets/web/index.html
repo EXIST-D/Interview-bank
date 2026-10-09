@@ -22,18 +22,19 @@
       <button type="button" role="tab" data-mode="bank" aria-selected="true" data-i18n="mode_bank">面经</button>
       <button type="button" role="tab" data-mode="notes" aria-selected="false" data-i18n="mode_notes">八股</button>
     </div>
-    <p class="side-title bank-only" data-i18n="study">学习</p>
+    <p class="side-title bank-only" data-fold="views" data-i18n="study">学习</p>
     <nav id="views" class="side-list bank-only">
       <button type="button" data-view="all" class="side-item active"><span data-i18n="view_all_long">全部题目</span><small id="nav-all"></small></button>
       <button type="button" data-view="due" class="side-item"><span data-i18n="view_due">待复习</span><small id="nav-due"></small></button>
       <button type="button" data-view="weak" class="side-item"><span data-i18n="view_weak">待巩固</span><small id="nav-weak"></small></button>
       <button type="button" data-view="unseen" class="side-item"><span data-i18n="view_unseen">尚未练习</span><small id="nav-unseen"></small></button>
     </nav>
-    <p class="side-title bank-only" data-i18n="topics">主题</p>
+    <p class="side-title bank-only" data-fold="side-groups" data-i18n="topics">主题</p>
     <nav id="side-groups" class="side-list side-groups bank-only"></nav>
     <nav id="side-notes" class="side-list side-groups notes-only" aria-label="八股" data-i18n-aria="mode_notes"></nav>
-    <p class="side-title" data-i18n="tools">工具</p>
-    <div class="side-list">
+    <p class="side-title" data-fold="side-tools" data-i18n="tools">工具</p>
+    <div id="side-tools" class="side-list">
+      <button id="side-random" type="button" class="side-item"><span data-i18n="random">随机一题</span><small data-i18n="random_hint">优先未读</small></button>
       <button id="side-practice" type="button" class="side-item bank-only"><span data-i18n="practice">练习一组</span></button>
       <button id="side-merges" type="button" class="side-item" hidden><span data-i18n="merges">合并裁决</span><small id="side-merge-count"></small></button>
       <button type="button" class="side-item" data-info="import"><span data-i18n="import">导入题目</span><small data-i18n="via_agent">Agent</small></button>
@@ -42,6 +43,7 @@
     </div>
     <div class="side-foot">
       <label class="side-switch"><input id="side-think-first" type="checkbox"> <span data-i18n="think_first_short">先想再看</span></label>
+      <button id="side-theme" type="button" class="link side-theme"></button>
       <div class="side-actions"><button id="side-refresh" type="button" class="link" data-i18n="refresh">刷新</button><button id="side-logout" type="button" class="link" hidden data-i18n="logout">退出登录</button></div>
       <small id="side-status" class="side-status"></small>
     </div>
@@ -60,6 +62,8 @@
       <button role="menuitem" type="button" data-info="import" data-i18n="import">导入题目</button>
       <button role="menuitem" type="button" data-info="research" data-i18n="research">补充答案</button>
       <button role="menuitem" type="button" data-info="export" data-i18n="export">导出报告</button>
+      <button id="random" role="menuitem" type="button" data-i18n="random">随机一题</button>
+      <button id="theme" role="menuitem" type="button"></button>
       <label class="menu-switch"><input id="think-first" type="checkbox"> <span data-i18n="think_first">先想再看（默认隐藏答案）</span></label>
       <button id="refresh" role="menuitem" type="button" data-i18n="refresh">刷新</button>
       <button id="logout" role="menuitem" type="button" hidden data-i18n="logout">退出登录</button>
@@ -84,19 +88,25 @@
       </span>
     </div>
     <p id="chapter-intro" class="chapter-intro notes-only" hidden></p>
+    <div id="group-tools" class="group-tools" hidden>
+      <button id="fold-all" class="link" type="button" data-i18n="fold_all">全部折叠</button>
+      <button id="unfold-all" class="link" type="button" data-i18n="unfold_all">全部展开</button>
+    </div>
     <div id="error" class="error" role="alert" hidden></div>
     <button id="continue" class="continue" type="button" hidden></button>
     <div id="resume-bar" class="notice bank-only" role="status" hidden><span id="resume-text"></span> <button id="resume-round" class="link" type="button" data-i18n="resume">继续练习</button> <button id="discard-round" class="link" type="button" data-i18n="discard">放弃</button></div>
     <ol id="question-list" class="questions" aria-busy="true"></ol>
     <button id="more" class="more" type="button" hidden data-i18n="more_questions">加载更多</button>
+    <button id="to-top" class="to-top" type="button" hidden aria-label="回到顶部" data-i18n-aria="to_top">↑</button>
   </section>
 
   <section id="reader" class="reader" aria-label="阅读" data-i18n-aria="reader" hidden>
     <header class="reader-bar">
       <button id="back" class="icon-button" type="button" aria-label="返回列表" data-i18n-aria="back">‹</button>
       <span id="position" class="position"></span>
-      <span class="reader-actions"><button id="practise-current" class="chip-button wide-only bank-only" type="button" data-i18n="practise_one">练习这一题</button><button id="toggle-answer" class="chip-button" type="button" data-i18n="hide_answer">隐藏答案</button></span>
+      <span class="reader-actions"><button id="text-size" class="chip-button" type="button" aria-label="字号" data-i18n-aria="text_size">Aa</button><button id="practise-current" class="chip-button wide-only bank-only" type="button" data-i18n="practise_one">练习这一题</button><button id="toggle-answer" class="chip-button" type="button" data-i18n="hide_answer">隐藏答案</button></span>
     </header>
+    <div class="read-progress" aria-hidden="true"><span id="read-progress"></span></div>
     <article id="reading" class="reading" tabindex="-1"></article>
     <nav class="reader-nav" aria-label="切换题目" data-i18n-aria="navigation">
       <button id="previous" class="nav-button" type="button"><span aria-hidden="true">‹</span> <span data-i18n="previous">上一题</span></button>

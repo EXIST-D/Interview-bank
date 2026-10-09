@@ -1039,6 +1039,184 @@ body.notes-mode .bank-only, body:not(.notes-mode) .notes-only {
   line-height: 1.5;
 }
 
+/* ------------------------------------------------------------ list rows: peek, read marks, chapter groups, folding */
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.row .question {
+  padding-right: 4px;
+}
+
+.row:has(> .question.current) {
+  background: var(--blue-soft);
+}
+
+.peek {
+  align-self: start;
+  width: 44px;
+  height: 48px;
+  color: var(--muted);
+  font-size: 16px;
+  transition: transform .15s;
+}
+
+.peek:hover {
+  color: var(--blue);
+}
+
+.row.peeking .peek {
+  transform: rotate(180deg);
+}
+
+.peek-body {
+  grid-column: 1 / -1;
+  padding: 0 16px 14px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.peek-clip {
+  max-height: 240px;
+  overflow: hidden;
+  margin-bottom: 6px;
+  color: var(--ink);
+  -webkit-mask-image: linear-gradient(#000 70%, transparent);
+  mask-image: linear-gradient(#000 70%, transparent);
+}
+
+.peek-clip .rich {
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.question.read .question-title {
+  font-weight: 450;
+}
+
+.read-mark {
+  color: var(--muted);
+}
+
+mark {
+  border-radius: 3px;
+  background: var(--amber-soft);
+  color: inherit;
+}
+
+.questions > li.group {
+  background: var(--canvas);
+}
+
+.group-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+}
+
+.group-head .chevron {
+  color: var(--muted);
+  transition: transform .15s;
+}
+
+.group-head[aria-expanded="true"] .chevron {
+  transform: rotate(90deg);
+}
+
+.group-head .group-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group-head small {
+  color: var(--muted);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+.group-tools {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin: 0 16px 8px;
+  font-size: 13px;
+}
+
+.folded {
+  display: none !important;
+}
+
+.to-top {
+  position: sticky;
+  bottom: calc(16px + var(--safe-bottom));
+  z-index: 4;
+  display: block;
+  width: 44px;
+  height: 44px;
+  margin: 12px 16px 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 18px;
+  box-shadow: 0 6px 18px #0000001f;
+}
+
+/* ------------------------------------------------------------ reading comfort: progress and text size */
+
+.read-progress {
+  height: 2px;
+  margin-top: -1px;
+}
+
+.read-progress span {
+  display: block;
+  height: 100%;
+  background: var(--blue);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform .08s linear;
+}
+
+body[data-size="1"] .reading {
+  zoom: 1.12;
+}
+
+body[data-size="2"] .reading {
+  zoom: 1.25;
+}
+
+.sidebar .side-title.foldable {
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sidebar .side-title.foldable::after {
+  content: "⌄";
+  transition: transform .15s;
+}
+
+.sidebar .side-title.foldable[aria-expanded="false"]::after {
+  transform: rotate(-90deg);
+}
+
+.side-theme {
+  justify-self: start;
+  font-size: 13px;
+}
+
 /* ------------------------------------------------------------ wide screens: list and reader side by side */
 
 @media (min-width: 900px) {
@@ -1504,8 +1682,9 @@ body.notes-mode .bank-only, body:not(.notes-mode) .notes-only {
 
 /* ------------------------------------------------------------ dark mode */
 
+/* Dark: follows the system unless the reader picked light; a picked dark applies everywhere. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     color-scheme: dark;
     --canvas: #17181b;
     --surface: #202125;
@@ -1520,21 +1699,58 @@ body.notes-mode .bank-only, body:not(.notes-mode) .notes-only {
     --amber-soft: #2d2412;
   }
 
-  .brand-mark {
+  :root:not([data-theme="light"]) .brand-mark {
     background: #33363d;
   }
 
-  .error {
+  :root:not([data-theme="light"]) .error {
     background: #3a1a1a;
     color: #ff9b91;
   }
 
-  .button.primary, .count-dot {
+  :root:not([data-theme="light"]) .button.primary, :root:not([data-theme="light"]) .count-dot {
     color: #0d1420;
   }
 
-  .toast {
+  :root:not([data-theme="light"]) .toast {
     background: #e4e5e9;
     color: #17181b;
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --canvas: #17181b;
+  --surface: #202125;
+  --ink: #e4e5e9;
+  --muted: #9fa2aa;
+  --line: #33353b;
+  --blue: #5aa2ff;
+  --blue-soft: #16243a;
+  --green: #5cc99c;
+  --green-soft: #13291f;
+  --amber: #f0b45a;
+  --amber-soft: #2d2412;
+}
+
+:root[data-theme="dark"] .brand-mark {
+  background: #33363d;
+}
+
+:root[data-theme="dark"] .error {
+  background: #3a1a1a;
+  color: #ff9b91;
+}
+
+:root[data-theme="dark"] .button.primary, :root[data-theme="dark"] .count-dot {
+  color: #0d1420;
+}
+
+:root[data-theme="dark"] .toast {
+  background: #e4e5e9;
+  color: #17181b;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
 }

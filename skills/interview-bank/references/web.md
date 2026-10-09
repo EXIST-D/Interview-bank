@@ -54,7 +54,12 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
 - 八股 notes: once a collection is imported, a 面经 / 八股 switch appears. Notes read in chapter order (key-only, asked-only,
   most-asked views), show the collection's answer with its source, and link both ways to interview questions.
   See [notes](notes.md).
-- Language and theme: the page follows `config.language` (Chinese or English) and the operating system's light/dark setting.
+- Reading aids: each row can unfold a peek at its answer; opened questions count as read (this browser only), and
+  chapter headers in the notes list fold and show how many were read (全部折叠 turns the list into a table of contents).
+  随机一题 opens a random question of the current list, unread ones first. In the reader, Aa changes the text size
+  and a thin bar shows how far you have read. Sidebar sections fold; the choices are remembered on the device.
+- Language and theme: the page follows `config.language` (Chinese or English); the theme follows the operating
+  system unless the reader picks light or dark (外观).
 
 The page fetches bank data on navigation, refresh and after practice; it does not automatically poll, research answers or watch directories.
 The overview distinguishes stored answers (including draft/stale) from currently valid source-backed/reviewed coverage in its tooltip.

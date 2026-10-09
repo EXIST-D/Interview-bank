@@ -178,8 +178,9 @@ class WebApp:
     def notes(self, params):
         """八股 collections: chapters, filters and one page of note cards in reading order."""
         require(set(params) <= NOTE_FILTERS, 'Unknown filter')
+        # Note cards are short: the reader loads a whole collection so chapters can fold.
         limit, offset = int(params.get('limit', 30)), int(params.get('offset', 0))
-        require(1 <= limit <= 100 and offset >= 0, 'Invalid pagination (limit 1..100)')
+        require(1 <= limit <= 1000 and offset >= 0, 'Invalid pagination (limit 1..1000)')
         with open_bank(self.bank, shared=True) as (_, config, data):
             bundle = self._notes(data)
             rows = select(data, config, self.bank)

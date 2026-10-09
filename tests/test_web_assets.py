@@ -62,7 +62,7 @@ class WebAssets(unittest.TestCase):
         zh, en = text_tables(self.script)
         self.assertEqual(sorted(zh ^ en), [])
         used = set(re.findall(r"\bt\('([a-z_0-9]+)'", self.script)) | self.markup.keys
-        dynamic = {"status_", "rating_", "titles_", "all_", "relation_", "stat_"}
+        dynamic = {"status_", "rating_", "titles_", "all_", "relation_", "stat_", "size_", "theme_"}
         self.assertEqual(sorted(k for k in used - zh if not k.startswith(tuple(dynamic))), [])
 
     def test_stylesheet_is_readable_and_has_dark_mode(self):
