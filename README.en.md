@@ -6,34 +6,33 @@ English | [简体中文](README.md)
 
 Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.16.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## What's new: 1.16 a 八股 notes section, linked to your own questions
+## What's new: 1.16 a 八股 notes section and a better Web reader
 
-- **Import 八股 collections:** `notes import` reads a folder of Markdown study notes (one file per chapter, `##` headings as questions). The collection's answers are kept verbatim, each with its source (collection, chapter, file and line); 🔴 / ⭐ in a heading marks a key question. Notes never count as interview occurrences and do not touch dedupe or sourced answers.
-- **Linked both ways:** the agent judges which notes answer each interview question (same question / related topic). In the reader, a question lists its related notes, and a note lists how interviews asked it and how often; one tap jumps between them.
-- **A notes section in the Web reader:** a switch between interview questions and notes; chapters in order, with key-only, asked-only and most-asked views; lists, tables, quotes and code in answers render properly, on a phone and a computer.
-- **Reading in spare minutes:** notes grouped by chapter with folding headers (collapse all for a table of contents); a peek at any answer from the list; read marks with per-chapter progress; a random pick that prefers unread questions; highlighted search words; text size and a progress bar in the reader; foldable sidebar sections; on a computer the navigation and the list fold away, and Focus reads full-window; a system / light / dark theme; back to top.
-- Server sync and daily backups include the notes (`collections/`). See [notes](skills/interview-bank/references/notes.md).
+- **Notes section (八股):** `notes import` reads a folder of collected public study notes in Markdown (one file per chapter, `##` headings as questions). Their answers are kept verbatim with their source (collection, chapter, file and line); 🔴 / ⭐ marks key questions. Notes never count as interview occurrences and do not touch dedupe or reference answers. See [notes](skills/interview-bank/references/notes.md).
+- **Linked to your own questions:** the agent judges which notes answer each interview question (same question / related topic). In the reader a question lists its related notes, and a note lists how interviews asked it and how often, one tap apart; "asked" and "most asked" views put the questions interviewers actually ask first.
+- **A better Web reader:** notes grouped by chapter with folding headers (collapse all for a table of contents); a peek at any answer from the list; read marks and chapter progress; a random pick; on a computer the navigation and the list fold away and Focus reads full-window; text size, a reading progress bar, light / dark themes. See [the Web reader](#the-web-reader-study-on-a-computer-or-a-phone).
+- Server sync and daily backups include the notes (`collections/`).
 
-## 1.15 reading and practice online, on a phone or a computer
+## 1.15 reading online, on a phone or a computer
 
-- **A Web reader redesigned for short sessions:** on a phone, a list and a full-screen reader with previous/next at the bottom, swipe and the back gesture; on a computer, three columns (navigation, list, reader) with ←/→. Each answer lists its key points with links to the sources behind them; an optional think-first mode hides answers.
-- **On your own server:** the read-only reader can sit behind your own HTTPS server with its own login page (hashed passwords, 14-day sessions, lockout after repeated failures); `--banks-dir` gives several people one account and one bank each. `tools/deploy/sync.sh` copies the bank there from your computer (no screenshots), with daily verified backups.
-- **Deployment templates:** `tools/deploy/` holds the systemd units, nginx snippets and the account, sync and backup scripts; steps are in [local Web usage](skills/interview-bank/references/web.md).
-- Local use is unchanged: `web` still opens on your computer only, with the same new interface and no login.
-
-Details are in the [CHANGELOG](CHANGELOG.md). The local Web interface is described in [local Web usage](skills/interview-bank/references/web.md).
+- The Web page was redesigned for short sessions: a list and a full-screen reader on a phone, three columns on a computer; every key point of an answer links to the source behind it.
+- The read-only reader can run behind your own HTTPS server with its own login page, one bank per account and daily verified backups; `tools/deploy/` holds every template.
 
 ## Interface preview
 
-On a computer: navigation, question list and reader in three columns.
+On a computer: navigation, question list and reader in three columns; a question lists its related notes.
 
-![Interview Bank on a computer: navigation and topics, question list, reference answer with sources](assets/readme/web-preview.png)
+![Interview Bank on a computer: navigation and topics, question list, reference answer with sources and related notes](assets/readme/web-preview.png)
 
-On a phone: the question list and the full-screen reader with previous/next.
+The notes section: chapters that fold, a peek at an answer in the list, and a note with its source and how interviews asked it.
 
-![Interview Bank on a phone: question list and reader](assets/readme/mobile-preview.png)
+![Interview Bank notes section on a computer: chapter groups, answer peek, the collection's answer and linked interview questions](assets/readme/notes-preview.png)
 
-Both come from the `demo` sample bank (synthetic questions, fictional companies); anyone can reproduce them with `demo --bank <new dir>` and `web`.
+On a phone: chapters with a peek (left), the full-screen reader with previous/next (right).
+
+![Interview Bank on a phone: notes list and reader](assets/readme/mobile-preview.png)
+
+All come from the `demo` sample bank (synthetic questions, fictional companies, notes written for the demo); anyone can reproduce them with `demo --bank <new dir>` and `web`.
 
 ## Repository layout
 
@@ -73,7 +72,8 @@ Interview-bank/
 | Reports | Two Markdown editions plus a JSON sidecar; JSON/JSONL/CSV/Anki exports; English or Chinese |
 | Maintenance | V2 personal state, field protection, never-merge rules, research workflows, undo, change-set runs, `gc`, standalone backup and restore |
 | Preparation | JD topics with coverage gaps, daily plan calendars, review queues (simple or FSRS), one-question-at-a-time mock interviews |
-| Local Web | Browse, filter, self-rated practice, human review, merge decisions; English and Chinese, dark mode |
+| Notes (八股) | Import collected Markdown study notes with their answers and sources; agent-judged links to interview questions, both ways in the reader |
+| Web reader | Interview and notes sections, peek, read marks, random pick, folding chapters, focus reading; self-rated practice, human review, merge decisions; can run on your own server for a phone |
 
 ## Agent capabilities and requirements
 
@@ -117,7 +117,7 @@ python -B <skill dir>/scripts/ibank.py demo --bank <new dir>
 python -B <skill dir>/scripts/ibank.py web --bank <new dir> --open
 ```
 
-`demo` builds 20 synthetic questions, 8 with reference answers checked against official documentation.
+`demo` builds 20 synthetic questions, 8 with reference answers checked against official documentation, and a small notes collection written for the demo (5 notes, linked to the questions).
 
 ## Examples
 
@@ -139,17 +139,32 @@ Export my bank as Anki cards.
 Open the local Web reader; I want to review answers myself and settle the uncertain merges.
 ```
 
-## Local Web reader and practice
+## The Web reader: study on a computer or a phone
 
-> Use interview-bank to open the local Web reader for my bank so I can browse and practise.
+The agent organises the bank; the Web page is for reading it. The page runs no AI and searches nothing online; it only reads your bank.
 
-```text
-python -B <skill dir>/scripts/ibank.py web --bank <existing bank> --open
-```
+- **Two sections:** *Interviews* holds the real questions you collected, most frequent first, with reference answers whose sources you can check; *Notes* holds the public study notes you collected, in chapter order, with their own answers and sources. The two link to each other.
+- **Made for spare minutes:** on a phone, a list and a full-screen reader with previous/next at the bottom or a swipe; a peek at any answer from the list; read marks and chapter progress; a random pick that prefers unread questions; Think first hides answers by default.
+- **Three columns on a computer:** navigation, list and reader. The navigation and the list fold away, and Focus lets the reader fill the window at a comfortable line length.
+- **Easy on the eyes:** three text sizes, a reading progress bar, light / dark / system themes, highlighted search words; tables, code, quotes and nested lists in long answers render properly. Read marks, folds, text size and theme stay in the browser.
+- **Practice and your own decisions** (when run locally): self-rated practice (V2 banks save progress and schedule reviews), **human review** of answers and **merge decisions** on pairs the agent was unsure about; only you can press these.
 
-The server listens on the loopback interface only (`127.0.0.1` or `localhost`); use the full launch URL it prints, stop it with Ctrl+C, and add `--read-only` to disable all writes. The page offers filters and search, answers and original wording, self-rated practice (saved in V2 banks; a round survives a reload), **human review** (only you can press it), **merge decisions** (you settle the merges the agent was unsure about), English or Chinese and dark mode. It runs no AI and does not grade answers.
+| Shortcut (computer) | Action |
+|---|---|
+| ← / → or K / J | Previous / next |
+| Space | Show the answer (in Think first) |
+| / | Search |
+| F | Focus (fold the navigation and the list) |
+| L | Fold / unfold the list |
+| Esc | Leave focus |
 
-**Reading on a phone (optional):** the read-only reader can sit behind your own HTTPS server and a login; `tools/deploy/sync.sh` copies the bank data there (no screenshots). Steps and templates: [local Web usage](skills/interview-bank/references/web.md) and `tools/deploy/`.
+### Three ways to use it
+
+| Way | For | How |
+|---|---|---|
+| **On your computer** | Reading on the machine where your bank is | `python -B <skill dir>/scripts/ibank.py web --bank <bank> --open`. Loopback only (127.0.0.1), no login; Ctrl+C stops it and `--read-only` disables writes. Or ask the agent to open your bank's Web reader. |
+| **On your own server** | Reading on a phone anywhere | The read-only reader sits behind your own HTTPS reverse proxy: its own login page (hashed passwords, lockout after failures), one bank per account, daily verified backups. `tools/deploy/sync.sh` copies the bank text and notes from your computer, never screenshots. Steps: [Web usage](skills/interview-bank/references/web.md) and `tools/deploy/`. |
+| **Test it with the author** | Trying the hosted reader first, or when you cannot deploy one yet | Contact the author through [GitHub Issues](https://github.com/EXIST-D/Interview-bank/issues) for an account to test with. Each account sees only its own bank; the server keeps only the bank text (no screenshots), deleted on request. |
 
 ## Processing policy
 
@@ -193,6 +208,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 | On-screen text in videos | Only speech is processed; capture silent on-screen questions as screenshots |
 | Speaker separation, resuming inside long recordings | Speaker labels from the tool are kept; resume is per file |
 | Editing in the Web reader | Question edits and intake stay with the agent; the Web reader reads, practises, reviews and decides merges |
+| Reading progress across devices | Read marks and folds stay in one browser; a hosted reader does not yet send practice ratings back |
 | MCP server | Planned as a separate optional package; the core stays dependency-free |
 
 **Other limits:** review queues are generated on demand with no background reminders; exact token and cost figures depend on the host; splitting an arbitrary historical merge is not supported, only undoing the latest eligible operation.
