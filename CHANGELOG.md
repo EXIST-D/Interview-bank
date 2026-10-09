@@ -17,6 +17,11 @@ A 八股 notes section beside the bank's own questions. Data stays V1/V2; no mig
 - Web reader: a 面经 / 八股 switch; collections and chapters (chips on a phone, the sidebar on wide screens); key-only,
   asked-only and most-asked views; Markdown answers with lists, tables, quotes and code; the source under every
   answer; "相关八股" under a question and "面经里这样问" under a note, jumping both ways. API: `/api/notes`, `/api/note`.
+- Web reading aids, on a phone and a computer: chapter headers in the notes list that fold (全部折叠 / 全部展开, a table
+  of contents on a phone) and count what was read; a peek at each answer from the list; read marks; 随机一题 (unread
+  first); search words highlighted in titles; text size (Aa) and a reading progress bar in the reader; foldable
+  sidebar sections; a light / dark / system theme choice; a back-to-top button. Read marks, folds, theme and text size
+  stay in the browser.
 - references/notes.md.
 
 ### Changed

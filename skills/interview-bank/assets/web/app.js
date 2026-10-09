@@ -65,6 +65,10 @@ const TEXT = {
     note_answer: '原文答案', no_note_answer: '原文没有给出答案。', note_source: '出处', source_line: '{file} 第 {line} 行',
     imported: '导入于 {d}', asked_in: '面经里这样问 · {n}', related_notes: '相关八股 · {n}',
     relation_answers: '同一题', relation_covers: '相关知识点',
+    random: '随机一题', random_hint: '优先未读', random_none: '当前列表是空的。', fold_all: '全部折叠', unfold_all: '全部展开',
+    to_top: '回到顶部', text_size: '字号', size_0: '字号：标准', size_1: '字号：大', size_2: '字号：特大',
+    theme_auto: '外观：跟随系统', theme_light: '外观：浅色', theme_dark: '外观：深色',
+    peek: '速览答案', read_all: '阅读全文 ›', read_mark: '已读', group_count: '{n} 条 · 已读 {r}',
   },
   en: {
     library: 'Questions', reader: 'Reader', more: 'More', filters: 'Filters', topics: 'Topics', navigation: 'Question navigation',
@@ -126,6 +130,10 @@ const TEXT = {
     note_answer: 'Answer in the collection', no_note_answer: 'The collection gives no answer.', note_source: 'Source', source_line: '{file}, line {line}',
     imported: 'imported {d}', asked_in: 'Asked in interviews · {n}', related_notes: 'Related notes · {n}',
     relation_answers: 'Same question', relation_covers: 'Related topic',
+    random: 'Random pick', random_hint: 'unread first', random_none: 'The list is empty.', fold_all: 'Collapse all', unfold_all: 'Expand all',
+    to_top: 'Back to top', text_size: 'Text size', size_0: 'Text: normal', size_1: 'Text: large', size_2: 'Text: larger',
+    theme_auto: 'Theme: system', theme_light: 'Theme: light', theme_dark: 'Theme: dark',
+    peek: 'Peek at the answer', read_all: 'Read all ›', read_mark: 'Read', group_count: '{n} · {r} read',
   },
 };
 const RATINGS = ['again', 'hard', 'good', 'easy'];
@@ -144,6 +152,7 @@ function applyLanguage(code) {
   for (const node of document.querySelectorAll('[data-i18n-aria]')) node.setAttribute('aria-label', t(node.dataset.i18nAria));
   document.title = 'Interview Bank · ' + t('titles_all');
   $('search').placeholder = t(state.mode === 'notes' ? 'search_notes' : 'search');
+  applyTheme(stored('ibank-theme', 'auto'));
   offerResume();
 }
 
@@ -403,16 +412,12 @@ async function loadLibrary(reset = false) {
 function renderList() {
   const list = $('question-list');
   list.replaceChildren();
+  $('group-tools').hidden = true;
   for (const q of state.questions) {
-    const item = el('li');
-    const row = button('', 'question' + (state.current === q.id ? ' current' : ''), () => openQuestion(q.id, true));
-    row.dataset.id = q.id;
     const meta = el('span', 'question-meta');
     meta.append(el('span', '', q.group), el('span', '', t('seen', { n: q.frequency })));
     if (answered(q.answer_status)) meta.append(el('span', 'has-answer', '✓ ' + t('status_answered')));
-    row.append(el('span', 'question-title', q.canonical), meta);
-    item.append(row);
-    list.append(item);
+    list.append(listRow(q.id, q.canonical, meta));
   }
   if (!state.questions.length) list.append(el('li', 'empty', state.data?.summary.questions ? t('empty_filtered') : t('empty_bank')));
   $('more').hidden = state.questions.length >= (state.data?.total || 0);
@@ -466,6 +471,8 @@ async function openQuestion(id, fromList = false) {
     store(isNote(q.id) ? 'ibank-last-note' : 'ibank-last', { id: q.id, title: title.slice(0, 40) + (title.length > 40 ? '…' : '') });
     updateNav();
     $('reading').scrollTop = 0;
+    updateProgress();
+    markRead(q.id);
     $('reading').focus({ preventScroll: true });
     const index = state.ids.indexOf(q.id);
     for (const neighbour of [state.ids[index + 1], state.ids[index - 1]]) if (neighbour) question(neighbour).catch(() => {});
@@ -840,7 +847,8 @@ async function loadNotes(reset = false) {
   message('error', '');
   try {
     const f = state.notes;
-    const query = new URLSearchParams({ offset: state.offset, limit: state.limit, sort: f.sort });
+    // Notes load whole (a few hundred short cards), so chapters can fold and count what was read.
+    const query = new URLSearchParams({ offset: state.offset, limit: NOTES_PAGE, sort: f.sort });
     // A search looks through every collection; the chosen chapter comes back when the search is cleared.
     const words = $('search').value.trim();
     if (words) query.set('query', words);
@@ -910,42 +918,205 @@ function renderNoteFilters(data) {
   }
   const side = $('side-notes');
   side.replaceChildren();
-  const entry = (label, count, active, action, cls = '') => {
+  const entry = (parent, label, count, active, action, cls = '') => {
     const node = button('', 'side-item' + cls + (active ? ' active' : ''), action);
     node.append(el('span', '', label), el('small', '', count === undefined ? '' : String(count)));
-    side.append(node);
+    parent.append(node);
   };
-  side.append(el('p', 'side-title', t('mode_notes')));
-  entry(t('notes_all'), data.summary.notes, !f.collection && !f.marked && !f.asked, () => pickNotes({ collection: '', chapter: '', marked: false, asked: false }));
-  entry(t('marked_only'), data.summary.marked, f.marked, () => pickNotes({ marked: !f.marked }));
-  entry(t('asked_only'), data.summary.asked, f.asked, () => pickNotes({ asked: !f.asked }));
+  const section = (title, key) => {
+    const head = el('p', 'side-title', title);
+    const body = el('div', 'side-list');
+    side.append(head, body);
+    foldable(head, body, key);
+    return body;
+  };
+  const views = section(t('mode_notes'), 'side:notes');
+  entry(views, t('notes_all'), data.summary.notes, !f.collection && !f.marked && !f.asked, () => pickNotes({ collection: '', chapter: '', marked: false, asked: false }));
+  entry(views, t('marked_only'), data.summary.marked, f.marked, () => pickNotes({ marked: !f.marked }));
+  entry(views, t('asked_only'), data.summary.asked, f.asked, () => pickNotes({ asked: !f.asked }));
   for (const c of data.collections) {
-    side.append(el('p', 'side-title', c.title));
-    entry(t('all_chapters'), c.total, f.collection === c.name && f.chapter === '', () => pickNotes({ collection: c.name, chapter: '' }));
+    const body = section(c.title, 'side:c:' + c.name);
+    entry(body, t('all_chapters'), c.total, f.collection === c.name && f.chapter === '', () => pickNotes({ collection: c.name, chapter: '' }));
     for (const ch of c.chapters) {
-      entry(ch.title, ch.count, f.collection === c.name && String(f.chapter) === String(ch.index),
+      entry(body, ch.title, ch.count, f.collection === c.name && String(f.chapter) === String(ch.index),
             () => pickNotes({ collection: c.name, chapter: String(ch.index) }), ' side-sub');
     }
   }
 }
 
+function grouped() {
+  // Chapter headers only where the list is in chapter order and spans several chapters.
+  const f = state.notes;
+  return f.sort === 'order' && !$('search').value.trim() && !(f.collection && f.chapter !== '');
+}
+
 function renderNoteList() {
   const list = $('question-list');
   list.replaceChildren();
+  const groups = grouped();
+  $('group-tools').hidden = !groups || !state.questions.length;
+  let head = null;
   for (const n of state.questions) {
-    const item = el('li');
-    const row = button('', 'question' + (state.current === n.id ? ' current' : ''), () => openQuestion(n.id, true));
-    row.dataset.id = n.id;
+    const key = `${n.collection}:${n.chapter}`;
+    if (groups && head?.dataset.group !== key) {
+      head = el('li', 'group');
+      head.dataset.group = key;
+      head.dataset.label = state.notes.collection ? n.chapter_title : `${n.collection_title} › ${n.chapter_title}`;
+      head.append(button('', 'group-head', () => { setFolded('list:' + key, !folded.has('list:' + key)); syncGroup(key); }));
+      list.append(head);
+    }
     const meta = el('span', 'question-meta');
     meta.append(el('span', '', n.group || n.chapter_title));
     if (n.marked) meta.append(el('span', 'mark', t('marked')));
     if (n.asked) meta.append(el('span', 'has-answer', t('asked_times', { n: n.asked })));
-    row.append(el('span', 'question-title', n.title), meta);
-    item.append(row);
+    const item = listRow(n.id, n.title, meta);
+    if (groups) item.dataset.member = key;
     list.append(item);
   }
+  for (const node of list.querySelectorAll('li.group')) syncGroup(node.dataset.group);
   if (!state.questions.length) list.append(el('li', 'empty', t('empty_notes')));
   $('more').hidden = state.questions.length >= (state.notesData?.total || 0);
+}
+
+// ---------------------------------------------------------------- list rows, folding and reading comfort
+
+const NOTES_PAGE = 1000;
+const THEMES = ['auto', 'light', 'dark'];
+const read = new Set(stored('ibank-read', []));
+const folded = new Set(stored('ibank-folded', []));
+
+function highlight(target, text) {
+  // Marks the search words in a title; the text itself stays plain text.
+  const words = $('search').value.trim();
+  if (!words) { target.textContent = text; return; }
+  const pattern = new RegExp('(' + words.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
+  for (const part of String(text).split(pattern)) {
+    if (!part) continue;
+    target.append(part.toLowerCase() === words.toLowerCase() ? el('mark', '', part) : document.createTextNode(part));
+  }
+}
+
+function listRow(id, title, meta) {
+  const item = el('li', 'row');
+  const main = button('', 'question' + (state.current === id ? ' current' : '') + (read.has(id) ? ' read' : ''), () => openQuestion(id, true));
+  main.dataset.id = id;
+  const heading = el('span', 'question-title');
+  highlight(heading, title);
+  if (read.has(id)) meta.append(el('span', 'read-mark', t('read_mark')));
+  main.append(heading, meta);
+  const peek = button('⌄', 'peek', () => togglePeek(item, id, peek));
+  peek.setAttribute('aria-label', t('peek'));
+  peek.setAttribute('aria-expanded', 'false');
+  item.append(main, peek);
+  return item;
+}
+
+async function togglePeek(item, id, control) {
+  // A quick look at the answer without leaving the list; opening the reader still marks it read.
+  const open = item.querySelector('.peek-body');
+  control.setAttribute('aria-expanded', String(!open));
+  item.classList.toggle('peeking', !open);
+  if (open) { open.remove(); return; }
+  const body = el('div', 'peek-body', t('preparing'));
+  item.append(body);
+  try {
+    const data = await question(id);
+    body.replaceChildren();
+    const text = isNote(id) ? data.body : data.answer?.short_answer;
+    if (text) {
+      const clip = el('div', 'peek-clip');
+      clip.append(isNote(id) ? markdown(text) : richText(text));
+      body.append(clip);
+    } else {
+      body.append(el('p', 'hint', t(isNote(id) ? 'no_note_answer' : 'no_answer')));
+    }
+    body.append(button(t('read_all'), 'link', () => openQuestion(id, true)));
+  } catch (error) {
+    body.textContent = error.message;
+  }
+}
+
+function markRead(id) {
+  if (read.has(id)) return;
+  read.add(id);
+  store('ibank-read', [...read].slice(-5000));
+  const row = document.querySelector(`.question[data-id="${CSS.escape(id)}"]`);
+  if (row) { row.classList.add('read'); row.querySelector('.question-meta').append(el('span', 'read-mark', t('read_mark'))); }
+  const member = row?.closest('li')?.dataset.member;
+  if (member) syncGroup(member);
+}
+
+function setFolded(key, on) {
+  if (on) folded.add(key); else folded.delete(key);
+  store('ibank-folded', [...folded]);
+}
+
+function syncGroup(key) {
+  const list = $('question-list');
+  const head = list.querySelector(`li.group[data-group="${CSS.escape(key)}"]`);
+  if (!head) return;
+  const on = folded.has('list:' + key);
+  const members = [...list.querySelectorAll(`li[data-member="${CSS.escape(key)}"]`)];
+  for (const item of members) item.hidden = on;
+  const ids = members.map(item => item.querySelector('.question').dataset.id);
+  const control = head.querySelector('.group-head');
+  control.replaceChildren(el('span', 'chevron', '›'), el('span', 'group-title', head.dataset.label),
+                          el('small', '', t('group_count', { n: ids.length, r: ids.filter(id => read.has(id)).length })));
+  control.setAttribute('aria-expanded', String(!on));
+}
+
+function foldAll(on) {
+  for (const head of $('question-list').querySelectorAll('li.group')) {
+    setFolded('list:' + head.dataset.group, on);
+    syncGroup(head.dataset.group);
+  }
+}
+
+function foldable(title, body, key) {
+  // Sidebar sections fold on a click or Enter; the choice is remembered on this device.
+  title.classList.add('foldable');
+  title.tabIndex = 0;
+  title.setAttribute('role', 'button');
+  const sync = () => {
+    body.classList.toggle('folded', folded.has(key));
+    title.setAttribute('aria-expanded', String(!folded.has(key)));
+  };
+  const toggle = () => { setFolded(key, !folded.has(key)); sync(); };
+  title.addEventListener('click', toggle);
+  title.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); toggle(); } });
+  sync();
+}
+
+function randomPick() {
+  // For a spare minute: any question of the current list, unread ones first.
+  $('menu').hidden = true;
+  const pool = state.ids.filter(id => id !== state.current);
+  if (!pool.length) { toast(t('random_none')); return; }
+  const unread = pool.filter(id => !read.has(id));
+  const from = unread.length ? unread : pool;
+  openQuestion(from[Math.floor(Math.random() * from.length)], true);
+}
+
+function applyTheme(theme) {
+  if (theme === 'auto') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = theme;
+  $('theme').textContent = $('side-theme').textContent = t('theme_' + theme);
+}
+
+function cycleTheme() {
+  const next = THEMES[(THEMES.indexOf(stored('ibank-theme', 'auto')) + 1) % THEMES.length];
+  store('ibank-theme', next);
+  applyTheme(next);
+}
+
+function updateProgress() {
+  const reading = $('reading');
+  const room = reading.scrollHeight - reading.clientHeight;
+  $('read-progress').style.transform = `scaleX(${room > 0 ? Math.min(1, reading.scrollTop / room) : 0})`;
+}
+
+function listScrolled() {
+  return wide.matches ? document.querySelector('.library').scrollTop : window.scrollY;
 }
 
 // ---------------------------------------------------------------- human review
@@ -1299,6 +1470,28 @@ document.addEventListener('keydown', event => {
 });
 
 $('start-practice').addEventListener('click', preparePractice);
+$('random').addEventListener('click', randomPick);
+$('side-random').addEventListener('click', randomPick);
+$('theme').addEventListener('click', () => { $('menu').hidden = true; cycleTheme(); });
+$('side-theme').addEventListener('click', cycleTheme);
+$('fold-all').addEventListener('click', () => foldAll(true));
+$('unfold-all').addEventListener('click', () => foldAll(false));
+$('text-size').addEventListener('click', () => {
+  const size = (Number(stored('ibank-text-size', 0)) + 1) % 3;
+  store('ibank-text-size', size);
+  document.body.dataset.size = String(size);
+  toast(t('size_' + size));
+  updateProgress();
+});
+$('reading').addEventListener('scroll', updateProgress, { passive: true });
+const showTop = () => { $('to-top').hidden = listScrolled() < 600; };
+window.addEventListener('scroll', showTop, { passive: true });
+document.querySelector('.library').addEventListener('scroll', showTop, { passive: true });
+$('to-top').addEventListener('click', () => {
+  if (wide.matches) document.querySelector('.library').scrollTo({ top: 0, behavior: 'smooth' });
+  else window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+for (const title of document.querySelectorAll('[data-fold]')) foldable(title, $(title.dataset.fold), 'side:' + title.dataset.fold);
 $('begin-round').addEventListener('click', async () => {
   const begin = $('begin-round');
   begin.disabled = true;
@@ -1329,6 +1522,8 @@ window.addEventListener('beforeunload', event => {
   if (state.round && $('practice-response')?.value) { event.preventDefault(); event.returnValue = ''; }
 });
 
+applyTheme(stored('ibank-theme', 'auto'));
+document.body.dataset.size = String(stored('ibank-text-size', 0));
 $('think-first').checked = stored('ibank-think-first', false);
 $('side-think-first').checked = $('think-first').checked;
 placeFilters();

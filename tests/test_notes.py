@@ -168,6 +168,9 @@ class NotesCliTests(unittest.TestCase):
         self.assertIn("先更新数据库", note["body"])
         question = app.question(redis["question"]["id"])
         self.assertEqual([n["title"] for n in question["notes"]], ["缓存与数据库双写一致性怎么保证？"])
+        self.assertEqual(app.notes({"limit": "1000"})["limit"], 1000)  # the reader loads a whole collection
+        with self.assertRaises(Exception):
+            app.notes({"limit": "1001"})
         with self.assertRaises(Exception):
             app.notes({"unknown": "1"})
         server = LocalServer(app)
