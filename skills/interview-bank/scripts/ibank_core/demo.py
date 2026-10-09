@@ -2,7 +2,8 @@
 
 20 synthetic questions under fictional companies (示例科技 / 演示网络). Eight carry reference answers whose
 claims were checked against the cited official pages on the access date given; the rest stay unanswered so
-the reports show both states. Nothing here comes from a real person's interviews.
+the reports show both states. A small 八股 collection, written for the demo, is linked to five of the questions.
+Nothing here comes from a real person's interviews or from a published collection.
 """
 from __future__ import annotations
 
@@ -115,6 +116,76 @@ ANSWERS = {
 }
 
 
+# A tiny 八股 collection written for the demo: chapter file -> Markdown.
+NOTES = {
+    "01-Redis.md": """# Redis
+
+## 1. Redis 为什么这么快？🔴
+
+- **内存存储**：数据主要放在内存里，读写不经过磁盘。
+- **高效的数据结构**：字符串、哈希、跳表等结构针对常见操作做了优化。
+- **单线程执行命令 + I/O 多路复用**：没有锁竞争和线程切换，一个线程就能处理大量连接。
+
+> 💡 追问时可以补充：Redis 6 起网络 I/O 可以用多线程，命令执行仍是单线程。
+
+## 2. 缓存穿透、击穿、雪崩有什么区别？⭐
+
+| 问题 | 现象 | 常见做法 |
+| --- | --- | --- |
+| 穿透 | 查询不存在的数据，每次都打到数据库 | 缓存空值、布隆过滤器 |
+| 击穿 | 热点 key 过期的瞬间大量请求打到数据库 | 互斥锁重建、热点不过期 |
+| 雪崩 | 大量 key 同时过期或缓存宕机 | 过期时间加随机值、多级缓存、限流降级 |
+
+## 3. RDB 和 AOF 怎么选？
+
+RDB 是定时快照，文件小、恢复快，但可能丢失最后一次快照之后的数据；AOF 记录每条写命令，数据更完整，文件更大。
+生产上常两者同时开启，或使用混合持久化。
+""",
+    "02-网络.md": """# 计算机网络
+
+## 1. TCP 三次握手为什么不是两次？🔴
+
+1. 客户端发送 SYN，进入 SYN_SENT。
+2. 服务端回复 SYN+ACK，进入 SYN_RCVD。
+3. 客户端回复 ACK，双方进入 ESTABLISHED。
+
+两次握手时，服务端无法确认客户端能收到自己的报文，过期的连接请求也可能让服务端白白建立连接。
+
+## 2. HTTP/2 做了哪些改进？
+
+- 二进制分帧，在一个连接上多路复用多个请求。
+- 头部压缩（HPACK）。
+- 服务端推送（多数浏览器已不再使用）。
+""",
+}
+# demo question -> (demo note title, relation)
+NOTE_LINKS = {
+    "Redis 为什么快？": ("Redis 为什么这么快？", "answers"),
+    "什么是缓存穿透？如何解决？": ("缓存穿透、击穿、雪崩有什么区别？", "covers"),
+    "Redis 持久化有哪些方式？": ("RDB 和 AOF 怎么选？", "answers"),
+    "TCP 三次握手的过程是什么？": ("TCP 三次握手为什么不是两次？", "answers"),
+    "HTTP/2 相比 HTTP/1.1 有哪些改进？": ("HTTP/2 做了哪些改进？", "answers"),
+}
+
+
+def _demo_notes(bank, temp):
+    from .notes import import_collection, link_candidates, load_notes, stage_links
+    folder = Path(temp) / "八股示例"
+    folder.mkdir()
+    for name, text in NOTES.items():
+        (folder / name).write_text(text, encoding="utf-8")
+    import_collection(bank, folder, "demo", "示例八股", "为演示编写的示例笔记", 1)
+    notes = {n["title"]: n["id"] for n in load_notes(bank)["notes"]}
+    task = link_candidates(bank)
+    from .storage import read_json
+    items = read_json(Path(task["task_file"]))["items"]
+    links = [{"question_id": i["question"]["id"], "note_id": notes[NOTE_LINKS[i["question"]["canonical"]][0]],
+              "relation": NOTE_LINKS[i["question"]["canonical"]][1], "reason": "示例关联"}
+             for i in items if i["question"]["canonical"] in NOTE_LINKS]
+    stage_links(bank, {"task_id": task["task_id"], "links": links})
+    return len(notes)
+
+
 def build_demo(bank, v2: bool = False) -> dict:
     """Create a new sample bank. The directory must not exist or must be empty."""
     bank = guard_bank_path(bank)
@@ -140,7 +211,9 @@ def build_demo(bank, v2: bool = False) -> dict:
     answers += [{"question_id": qid, "skip": True, "reason": "Left unanswered in the demo to show pending answers"}
                 for text, qid in by_text.items() if text not in ANSWERS]
     commit_run(bank, stage_answers(bank, {"schema_version": 1, "task_id": task["id"], "answers": answers})["run_id"])
-    result = {"bank": str(bank), "questions": len(QUESTIONS), "answered": len(ANSWERS), "schema_version": 1,
+    with tempfile.TemporaryDirectory(prefix="ibank-demo-notes-") as temp:
+        notes = _demo_notes(bank, temp)
+    result = {"bank": str(bank), "questions": len(QUESTIONS), "answered": len(ANSWERS), "notes": notes, "schema_version": 1,
               "next": [f"search --bank {bank} --json", f"export --output demo.md --bank {bank} --json", f"web --bank {bank}"]}
     if v2:
         from .migrations import migrate

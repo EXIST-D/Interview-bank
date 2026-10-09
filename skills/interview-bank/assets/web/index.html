@@ -14,22 +14,27 @@
   <aside id="sidebar" class="sidebar" aria-label="导航" data-i18n-aria="sidebar">
     <a class="brand" href="./" aria-label="Interview Bank"><span class="brand-mark" aria-hidden="true">iB</span><span><span data-i18n="titles_all">我的题库</span><small id="account" class="account"></small></span></a>
     <div class="overview">
-      <div><strong id="stat-total">—</strong><small data-i18n="stat_total">题目</small></div>
-      <div><strong id="stat-answered">—</strong><small data-i18n="stat_answered">有答案</small></div>
-      <div><strong id="stat-topics">—</strong><small data-i18n="stat_topics">主题</small></div>
+      <div><strong id="stat-total">—</strong><small id="stat-total-label" data-i18n="stat_total">题目</small></div>
+      <div><strong id="stat-answered">—</strong><small id="stat-answered-label" data-i18n="stat_answered">有答案</small></div>
+      <div><strong id="stat-topics">—</strong><small id="stat-topics-label" data-i18n="stat_topics">主题</small></div>
     </div>
-    <p class="side-title" data-i18n="study">学习</p>
-    <nav id="views" class="side-list">
+    <div id="side-modes" class="modes side-modes" role="tablist" aria-label="板块" data-i18n-aria="modes" hidden>
+      <button type="button" role="tab" data-mode="bank" aria-selected="true" data-i18n="mode_bank">面经</button>
+      <button type="button" role="tab" data-mode="notes" aria-selected="false" data-i18n="mode_notes">八股</button>
+    </div>
+    <p class="side-title bank-only" data-i18n="study">学习</p>
+    <nav id="views" class="side-list bank-only">
       <button type="button" data-view="all" class="side-item active"><span data-i18n="view_all_long">全部题目</span><small id="nav-all"></small></button>
       <button type="button" data-view="due" class="side-item"><span data-i18n="view_due">待复习</span><small id="nav-due"></small></button>
       <button type="button" data-view="weak" class="side-item"><span data-i18n="view_weak">待巩固</span><small id="nav-weak"></small></button>
       <button type="button" data-view="unseen" class="side-item"><span data-i18n="view_unseen">尚未练习</span><small id="nav-unseen"></small></button>
     </nav>
-    <p class="side-title" data-i18n="topics">主题</p>
-    <nav id="side-groups" class="side-list side-groups"></nav>
+    <p class="side-title bank-only" data-i18n="topics">主题</p>
+    <nav id="side-groups" class="side-list side-groups bank-only"></nav>
+    <nav id="side-notes" class="side-list side-groups notes-only" aria-label="八股" data-i18n-aria="mode_notes"></nav>
     <p class="side-title" data-i18n="tools">工具</p>
     <div class="side-list">
-      <button id="side-practice" type="button" class="side-item"><span data-i18n="practice">练习一组</span></button>
+      <button id="side-practice" type="button" class="side-item bank-only"><span data-i18n="practice">练习一组</span></button>
       <button id="side-merges" type="button" class="side-item" hidden><span data-i18n="merges">合并裁决</span><small id="side-merge-count"></small></button>
       <button type="button" class="side-item" data-info="import"><span data-i18n="import">导入题目</span><small data-i18n="via_agent">Agent</small></button>
       <button type="button" class="side-item" data-info="research"><span data-i18n="research">补充答案</span><small data-i18n="via_agent">Agent</small></button>
@@ -45,12 +50,12 @@
     <header class="topbar">
       <a class="brand" href="./" aria-label="Interview Bank"><span class="brand-mark" aria-hidden="true">iB</span><span class="bank-name" data-i18n="titles_all">我的题库</span></a>
       <div class="topbar-actions">
-        <button id="open-filters" class="chip-button" type="button"><span data-i18n="filters">筛选</span> <span id="filter-count" class="count-dot" hidden></span></button>
+        <button id="open-filters" class="chip-button bank-only" type="button"><span data-i18n="filters">筛选</span> <span id="filter-count" class="count-dot" hidden></span></button>
         <button id="open-menu" class="icon-button" type="button" aria-haspopup="menu" aria-label="更多" data-i18n-aria="more">⋯</button>
       </div>
     </header>
     <div id="menu" class="menu" role="menu" hidden>
-      <button id="start-practice" role="menuitem" type="button" data-i18n="practice">练习一组</button>
+      <button id="start-practice" class="bank-only" role="menuitem" type="button" data-i18n="practice">练习一组</button>
       <button id="open-merges" role="menuitem" type="button" hidden><span data-i18n="merges">合并裁决</span> <span id="merge-count"></span></button>
       <button role="menuitem" type="button" data-info="import" data-i18n="import">导入题目</button>
       <button role="menuitem" type="button" data-info="research" data-i18n="research">补充答案</button>
@@ -61,16 +66,27 @@
       <small id="notice" class="menu-version" hidden></small>
       <small id="version" class="menu-version"></small>
     </div>
+    <div id="modes" class="modes" role="tablist" aria-label="板块" data-i18n-aria="modes" hidden>
+      <button type="button" role="tab" data-mode="bank" aria-selected="true" data-i18n="mode_bank">面经</button>
+      <button type="button" role="tab" data-mode="notes" aria-selected="false" data-i18n="mode_notes">八股</button>
+    </div>
     <label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="搜索题目…" aria-label="搜索题目" data-i18n-placeholder="search" data-i18n-aria="search_label"></label>
-    <div id="inline-filters" class="inline-filters" hidden></div>
+    <div id="inline-filters" class="inline-filters bank-only" hidden></div>
+    <nav id="collections" class="chips notes-only" aria-label="八股" data-i18n-aria="mode_notes"></nav>
     <nav id="groups" class="chips" aria-label="主题" data-i18n-aria="topics"></nav>
     <div class="list-head">
       <span id="result-count" aria-live="polite"></span>
-      <button id="answered-only" class="toggle" type="button" aria-pressed="false" data-i18n="answered_only">只看有答案</button>
+      <button id="answered-only" class="toggle bank-only" type="button" aria-pressed="false" data-i18n="answered_only">只看有答案</button>
+      <span class="toggles notes-only">
+        <button id="marked-only" class="toggle" type="button" aria-pressed="false" data-i18n="marked_only">重点</button>
+        <button id="asked-only" class="toggle" type="button" aria-pressed="false" data-i18n="asked_only">面经考过</button>
+        <button id="asked-sort" class="toggle" type="button" aria-pressed="false" data-i18n="asked_sort">按考频</button>
+      </span>
     </div>
+    <p id="chapter-intro" class="chapter-intro notes-only" hidden></p>
     <div id="error" class="error" role="alert" hidden></div>
     <button id="continue" class="continue" type="button" hidden></button>
-    <div id="resume-bar" class="notice" role="status" hidden><span id="resume-text"></span> <button id="resume-round" class="link" type="button" data-i18n="resume">继续练习</button> <button id="discard-round" class="link" type="button" data-i18n="discard">放弃</button></div>
+    <div id="resume-bar" class="notice bank-only" role="status" hidden><span id="resume-text"></span> <button id="resume-round" class="link" type="button" data-i18n="resume">继续练习</button> <button id="discard-round" class="link" type="button" data-i18n="discard">放弃</button></div>
     <ol id="question-list" class="questions" aria-busy="true"></ol>
     <button id="more" class="more" type="button" hidden data-i18n="more_questions">加载更多</button>
   </section>
@@ -79,7 +95,7 @@
     <header class="reader-bar">
       <button id="back" class="icon-button" type="button" aria-label="返回列表" data-i18n-aria="back">‹</button>
       <span id="position" class="position"></span>
-      <span class="reader-actions"><button id="practise-current" class="chip-button wide-only" type="button" data-i18n="practise_one">练习这一题</button><button id="toggle-answer" class="chip-button" type="button" data-i18n="hide_answer">隐藏答案</button></span>
+      <span class="reader-actions"><button id="practise-current" class="chip-button wide-only bank-only" type="button" data-i18n="practise_one">练习这一题</button><button id="toggle-answer" class="chip-button" type="button" data-i18n="hide_answer">隐藏答案</button></span>
     </header>
     <article id="reading" class="reading" tabindex="-1"></article>
     <nav class="reader-nav" aria-label="切换题目" data-i18n-aria="navigation">

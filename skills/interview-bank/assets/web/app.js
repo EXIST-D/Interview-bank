@@ -1,6 +1,6 @@
 'use strict';
 // Interview Bank reader. Talks only to the server that served this page (loopback, or the user's own proxy).
-// Sections: text · helpers · API · library list · reader · answer · human review · merge decisions · practice · events.
+// Sections: text · helpers · API · library list · reader · answer · notes · human review · merge decisions · practice · events.
 
 // ---------------------------------------------------------------- text
 
@@ -59,6 +59,12 @@ const TEXT = {
     merge_note: '判断依据（必填）', merge_need_note: '请写一句判断依据。',
     merge_saved: '已保存。全部裁决后请让 Agent 运行 dedupe --resolve {run}。', merge_decided: '已裁决：{a}',
     unreachable: '连不上题库服务，请稍后重试。', failed: '操作未完成，请重试。', connection: '连接失败，请稍后重试。',
+    modes: '板块', mode_bank: '面经', mode_notes: '八股', search_notes: '搜索八股…', marked_only: '重点', asked_only: '面经考过',
+    asked_sort: '按考频', notes_count: '{n} 条', notes_all: '全部八股', all_chapters: '全部章节', stat_notes: '八股',
+    stat_marked: '重点', stat_asked: '面经考过', empty_notes: '没有符合条件的条目。', marked: '重点', asked_times: '面经考过 {n} 次',
+    note_answer: '原文答案', no_note_answer: '原文没有给出答案。', note_source: '出处', source_line: '{file} 第 {line} 行',
+    imported: '导入于 {d}', asked_in: '面经里这样问 · {n}', related_notes: '相关八股 · {n}',
+    relation_answers: '同一题', relation_covers: '相关知识点',
   },
   en: {
     library: 'Questions', reader: 'Reader', more: 'More', filters: 'Filters', topics: 'Topics', navigation: 'Question navigation',
@@ -114,6 +120,12 @@ const TEXT = {
     merge_note: 'Why (required)', merge_need_note: 'Write one line explaining your decision.',
     merge_saved: 'Saved. When all are decided, ask the agent to run dedupe --resolve {run}.', merge_decided: 'Decided: {a}',
     unreachable: 'Cannot reach the bank server; try again shortly.', failed: 'That did not work; please retry.', connection: 'Connection failed; try again shortly.',
+    modes: 'Sections', mode_bank: 'Interviews', mode_notes: 'Notes', search_notes: 'Search notes…', marked_only: 'Key', asked_only: 'Asked',
+    asked_sort: 'Most asked', notes_count: '{n} notes', notes_all: 'All notes', all_chapters: 'All chapters', stat_notes: 'Notes',
+    stat_marked: 'Key', stat_asked: 'Asked', empty_notes: 'No notes match.', marked: 'Key', asked_times: 'Asked {n}×',
+    note_answer: 'Answer in the collection', no_note_answer: 'The collection gives no answer.', note_source: 'Source', source_line: '{file}, line {line}',
+    imported: 'imported {d}', asked_in: 'Asked in interviews · {n}', related_notes: 'Related notes · {n}',
+    relation_answers: 'Same question', relation_covers: 'Related topic',
   },
 };
 const RATINGS = ['again', 'hard', 'good', 'easy'];
@@ -131,6 +143,7 @@ function applyLanguage(code) {
   for (const node of document.querySelectorAll('[data-i18n-placeholder]')) node.placeholder = t(node.dataset.i18nPlaceholder);
   for (const node of document.querySelectorAll('[data-i18n-aria]')) node.setAttribute('aria-label', t(node.dataset.i18nAria));
   document.title = 'Interview Bank · ' + t('titles_all');
+  $('search').placeholder = t(state.mode === 'notes' ? 'search_notes' : 'search');
   offerResume();
 }
 
@@ -143,10 +156,12 @@ const roomy = matchMedia('(min-width: 1100px)');  // three columns: sidebar, lis
 const state = {
   group: '', offset: 0, limit: 30, questions: [], ids: [], data: null, load: 0, detail: 0,
   current: null, revealed: true, cache: new Map(), round: null, merges: [],
+  // 'bank': your interview questions; 'notes': 八股 collections. Both share the list and the reader.
+  mode: 'bank', notes: { collection: '', chapter: '', marked: false, asked: false, sort: 'order' }, notesData: null,
 };
 const launch = new URLSearchParams(location.hash.slice(1));
 let token = launch.get('token');
-const openOnLoad = launch.get('question');  // #question=q_… opens one question directly
+const openOnLoad = launch.get('question') || launch.get('note');  // #question=q_… or #note=note_… opens one item directly
 try { if (token) sessionStorage.setItem('ibank-token', token); else token = sessionStorage.getItem('ibank-token'); } catch (_) {}
 if (location.hash) history.replaceState(null, '', location.pathname);
 
@@ -267,8 +282,12 @@ function params() {
   return query;
 }
 
+const isNote = id => String(id).startsWith('note_');
+
 async function question(id) {
-  if (!state.cache.has(id)) state.cache.set(id, api('/api/question?id=' + encodeURIComponent(id)).catch(error => { state.cache.delete(id); throw error; }));
+  // One cache for both kinds: note IDs and question IDs never collide.
+  const path = (isNote(id) ? '/api/note?id=' : '/api/question?id=') + encodeURIComponent(id);
+  if (!state.cache.has(id)) state.cache.set(id, api(path).catch(error => { state.cache.delete(id); throw error; }));
   return state.cache.get(id);
 }
 
@@ -285,6 +304,7 @@ function updateFacets(facets) {
   }
   const groups = $('groups');
   groups.replaceChildren();
+  groups.hidden = false;
   const total = (facets.group || []).reduce((sum, g) => sum + g.count, 0);
   for (const item of [{ value: '', label: t('all_group'), count: total }, ...(facets.group || [])]) {
     const chip = button('', 'chip' + (state.group === item.value ? ' active' : ''), () => {
@@ -306,6 +326,7 @@ function updateFacets(facets) {
 }
 
 function updateSidebar(data) {
+  for (const key of ['total', 'answered', 'topics']) $(`stat-${key}-label`).textContent = t('stat_' + key);
   $('stat-total').textContent = data.summary.questions;
   $('stat-answered').textContent = data.summary.answered;
   $('stat-topics').textContent = (data.facets.group || []).length;
@@ -349,6 +370,15 @@ async function loadLibrary(reset = false) {
     if (generation !== state.load) return;
     if (!state.data || state.data.language !== data.language) applyLanguage(data.language);
     state.data = data;
+    $('modes').hidden = $('side-modes').hidden = !data.notes?.total;
+    $('account').textContent = data.account || data.name;
+    $('side-logout').hidden = !data.can_logout;
+    $('logout').hidden = !data.can_logout;
+    if (state.mode !== 'bank') {
+      if (data.notes?.total) return;
+      setMode('bank');  // the notes were removed since last time
+      return;
+    }
     state.ids = data.ids;
     state.questions = state.offset ? [...state.questions, ...data.questions] : data.questions;
     updateFacets(data.facets);
@@ -388,8 +418,10 @@ function renderList() {
   $('more').hidden = state.questions.length >= (state.data?.total || 0);
 }
 
+const lastKey = () => state.mode === 'notes' ? 'ibank-last-note' : 'ibank-last';
+
 function offerContinue() {
-  const last = stored('ibank-last', null);
+  const last = stored(lastKey(), null);
   const show = last && last.id !== state.current && state.ids.includes(last.id);
   $('continue').hidden = !show;
   if (show) $('continue').textContent = t('continue', { q: last.title });
@@ -422,14 +454,16 @@ async function openQuestion(id, fromList = false) {
     const opening = !document.body.classList.contains('reading-open');
     state.current = q.id;
     state.revealed = !stored('ibank-think-first', false);
-    renderReading(q);
+    if (isNote(q.id)) renderNote(q); else renderReading(q);
     document.body.classList.add('reading-open');
     $('reader').hidden = false;
     $('empty-reader').hidden = true;
     // On a phone the reader covers the list; the system back gesture closes it.
-    if (!wide.matches && opening && fromList) history.pushState({ reader: true }, '', location.pathname + '#question=' + q.id);
-    else history.replaceState(history.state, '', location.pathname + '#question=' + q.id);
-    store('ibank-last', { id: q.id, title: q.canonical.slice(0, 40) + (q.canonical.length > 40 ? '…' : '') });
+    const hash = (isNote(q.id) ? '#note=' : '#question=') + q.id;
+    if (!wide.matches && opening && fromList) history.pushState({ reader: true }, '', location.pathname + hash);
+    else history.replaceState(history.state, '', location.pathname + hash);
+    const title = q.canonical || q.title;
+    store(isNote(q.id) ? 'ibank-last-note' : 'ibank-last', { id: q.id, title: title.slice(0, 40) + (title.length > 40 ? '…' : '') });
     updateNav();
     $('reading').scrollTop = 0;
     $('reading').focus({ preventScroll: true });
@@ -482,6 +516,7 @@ function renderReading(q) {
     reading.append(button(t('show_answer'), 'reveal button primary', () => setReveal(true)), answerView(q));
     setReveal(state.revealed);
   }
+  if (q.notes?.length) reading.append(linkedNotes(q.notes));
   const more = el('div', 'reading-more');
   const origins = el('details');
   origins.append(el('summary', '', t('origins', { n: q.occurrences.length })));
@@ -572,6 +607,345 @@ function answerView(q) {
     wrap.append(box);
   }
   return wrap;
+}
+
+// ---------------------------------------------------------------- notes (八股 collections)
+
+const LIST_ITEM = /^(\s*)([-*+•]|\d+[.)、])\s+(.*)$/;
+const indentOf = line => line.match(/^\s*/)[0].length;
+
+function inline(target, text) {
+  // Bold, code, links and <br>; everything else, including any HTML in the source, stays literal text.
+  for (const part of String(text).split(/(\*\*[^*]+\*\*|`[^`]+`|\[[^\]]+\]\([^)\s]+\)|<br\s*\/?>)/gi)) {
+    if (!part) continue;
+    const link = part.match(/^\[([^\]]+)\]\(([^)\s]+)\)$/);
+    if (/^<br\s*\/?>$/i.test(part)) target.append(el('br'));
+    else if (part.length > 4 && part.startsWith('**') && part.endsWith('**')) target.append(el('strong', '', part.slice(2, -2)));
+    else if (part.length > 2 && part.startsWith('`') && part.endsWith('`')) target.append(el('code', '', part.slice(1, -1)));
+    else if (link) target.append(safeLink(link[2], link[1]) || document.createTextNode(link[1]));
+    else target.append(document.createTextNode(part));
+  }
+}
+
+function table(rows) {
+  const cells = row => row.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(cell => cell.trim());
+  const parsed = rows.map(cells);
+  const headed = parsed.length > 1 && parsed[1].every(cell => /^:?-+:?$/.test(cell));
+  const node = el('table');
+  const add = (parent, row, tag) => {
+    const tr = el('tr');
+    for (const cell of row) { const td = el(tag); inline(td, cell); tr.append(td); }
+    parent.append(tr);
+  };
+  if (headed) { const head = el('thead'); add(head, parsed[0], 'th'); node.append(head); }
+  const body = el('tbody');
+  for (const row of parsed.slice(headed ? 2 : 0)) add(body, row, 'td');
+  node.append(body);
+  const wrap = el('div', 'table-wrap');
+  wrap.append(node);
+  return wrap;
+}
+
+function list(lines, start) {
+  // A list and everything indented under its items: nested lists, paragraphs, quotes and code.
+  const first = lines[start].match(LIST_ITEM);
+  const indent = first[1].length;
+  const node = el(/\d/.test(first[2]) ? 'ol' : 'ul');
+  if (/\d/.test(first[2]) && parseInt(first[2], 10) > 1) node.start = parseInt(first[2], 10);
+  let i = start;
+  let item = null;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (!line.trim()) {
+      const next = lines[i + 1];
+      if (item && next !== undefined && next.trim() && indentOf(next) > indent) { i++; continue; }
+      if (next !== undefined && LIST_ITEM.test(next) && indentOf(next) === indent) { i++; continue; }
+      break;
+    }
+    const match = line.match(LIST_ITEM);
+    if (match && match[1].length === indent) {
+      item = el('li');
+      inline(item, match[3]);
+      node.append(item);
+      i++;
+    } else if (match && match[1].length > indent && item) {
+      const [child, next] = list(lines, i);
+      item.append(child);
+      i = next;
+    } else if (item && indentOf(line) > indent) {
+      const block = [];
+      const cut = indentOf(line);
+      while (i < lines.length && lines[i].trim() && indentOf(lines[i]) > indent && !LIST_ITEM.test(lines[i])) {
+        block.push(lines[i].slice(Math.min(cut, indentOf(lines[i]))));
+        i++;
+      }
+      item.append(...Array.from(markdown(block.join('\n'), true).childNodes));
+    } else {
+      break;
+    }
+  }
+  return [node, i];
+}
+
+function markdown(text, nested = false) {
+  // Markdown as written in the collections: headings, lists, quotes, tables and code, built as DOM nodes.
+  const root = el('div', nested ? '' : 'rich md');
+  const lines = String(text || '').replace(/\r\n/g, '\n').split('\n');
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (/^\s*(```|~~~)/.test(line)) {
+      const fence = line.trim().slice(0, 3);
+      const code = [];
+      i++;
+      while (i < lines.length && !lines[i].trim().startsWith(fence)) code.push(lines[i++]);
+      i++;
+      root.append(el('pre', '', code.join('\n')));
+      continue;
+    }
+    if (!line.trim()) { i++; continue; }
+    const heading = line.match(/^(#{1,6})\s+(.*?)\s*#*\s*$/);
+    if (heading) {
+      const node = el(heading[1].length <= 3 ? 'h3' : 'h4');
+      inline(node, heading[2]);
+      root.append(node);
+      i++;
+      continue;
+    }
+    if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)) { root.append(el('hr')); i++; continue; }
+    if (/^\s*>/.test(line)) {
+      const quote = [];
+      while (i < lines.length && /^\s*>/.test(lines[i])) quote.push(lines[i++].replace(/^\s*>\s?/, ''));
+      const box = el('blockquote');
+      box.append(...Array.from(markdown(quote.join('\n'), true).childNodes));
+      root.append(box);
+      continue;
+    }
+    if (/^\s*\|/.test(line)) {
+      const rows = [];
+      while (i < lines.length && /^\s*\|/.test(lines[i])) rows.push(lines[i++]);
+      root.append(table(rows));
+      continue;
+    }
+    if (LIST_ITEM.test(line)) {
+      const [node, next] = list(lines, i);
+      root.append(node);
+      i = next;
+      continue;
+    }
+    const paragraph = el('p');
+    let first = true;
+    while (i < lines.length && lines[i].trim() && !/^\s*(```|~~~|>|\||#{1,6}\s)/.test(lines[i]) && !LIST_ITEM.test(lines[i])) {
+      if (!first) paragraph.append(el('br'));
+      inline(paragraph, lines[i++].trim());
+      first = false;
+    }
+    root.append(paragraph);
+  }
+  return root;
+}
+
+function renderNote(n) {
+  const reading = $('reading');
+  reading.replaceChildren();
+  const top = el('p', 'reading-meta');
+  top.append(el('span', 'topic', n.chapter_title), el('span', '', [n.collection_title, n.group].filter(Boolean).join(' · ')));
+  reading.append(top, el('h1', 'reading-title', n.title));
+  const tags = el('div', 'tags');
+  if (n.marked) tags.append(el('span', 'tag mark', t('marked')));
+  if (n.asked) tags.append(el('span', 'tag asked', t('asked_times', { n: n.asked })));
+  if (tags.childNodes.length) reading.append(tags);
+  $('toggle-answer').hidden = !n.body;
+  if (!n.body) {
+    reading.append(el('p', 'no-answer', t('no_note_answer')), sourceBox(n.source));
+  } else {
+    const body = el('section', 'answer-body');
+    body.append(el('h2', 'answer-head', t('note_answer')), markdown(n.body), sourceBox(n.source));
+    reading.append(button(t('show_answer'), 'reveal button primary', () => setReveal(true)), body);
+    setReveal(state.revealed);
+  }
+  if (n.questions.length) {
+    const box = el('section', 'linked');
+    box.append(el('h3', '', t('asked_in', { n: n.questions.length })));
+    const items = el('ul', 'linked-list');
+    for (const q of n.questions) {
+      const entry = button('', 'linked-item', () => jump('bank', q.id));
+      const meta = el('span', 'question-meta');
+      meta.append(el('span', '', t('seen', { n: q.frequency })), el('span', '', t('relation_' + q.relation)));
+      if (q.answered) meta.append(el('span', 'has-answer', '✓ ' + t('status_answered')));
+      entry.append(el('span', 'linked-title', q.canonical), meta);
+      const li = el('li');
+      li.append(entry);
+      items.append(li);
+    }
+    box.append(items);
+    reading.append(box);
+  }
+}
+
+function sourceBox(source) {
+  // The collection's own answer is quoted as published; say where it came from.
+  const box = el('p', 'note-source');
+  box.append(el('strong', '', t('note_source') + '：'),
+             document.createTextNode([source.collection, source.chapter, t('source_line', { file: source.file, line: source.line })].join(' › ')));
+  const extra = [source.origin, t('imported', { d: date(source.imported_at) })].filter(Boolean).join(' · ');
+  if (extra) box.append(el('small', '', extra));
+  return box;
+}
+
+function linkedNotes(notes) {
+  const box = el('section', 'linked');
+  box.append(el('h3', '', t('related_notes', { n: notes.length })));
+  const items = el('ul', 'linked-list');
+  for (const n of notes) {
+    const entry = button('', 'linked-item', () => jump('notes', n.id));
+    const meta = el('span', 'question-meta');
+    meta.append(el('span', '', n.where), el('span', '', t('relation_' + n.relation)));
+    if (n.marked) meta.append(el('span', 'mark', t('marked')));
+    entry.append(el('span', 'linked-title', n.title), meta);
+    const li = el('li');
+    li.append(entry);
+    items.append(li);
+  }
+  box.append(items);
+  return box;
+}
+
+function reload(reset = false) {
+  return state.mode === 'notes' ? loadNotes(reset) : loadLibrary(reset);
+}
+
+function setMode(mode, keepReader = false) {
+  state.mode = mode;
+  store('ibank-mode', mode);
+  document.body.classList.toggle('notes-mode', mode === 'notes');
+  for (const tab of document.querySelectorAll('[data-mode]')) tab.setAttribute('aria-selected', String(tab.dataset.mode === mode));
+  $('search').value = '';
+  $('search').placeholder = t(mode === 'notes' ? 'search_notes' : 'search');
+  $('chapter-intro').hidden = true;
+  if (!keepReader) closeReader();
+  return reload(true);
+}
+
+async function jump(mode, id) {
+  // From a question to its notes and back; the list behind switches too, the reader stays open.
+  if (state.mode !== mode) await setMode(mode, true);
+  openQuestion(id);
+}
+
+async function loadNotes(reset = false) {
+  const generation = ++state.load;
+  if (reset) { state.offset = 0; state.questions = []; }
+  $('question-list').setAttribute('aria-busy', 'true');
+  message('error', '');
+  try {
+    const f = state.notes;
+    const query = new URLSearchParams({ offset: state.offset, limit: state.limit, sort: f.sort });
+    // A search looks through every collection; the chosen chapter comes back when the search is cleared.
+    const words = $('search').value.trim();
+    if (words) query.set('query', words);
+    if (f.collection && !words) query.set('collection', f.collection);
+    if (f.collection && f.chapter !== '' && !words) query.set('chapter', f.chapter);
+    if (f.marked) query.set('marked', '1');
+    if (f.asked) query.set('asked', '1');
+    const data = await api('/api/notes?' + query);
+    if (generation !== state.load) return;
+    state.notesData = data;
+    state.ids = data.ids;
+    state.questions = state.offset ? [...state.questions, ...data.notes] : data.notes;
+    renderNoteFilters(data);
+    $('result-count').textContent = t('notes_count', { n: data.total });
+    renderNoteList();
+    offerContinue();
+    if (state.current && !state.ids.includes(state.current) && wide.matches) closeReader();
+    else updateNav();
+  } catch (error) {
+    if (generation === state.load) message('error', error.message || t('connection'));
+  } finally {
+    if (generation === state.load) $('question-list').setAttribute('aria-busy', 'false');
+  }
+}
+
+function pickNotes(changes) {
+  if ('collection' in changes || 'chapter' in changes) $('search').value = '';
+  Object.assign(state.notes, changes);
+  store('ibank-notes', state.notes);
+  loadNotes(true);
+}
+
+function renderNoteFilters(data) {
+  const searching = Boolean($('search').value.trim());
+  const f = searching ? { ...state.notes, collection: '', chapter: '' } : state.notes;
+  const current = data.collections.find(c => c.name === f.collection);
+  // Phones: a row of collections and, inside one, a row of its chapters.
+  const collections = $('collections');
+  collections.replaceChildren();
+  for (const item of [{ name: '', title: t('notes_all'), total: data.summary.notes }, ...data.collections]) {
+    const chip = button('', 'chip' + (f.collection === item.name ? ' active' : ''), () => pickNotes({ collection: item.name, chapter: '' }));
+    chip.append(el('span', '', item.title), el('small', '', String(item.total)));
+    chip.setAttribute('aria-pressed', String(f.collection === item.name));
+    collections.append(chip);
+  }
+  const groups = $('groups');
+  groups.replaceChildren();
+  groups.hidden = !current;
+  if (current) {
+    for (const chapter of [{ index: '', title: t('all_chapters'), count: current.total }, ...current.chapters]) {
+      const active = String(f.chapter) === String(chapter.index);
+      const chip = button('', 'chip' + (active ? ' active' : ''), () => pickNotes({ chapter: String(chapter.index) }));
+      chip.append(el('span', '', chapter.title), el('small', '', String(chapter.count)));
+      chip.setAttribute('aria-pressed', String(active));
+      groups.append(chip);
+    }
+    groups.querySelector('.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  }
+  const chapter = current && f.chapter !== '' ? current.chapters[Number(f.chapter)] : null;
+  $('chapter-intro').textContent = chapter?.intro ? chapter.intro.replace(/^\s*>\s?/gm, '').replace(/\*\*/g, '') : '';
+  $('chapter-intro').hidden = !chapter?.intro;
+  for (const [id, on] of [['marked-only', f.marked], ['asked-only', f.asked], ['asked-sort', f.sort === 'asked']]) $(id).setAttribute('aria-pressed', String(on));
+  // Wide screens: the sidebar lists every collection with its chapters.
+  for (const [key, label, value] of [['total', 'stat_notes', data.summary.notes], ['answered', 'stat_marked', data.summary.marked], ['topics', 'stat_asked', data.summary.asked]]) {
+    $(`stat-${key}`).textContent = value;
+    $(`stat-${key}-label`).textContent = t(label);
+  }
+  const side = $('side-notes');
+  side.replaceChildren();
+  const entry = (label, count, active, action, cls = '') => {
+    const node = button('', 'side-item' + cls + (active ? ' active' : ''), action);
+    node.append(el('span', '', label), el('small', '', count === undefined ? '' : String(count)));
+    side.append(node);
+  };
+  side.append(el('p', 'side-title', t('mode_notes')));
+  entry(t('notes_all'), data.summary.notes, !f.collection && !f.marked && !f.asked, () => pickNotes({ collection: '', chapter: '', marked: false, asked: false }));
+  entry(t('marked_only'), data.summary.marked, f.marked, () => pickNotes({ marked: !f.marked }));
+  entry(t('asked_only'), data.summary.asked, f.asked, () => pickNotes({ asked: !f.asked }));
+  for (const c of data.collections) {
+    side.append(el('p', 'side-title', c.title));
+    entry(t('all_chapters'), c.total, f.collection === c.name && f.chapter === '', () => pickNotes({ collection: c.name, chapter: '' }));
+    for (const ch of c.chapters) {
+      entry(ch.title, ch.count, f.collection === c.name && String(f.chapter) === String(ch.index),
+            () => pickNotes({ collection: c.name, chapter: String(ch.index) }), ' side-sub');
+    }
+  }
+}
+
+function renderNoteList() {
+  const list = $('question-list');
+  list.replaceChildren();
+  for (const n of state.questions) {
+    const item = el('li');
+    const row = button('', 'question' + (state.current === n.id ? ' current' : ''), () => openQuestion(n.id, true));
+    row.dataset.id = n.id;
+    const meta = el('span', 'question-meta');
+    meta.append(el('span', '', n.group || n.chapter_title));
+    if (n.marked) meta.append(el('span', 'mark', t('marked')));
+    if (n.asked) meta.append(el('span', 'has-answer', t('asked_times', { n: n.asked })));
+    row.append(el('span', 'question-title', n.title), meta);
+    item.append(row);
+    list.append(item);
+  }
+  if (!state.questions.length) list.append(el('li', 'empty', t('empty_notes')));
+  $('more').hidden = state.questions.length >= (state.notesData?.total || 0);
 }
 
 // ---------------------------------------------------------------- human review
@@ -827,15 +1201,24 @@ function closePractice() {
 // ---------------------------------------------------------------- events
 
 let debounce;
-$('search').addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(() => loadLibrary(true), 250); });
+$('search').addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(() => reload(true), 250); });
 $('answered-only').addEventListener('click', () => {
   const on = $('answered-only').getAttribute('aria-pressed') !== 'true';
   $('answered-only').setAttribute('aria-pressed', String(on));
   store('ibank-answered-only', on);
   loadLibrary(true);
 });
-$('more').addEventListener('click', () => { state.offset = state.questions.length; loadLibrary(); });
-$('continue').addEventListener('click', () => { const last = stored('ibank-last', null); if (last) openQuestion(last.id, true); });
+$('more').addEventListener('click', () => { state.offset = state.questions.length; reload(); });
+$('continue').addEventListener('click', () => { const last = stored(lastKey(), null); if (last) openQuestion(last.id, true); });
+for (const tabs of [$('modes'), $('side-modes')]) {
+  tabs.addEventListener('click', event => {
+    const tab = event.target.closest('[data-mode]');
+    if (tab && tab.dataset.mode !== state.mode) setMode(tab.dataset.mode);
+  });
+}
+$('marked-only').addEventListener('click', () => pickNotes({ marked: !state.notes.marked }));
+$('asked-only').addEventListener('click', () => pickNotes({ asked: !state.notes.asked }));
+$('asked-sort').addEventListener('click', () => pickNotes({ sort: state.notes.sort === 'asked' ? 'order' : 'asked' }));
 $('open-filters').addEventListener('click', () => {
   if (roomy.matches) $('inline-filters').hidden = !$('inline-filters').hidden;
   else $('filter-dialog').showModal();
@@ -876,6 +1259,7 @@ $('refresh').addEventListener('click', async () => {
   $('menu').hidden = true;
   state.cache.clear();
   await loadLibrary(true);
+  if (state.mode === 'notes') await loadNotes(true);
   if ($('error').hidden) toast(t('reloaded'));
 });
 $('logout').addEventListener('click', async () => { try { await api('/api/logout', {}); } finally { location.reload(); } });
@@ -949,6 +1333,16 @@ $('think-first').checked = stored('ibank-think-first', false);
 $('side-think-first').checked = $('think-first').checked;
 placeFilters();
 $('answered-only').setAttribute('aria-pressed', String(stored('ibank-answered-only', false)));
+state.notes = { ...state.notes, ...stored('ibank-notes', {}) };
+state.mode = openOnLoad ? (isNote(openOnLoad) ? 'notes' : 'bank') : stored('ibank-mode', 'bank') === 'notes' ? 'notes' : 'bank';
+document.body.classList.toggle('notes-mode', state.mode === 'notes');
+for (const tab of document.querySelectorAll('[data-mode]')) tab.setAttribute('aria-selected', String(tab.dataset.mode === state.mode));
 closeReader();
 offerResume();
-loadLibrary(true).then(() => { if (openOnLoad) openQuestion(openOnLoad, true); });
+loadLibrary(true)
+  .then(() => {
+    if (state.mode !== 'notes') return;
+    $('search').placeholder = t('search_notes');
+    return loadNotes(true);
+  })
+  .then(() => { if (openOnLoad) openQuestion(openOnLoad, true); });

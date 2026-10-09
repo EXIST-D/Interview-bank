@@ -4,9 +4,16 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.15.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.16.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## What's new: 1.15 reading and practice online, on a phone or a computer
+## What's new: 1.16 a 八股 notes section, linked to your own questions
+
+- **Import 八股 collections:** `notes import` reads a folder of Markdown study notes (one file per chapter, `##` headings as questions). The collection's answers are kept verbatim, each with its source (collection, chapter, file and line); 🔴 / ⭐ in a heading marks a key question. Notes never count as interview occurrences and do not touch dedupe or sourced answers.
+- **Linked both ways:** the agent judges which notes answer each interview question (same question / related topic). In the reader, a question lists its related notes, and a note lists how interviews asked it and how often; one tap jumps between them.
+- **A notes section in the Web reader:** a switch between interview questions and notes; chapters in order, with key-only, asked-only and most-asked views; lists, tables, quotes and code in answers render properly, on a phone and a computer.
+- Server sync and daily backups include the notes (`collections/`). See [notes](skills/interview-bank/references/notes.md).
+
+## 1.15 reading and practice online, on a phone or a computer
 
 - **A Web reader redesigned for short sessions:** on a phone, a list and a full-screen reader with previous/next at the bottom, swipe and the back gesture; on a computer, three columns (navigation, list, reader) with ←/→. Each answer lists its key points with links to the sources behind them; an optional think-first mode hides answers.
 - **On your own server:** the read-only reader can sit behind your own HTTPS server with its own login page (hashed passwords, 14-day sessions, lockout after repeated failures); `--banks-dir` gives several people one account and one bank each. `tools/deploy/sync.sh` copies the bank there from your computer (no screenshots), with daily verified backups.
@@ -176,7 +183,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 ## Status and plans
 
-**v1.15.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
+**v1.16.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
 
 **Not implemented yet:**
 
@@ -189,7 +196,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 **Other limits:** review queues are generated on demand with no background reminders; exact token and cost figures depend on the host; splitting an arbitrary historical merge is not supported, only undoing the latest eligible operation.
 
-**Verification:** v1.15.0 passes 308 automated tests in CI (Windows, macOS and Linux; Python 3.10–3.13), runs them again in the legacy snapshot format, and adds lint and a packaged-install check; run them with `python -B -m unittest discover -s tests`. Evaluation results and host checks are in [evals](evals/README.md): dedupe retrieval recall@10 is 1.00; blind dedupe judgments made 0 % false merges and 3.4 % missed merges (Opus and Sonnet); blind answers scored 1.7 / 2 from a separate judge with no unsupported claims; on Claude Code the trigger suite passes with Sonnet, while Haiku's recall (0.73–0.80) is below the gate. Extracted content and reference answers still need checking against the original material, sources and scope.
+**Verification:** v1.16.0 passes 315 automated tests in CI (Windows, macOS and Linux; Python 3.10–3.13), runs them again in the legacy snapshot format, and adds lint and a packaged-install check; run them with `python -B -m unittest discover -s tests`. Evaluation results and host checks are in [evals](evals/README.md): dedupe retrieval recall@10 is 1.00; blind dedupe judgments made 0 % false merges and 3.4 % missed merges (Opus and Sonnet); blind answers scored 1.7 / 2 from a separate judge with no unsupported claims; on Claude Code the trigger suite passes with Sonnet, while Haiku's recall (0.73–0.80) is below the gate. Extracted content and reference answers still need checking against the original material, sources and scope.
 
 The repository contains the Skill, tests, evaluations and development tools, documentation, license and the README image. Personal material, banks, research ledgers and local environments are not published; test and evaluation data are synthetic.
 

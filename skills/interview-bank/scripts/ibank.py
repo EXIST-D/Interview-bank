@@ -205,6 +205,8 @@ def parser():
     add_media_parsers(sub, common)
     from ibank_core.portability import add_parsers as add_portability_parsers
     add_portability_parsers(sub, common)
+    from ibank_core.notes import add_parsers as add_notes_parsers
+    add_notes_parsers(sub, common)
     return root
 
 
@@ -236,6 +238,9 @@ def dispatch(args):
     if args.command in ("media", "media-attach", "media-task", "media-transcribe", "web-intake"):
         from ibank_core.media import dispatch as media_dispatch
         return media_dispatch(bank, args)
+    if args.command == "notes":
+        from ibank_core.notes import dispatch as notes_dispatch
+        return notes_dispatch(bank, args)
     from ibank_core.advanced_cli import COMMANDS, dispatch as advanced_dispatch
     if args.command in COMMANDS:
         return advanced_dispatch(bank, args)

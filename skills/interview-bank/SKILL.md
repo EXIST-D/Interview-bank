@@ -4,7 +4,7 @@ description: Build and maintain a personal interview question bank (面试题库
 license: MIT
 metadata:
   author: EXIST-D
-  version: "1.15.0"
+  version: "1.16.0"
   repository: https://github.com/EXIST-D/Interview-bank
 ---
 
@@ -54,6 +54,7 @@ Prepare the JSON yourself; never ask the user to write it.
 | keep a bank over time, protect edits, recover, free space | [maintenance](references/maintenance.md) | `migrate`, `backup`, `policy`, `workflow`, `undo`, `gc` |
 | prepare for a role or a JD | [study sets](references/studysets.md) | `studyset` |
 | review weak questions or run a mock interview | [practice](references/practice.md) | `study`, `interview turn`, `interview review` |
+| study 八股 notes beside the questions | [notes](references/notes.md) | `notes` |
 | browse, practise or review in a browser | [local Web](references/web.md) | `web` |
 | set up a new host or check its tools | [portability](references/portability.md) | `capabilities`, `media-plan` |
 
@@ -61,16 +62,15 @@ Prepare the JSON yourself; never ask the user to write it.
 
 intake → extraction → classification → dedupe → commit → answers for every included question → export.
 Research each canonical question once, in batches of 5–10 with a ledger of done, blocked and remaining IDs;
-keep the user's filters throughout. A report with pending answers is not a finished answered delivery.
+keep the user's filters throughout. A report with pending answers is not finished.
 
 ## Running the CLI
 
-- Python 3.10+ (older interpreters are refused, with a hint on finding a newer one such as `python3.12`).
-  Core commands use only the standard library.
+- Python 3.10+ (older ones are refused with a hint). Core commands use only the standard library.
 - Resolve `scripts/ibank.py` to its absolute path, shown here as `<cli>`; run `python -B <cli> … --json`.
 - Bank: `--bank`, else `INTERVIEW_BANK_HOME`, else the nearest `interview-bank/` up to the repository root,
   else `./interview-bank`. Create a bank only when the user means a new one (`init --bank <dir>`).
-- Start with `doctor --bank <bank> --json`. Use IDs exactly as returned; never invent task or question IDs.
+- Start with `doctor --bank <bank> --json`. Use IDs exactly as returned; never invent them.
 - Writes return a `run_id`; inspect the result, then `commit --run <id>`. Composite commands
   (`ingest finalize`, `answer --commit`, `interview turn/review`) commit only when there are no review items.
   `ingest finalize --defer-review` commits the rest and leaves uncertain merges to the user (Web 合并裁决).

@@ -35,6 +35,8 @@ See [portability](portability.md) to check a new host.
   audited canonical rewrites, user decisions on uncertain merges in the Web reader, reversible report exclusions, problem links.
 - Answers: source-backed versions with per-key-point evidence and optional verified quotes, age- and revision-based staleness with
   `answer-recheck`, optional practice depth (spoken answer, follow-ups, pitfalls), optional link checks.
+- 八股 notes: Markdown study-note collections imported verbatim with their source, key marks and chapters; agent-judged links
+  to interview questions (`notes`), browsable in the Web reader; never counted as occurrences.
 - Output: two Markdown editions (Chinese or English) with a JSON sidecar, JSON/JSONL/CSV/viewer/Anki exports, compact size-bounded
   `--json` output with question cards and paging, `error_type` and `hint` on errors.
 - Personal state (V2): verified backup migration, field protection and never-merge rules, durable research workflows, saved topics and JD

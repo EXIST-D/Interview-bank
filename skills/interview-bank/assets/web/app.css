@@ -856,6 +856,189 @@ details > :last-child {
   font-size: 14px;
 }
 
+/* ------------------------------------------------------------ notes (八股): section switch, collections, Markdown answers */
+
+body.notes-mode .bank-only, body:not(.notes-mode) .notes-only {
+  display: none !important;
+}
+
+.modes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  margin: 2px 16px 10px;
+  padding: 3px;
+  border-radius: 11px;
+  background: var(--line);
+}
+
+.modes button {
+  height: 32px;
+  border-radius: 9px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 550;
+}
+
+.modes button[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 2px #0000001a;
+}
+
+.toggles {
+  display: flex;
+  gap: 6px;
+}
+
+.chapter-intro {
+  margin: 0 16px 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 13px;
+  white-space: pre-line;
+}
+
+.mark {
+  color: var(--amber);
+}
+
+.tag.mark {
+  background: var(--amber-soft);
+  color: var(--amber);
+}
+
+.tag.asked {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
+.md h3 {
+  margin: 18px 0 8px;
+  font-size: 16px;
+}
+
+.md h4 {
+  margin: 14px 0 6px;
+  font-size: 15px;
+}
+
+.md ol {
+  margin: 0 0 10px;
+  padding-left: 1.4em;
+}
+
+.md li > ul, .md li > ol {
+  margin: 4px 0;
+}
+
+.md li > p {
+  margin: 4px 0;
+}
+
+.md blockquote {
+  margin: 10px 0;
+  padding: 8px 12px;
+  border-left: 3px solid var(--blue);
+  border-radius: 0 10px 10px 0;
+  background: var(--blue-soft);
+  font-size: 15px;
+}
+
+.md blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.md hr {
+  margin: 16px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin: 8px 0 12px;
+}
+
+.md table {
+  border-collapse: collapse;
+  min-width: 100%;
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.md th, .md td {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.md th {
+  background: var(--canvas);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.note-source {
+  margin: 16px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--canvas);
+  color: var(--muted);
+  font-size: 12.5px;
+  word-break: break-word;
+}
+
+.note-source small {
+  display: block;
+  font-size: 12px;
+}
+
+.linked {
+  margin-top: 22px;
+}
+
+.linked h3 {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.linked-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.linked-list > li + li {
+  border-top: 1px solid var(--line);
+}
+
+.linked-item {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  padding: 11px 14px;
+  text-align: left;
+}
+
+.linked-item:hover {
+  background: var(--canvas);
+}
+
+.linked-title {
+  font-size: 14px;
+  font-weight: 550;
+  line-height: 1.5;
+}
+
 /* ------------------------------------------------------------ wide screens: list and reader side by side */
 
 @media (min-width: 900px) {
@@ -1012,6 +1195,7 @@ details > :last-child {
 
   .side-list {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: 1px;
   }
 
@@ -1042,6 +1226,26 @@ details > :last-child {
     font-size: 11px;
     font-weight: 400;
     font-variant-numeric: tabular-nums;
+  }
+
+  .side-sub {
+    padding-left: 18px;
+  }
+
+  .side-modes {
+    margin: 0 4px 6px;
+  }
+
+  .library .modes {
+    display: none;
+  }
+
+  body.notes-mode .library .search {
+    margin-right: 16px;
+  }
+
+  .sidebar .side-title:first-child {
+    margin-top: 4px;
   }
 
   .side-groups .side-item span {

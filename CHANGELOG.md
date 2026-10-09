@@ -2,6 +2,26 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.16.0] - 2026-10-09
+
+A 八股 notes section beside the bank's own questions. Data stays V1/V2; no migration is needed.
+
+### Added
+- `notes import|list|search|show|remove`: import a folder of Markdown study notes as a collection (one file per chapter,
+  `##` headings as questions, `###` under a grouping `##`, 🔴/⭐ as key marks, long chapter openings as 导读 notes).
+  Answers are kept verbatim with their source; notes never become occurrences. Re-imports keep the IDs of unchanged
+  headings. Stored in `collections/<name>.json`.
+- `notes link-candidates` and `notes link`: the agent judges which notes answer or cover each interview question
+  (`answers` / `covers`); links live in `collections/links.jsonl`, and judged questions without links are remembered
+  for `--unlinked`.
+- Web reader: a 面经 / 八股 switch; collections and chapters (chips on a phone, the sidebar on wide screens); key-only,
+  asked-only and most-asked views; Markdown answers with lists, tables, quotes and code; the source under every
+  answer; "相关八股" under a question and "面经里这样问" under a note, jumping both ways. API: `/api/notes`, `/api/note`.
+- references/notes.md.
+
+### Changed
+- Backups and `tools/deploy/sync.sh` include `collections/`.
+
 ## [1.15.0] - 2026-10-08
 
 Optional reading on a phone through the user's own server. Data stays V1/V2; no migration is needed.
