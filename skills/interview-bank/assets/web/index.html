@@ -13,6 +13,7 @@
 <div class="app">
   <aside id="sidebar" class="sidebar" aria-label="导航" data-i18n-aria="sidebar">
     <a class="brand" href="./" aria-label="Interview Bank"><span class="brand-mark" aria-hidden="true">iB</span><span><span data-i18n="titles_all">我的题库</span><small id="account" class="account"></small></span></a>
+    <button id="hide-side" class="icon-button side-hide" type="button" aria-label="收起导航" data-i18n-aria="hide_side">«</button>
     <div class="overview">
       <div><strong id="stat-total">—</strong><small id="stat-total-label" data-i18n="stat_total">题目</small></div>
       <div><strong id="stat-answered">—</strong><small id="stat-answered-label" data-i18n="stat_answered">有答案</small></div>
@@ -50,6 +51,7 @@
   </aside>
   <section class="library" aria-label="题目列表" data-i18n-aria="library">
     <header class="topbar">
+      <button id="show-side" class="icon-button show-side" type="button" aria-label="展开导航" data-i18n-aria="show_side">»</button>
       <a class="brand" href="./" aria-label="Interview Bank"><span class="brand-mark" aria-hidden="true">iB</span><span class="bank-name" data-i18n="titles_all">我的题库</span></a>
       <div class="topbar-actions">
         <button id="open-filters" class="chip-button bank-only" type="button"><span data-i18n="filters">筛选</span> <span id="filter-count" class="count-dot" hidden></span></button>
@@ -102,9 +104,12 @@
 
   <section id="reader" class="reader" aria-label="阅读" data-i18n-aria="reader" hidden>
     <header class="reader-bar">
-      <button id="back" class="icon-button" type="button" aria-label="返回列表" data-i18n-aria="back">‹</button>
+      <span class="reader-left">
+        <button id="back" class="icon-button" type="button" aria-label="返回列表" data-i18n-aria="back">‹</button>
+        <button id="toggle-list" class="chip-button wide-up" type="button" aria-keyshortcuts="L">收起列表</button>
+      </span>
       <span id="position" class="position"></span>
-      <span class="reader-actions"><button id="text-size" class="chip-button" type="button" aria-label="字号" data-i18n-aria="text_size">Aa</button><button id="practise-current" class="chip-button wide-only bank-only" type="button" data-i18n="practise_one">练习这一题</button><button id="toggle-answer" class="chip-button" type="button" data-i18n="hide_answer">隐藏答案</button></span>
+      <span class="reader-actions"><button id="focus" class="chip-button wide-up" type="button" aria-pressed="false" aria-keyshortcuts="F">专注</button><button id="text-size" class="chip-button" type="button" aria-label="字号" data-i18n-aria="text_size">Aa</button><button id="practise-current" class="chip-button wide-only bank-only" type="button" data-i18n="practise_one">练习这一题</button><button id="toggle-answer" class="chip-button" type="button" data-i18n="hide_answer">隐藏答案</button></span>
     </header>
     <div class="read-progress" aria-hidden="true"><span id="read-progress"></span></div>
     <article id="reading" class="reading" tabindex="-1"></article>
