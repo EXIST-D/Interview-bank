@@ -2,6 +2,12 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.16.1] - 2026-10-10
+
+### Added
+- A link to the project on GitHub in the Web reader: an icon at the top of the sidebar, a link at the foot of the
+  sidebar and in the phone menu, and one under the login card of a hosted reader.
+
 ## [1.16.0] - 2026-10-09
 
 A 八股 notes section beside the bank's own questions. Data stays V1/V2; no migration is needed.

@@ -1217,6 +1217,47 @@ body[data-size="2"] .reading {
   font-size: 13px;
 }
 
+/* ------------------------------------------------------------ link to the project on GitHub */
+
+.repo-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.repo-link:hover {
+  color: var(--ink);
+}
+
+.github-mark {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
+}
+
+.menu > .repo-link {
+  padding: 11px 12px;
+  border-radius: 9px;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.menu > .repo-link:hover {
+  background: var(--canvas);
+}
+
+.side-foot .repo-link {
+  justify-self: start;
+  margin-top: 4px;
+}
+
+.login-repo {
+  font-size: 12px;
+}
+
 /* ------------------------------------------------------------ wide screens: list and reader side by side */
 
 @media (min-width: 900px) {
@@ -1292,7 +1333,7 @@ body[data-size="2"] .reading {
 
 /* ------------------------------------------------------------ sidebar and inline filters (three columns from 1100px) */
 
-.sidebar, .wide-only, .wide-up, .side-hide, .show-side {
+.sidebar, .wide-only, .wide-up, .side-hide, .side-repo, .show-side {
   display: none;
 }
 
@@ -1541,7 +1582,20 @@ body[data-size="2"] .reading {
   }
 
   .sidebar .brand {
-    padding-right: 40px;
+    padding-right: 76px;
+  }
+
+  .side-repo {
+    position: absolute;
+    top: 14px;
+    right: 44px;
+    display: inline-grid;
+    place-items: center;
+    color: var(--muted);
+  }
+
+  .side-repo:hover {
+    color: var(--ink);
   }
 
   /* Navigation folded: its section switch, chips and menu come back above the list. */
@@ -1627,6 +1681,8 @@ body[data-size="2"] .reading {
 .login-shell {
   display: grid;
   place-items: center;
+  align-content: center;
+  gap: 18px;
   min-height: 100vh;
   min-height: 100dvh;
   padding: 32px 16px;
