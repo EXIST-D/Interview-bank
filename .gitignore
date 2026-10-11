@@ -12,5 +12,8 @@ dist/
 # A bank created by running the CLI from the repository root; personal data never belongs in git
 /interview-bank/
 
+# Private development plans and iteration records
+/docs/
+
 # OS noise
 .DS_Store

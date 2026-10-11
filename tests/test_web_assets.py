@@ -43,7 +43,7 @@ def text_tables(script):
 class WebAssets(unittest.TestCase):
     def setUp(self):
         self.html = (WEB / "index.html").read_text(encoding="utf-8")
-        self.script = (WEB / "app.js").read_text(encoding="utf-8")
+        self.script = (WEB / "app.js").read_text(encoding="utf-8") + '\n' + (WEB / "notes-ui.js").read_text(encoding="utf-8")
         self.markup = Markup()
         self.markup.feed(self.html)
 
@@ -62,8 +62,20 @@ class WebAssets(unittest.TestCase):
         zh, en = text_tables(self.script)
         self.assertEqual(sorted(zh ^ en), [])
         used = set(re.findall(r"\bt\('([a-z_0-9]+)'", self.script)) | self.markup.keys
-        dynamic = {"status_", "rating_", "titles_", "all_", "relation_", "stat_", "size_", "theme_"}
+        dynamic = {"status_", "rating_", "titles_", "all_", "relation_", "stat_", "size_", "theme_",
+                   "notes_learning_", "notes_kind_", "notes_verification_", "notes_set_", "notes_warning_"}
         self.assertEqual(sorted(k for k in used - zh if not k.startswith(tuple(dynamic))), [])
+
+    def test_notes_labels_cover_all_states_and_script_order(self):
+        zh, _ = text_tables(self.script)
+        for prefix, values in (
+            ('notes_kind_', ('material', 'qa', 'knowledge', 'case', 'reading', 'info')),
+            ('notes_verification_', ('reference', 'verified', 'needs_review', 'outdated')),
+            ('notes_learning_', ('unread', 'read', 'review', 'mastered')),
+            ('notes_warning_', ('reference', 'verified', 'needs_review', 'outdated')),
+        ):
+            self.assertTrue({prefix + value for value in values} <= zh)
+        self.assertLess(self.html.index('src="notes-ui.js"'), self.html.index('src="app.js"'))
 
     def test_stylesheet_is_readable_and_has_dark_mode(self):
         css = (WEB / "app.css").read_text(encoding="utf-8")

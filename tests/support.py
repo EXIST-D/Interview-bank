@@ -34,7 +34,8 @@ class Bank:
             source = self.root / f"payload-{uuid.uuid4().hex}.json"
             source.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
             argv += ["--input", str(source)]
-        proc = subprocess.run(argv, capture_output=True, text=True, encoding="utf-8", env=env)
+        proc = subprocess.run(argv, input="", capture_output=True,
+                              text=True, encoding="utf-8", env=env)
         if check and proc.returncode != 0:
             raise AssertionError(f"{args} exited {proc.returncode}: {proc.stderr or proc.stdout}")
         return proc

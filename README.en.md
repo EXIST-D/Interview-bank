@@ -4,19 +4,17 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.16.1**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.17.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## What's new: 1.16 a 八股 notes section and a better Web reader
+## What's new: 1.17 source shelves and knowledge directories
 
-- **Notes section (八股):** `notes import` reads a folder of collected public study notes in Markdown (one file per chapter, `##` headings as questions). Their answers are kept verbatim with their source (collection, chapter, file and line); 🔴 / ⭐ marks key questions. Notes never count as interview occurrences and do not touch dedupe or reference answers. See [notes](skills/interview-bank/references/notes.md).
-- **Linked to your own questions:** the agent judges which notes answer each interview question (same question / related topic). In the reader a question lists its related notes, and a note lists how interviews asked it and how often, one tap apart; "asked" and "most asked" views put the questions interviewers actually ask first.
-- **A better Web reader:** notes grouped by chapter with folding headers (collapse all for a table of contents); a peek at any answer from the list; read marks and chapter progress; a random pick; on a computer the navigation and the list fold away and Focus reads full-window; text size, a reading progress bar, light / dark themes. See [the Web reader](#the-web-reader-study-on-a-computer-or-a-phone).
-- Server sync and daily backups include the notes (`collections/`).
+- **Source overview:** separate cards with content counts, language, linked notes and this browser's reading progress. Source/license notices count separately.
+- **Two directories:** study a source by knowledge area and topic, or switch to its original chapters. Original answers, provenance and bidirectional interview links remain available.
+- **Explicit search scope:** current topic, current source or all sources, with tag, content-kind, verification and learning filters. Cross-source results retain their source labels.
+- **Source management:** author, license, version, dates and organization history. The agent previews and updates one source with `notes catalog` / `notes organize --preview`; digest checks guard against stale edits and metadata lives separately from original collections.
+- **Learning marks:** manually mark review/mastered, separately from content verification. They stay in this browser and do not sync across devices. Hosted readers remain read-only.
 
-## 1.15 reading online, on a phone or a computer
-
-- The Web page was redesigned for short sessions: a list and a full-screen reader on a phone, three columns on a computer; every key point of an answer links to the source behind it.
-- The read-only reader can run behind your own HTTPS server with its own login page, one bank per account and daily verified backups; `tools/deploy/` holds every template.
+See [notes](skills/interview-bank/references/notes.md). Updating the Skill never rewrites a personal bank; existing collections without knowledge mappings still use original chapters.
 
 ## Interface preview
 
@@ -66,13 +64,13 @@ Interview-bank/
 |---|---|
 | Intake | Screenshots, selected text, web page bodies, audio and video speech, SRT/VTT/TXT/JSON subtitles (including Bilibili and YouTube auto-captions); identical files never add frequency |
 | Extraction | The agent reads images or transcripts, keeping original wording, follow-up links, company/round/date; low confidence and contact details become review items |
-| Classification | 67 roles, 186 domains, 229 technologies, 83 industries; Chinese labels, aliases, multiple labels, hierarchical filters |
+| Classification | 68 roles, 186 domains, 235 technologies, 83 industries; Chinese labels, aliases, multiple labels, hierarchical filters |
 | Deduplication | Candidate retrieval (boilerplate removed, common English terms mapped) plus the agent's semantic judgment; uncertain pairs can go to the user in the Web reader |
 | Reference answers | Primary sources read and mapped per key point; optional verified quotes; `answer-recheck` for wording-only changes |
 | Reports | Two Markdown editions plus a JSON sidecar; JSON/JSONL/CSV/Anki exports; English or Chinese |
 | Maintenance | V2 personal state, field protection, never-merge rules, research workflows, undo, change-set runs, `gc`, standalone backup and restore |
 | Preparation | JD topics with coverage gaps, daily plan calendars, review queues (simple or FSRS), one-question-at-a-time mock interviews |
-| Notes (八股) | Import collected Markdown study notes with their answers and sources; agent-judged links to interview questions, both ways in the reader |
+| Notes (八股) | Separate sources, knowledge areas/topics and original chapters, tags/kinds/verification filters; original answers and sources; agent-judged interview links |
 | Web reader | Interview and notes sections, peek, read marks, random pick, folding chapters, focus reading; self-rated practice, human review, merge decisions; can run on your own server for a phone |
 
 ## Agent capabilities and requirements
@@ -143,7 +141,7 @@ Open the local Web reader; I want to review answers myself and settle the uncert
 
 The agent organises the bank; the Web page is for reading it. The page runs no AI and searches nothing online; it only reads your bank.
 
-- **Two sections:** *Interviews* holds the real questions you collected, most frequent first, with reference answers whose sources you can check; *Notes* holds the public study notes you collected, in chapter order, with their own answers and sources. The two link to each other.
+- **Two sections:** *Interviews* holds the real questions you collected, most frequent first, with reference answers whose sources you can check; *Notes* holds the public study notes you collected, in separate sources with knowledge or original chapter navigation, and their own answers and sources. The two link to each other.
 - **Made for spare minutes:** on a phone, a list and a full-screen reader with previous/next at the bottom or a swipe; a peek at any answer from the list; read marks and chapter progress; a random pick that prefers unread questions; Think first hides answers by default.
 - **Three columns on a computer:** navigation, list and reader. The navigation and the list fold away, and Focus lets the reader fill the window at a comfortable line length.
 - **Easy on the eyes:** three text sizes, a reading progress bar, light / dark / system themes, highlighted search words; tables, code, quotes and nested lists in long answers render properly. Read marks, folds, text size and theme stay in the browser.
@@ -199,7 +197,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 ## Status and plans
 
-**v1.16.1** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
+**v1.17.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
 
 **Not implemented yet:**
 
@@ -213,7 +211,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 **Other limits:** review queues are generated on demand with no background reminders; exact token and cost figures depend on the host; splitting an arbitrary historical merge is not supported, only undoing the latest eligible operation.
 
-**Verification:** v1.16.1 passes 315 automated tests in CI (Windows, macOS and Linux; Python 3.10–3.13), runs them again in the legacy snapshot format, and adds lint and a packaged-install check; run them with `python -B -m unittest discover -s tests`. Evaluation results and host checks are in [evals](evals/README.md): dedupe retrieval recall@10 is 1.00; blind dedupe judgments made 0 % false merges and 3.4 % missed merges (Opus and Sonnet); blind answers scored 1.7 / 2 from a separate judge with no unsupported claims; on Claude Code the trigger suite passes with Sonnet, while Haiku's recall (0.73–0.80) is below the gate. Extracted content and reference answers still need checking against the original material, sources and scope.
+**Verification:** v1.17.0 completed 325 regression tests on this Windows host (324 passed, one POSIX-only test skipped), 21 notes/compatibility tests on the Linux server, lint and a standalone package check. The CI configuration covers Windows, macOS and Linux × Python 3.10–3.13, plus the legacy snapshot format; run the suite with `python -B -m unittest discover -s tests`. Evaluation results and host checks are in [evals](evals/README.md): dedupe retrieval recall@10 is 1.00; blind dedupe judgments made 0 % false merges and 3.4 % missed merges (Opus and Sonnet); blind answers scored 1.7 / 2 from a separate judge with no unsupported claims; on Claude Code the trigger suite passes with Sonnet, while Haiku's recall (0.73–0.80) is below the gate. Extracted content and reference answers still need checking against the original material, sources and scope.
 
 The repository contains the Skill, tests, evaluations and development tools, documentation, license and the README image. Personal material, banks, research ledgers and local environments are not published; test and evaluation data are synthetic.
 

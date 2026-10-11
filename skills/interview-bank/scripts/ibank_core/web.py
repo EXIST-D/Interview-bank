@@ -25,13 +25,15 @@ from .studysets import select
 from .selection import apply_expression
 from .messages import group_title, label, language
 from . import notes as notebook
+from . import note_organization
 from .timestamps import parse_timestamp
 
 ASSETS = Path(__file__).resolve().parents[2] / 'assets' / 'web'
 FILTERS = {'query', 'domain', 'role', 'technology', 'company', 'industry', 'answer_status', 'group'}
 ANSWERED = ('source_backed', 'reviewed')
 VIEWS = {'all', 'due', 'weak', 'unseen'}
-NOTE_FILTERS = {'collection', 'chapter', 'query', 'marked', 'asked', 'sort', 'offset', 'limit'}
+NOTE_FILTERS = {'collection', 'chapter', 'query', 'marked', 'asked', 'sort', 'offset', 'limit',
+                'area', 'topic', 'tag', 'kind', 'verification', 'view'}
 
 
 def progress(data, rows):
@@ -192,6 +194,19 @@ class WebApp:
             found = [n for n in found if n['collection'] == params['collection']]
             if params.get('chapter', '') != '':
                 found = [n for n in found if str(n['chapter']) == params['chapter']]
+        scoped = found
+        for field in ('area', 'topic', 'verification'):
+            if params.get(field):
+                if field == 'verification':
+                    require(params[field] in note_organization.VERIFICATIONS, 'Unknown verification state')
+                found = [n for n in found if n['organization'][field] == params[field]]
+        if params.get('tag'):
+            found = [n for n in found if params['tag'] in n['organization']['tags']]
+        if params.get('kind'):
+            require(params['kind'] in (*note_organization.KINDS, 'study'), 'Unknown content kind')
+            found = [n for n in found if n['organization']['kind'] != 'info'] if params['kind'] == 'study' else [
+                n for n in found if n['organization']['kind'] == params['kind']]
+        require(params.get('view', 'original') in ('original', 'knowledge'), 'Unknown notes view')
         if params.get('query', '').strip():
             needle = params['query'].strip().casefold()
             found = [n for n in found if needle in n['title'].casefold()] + \
@@ -203,13 +218,22 @@ class WebApp:
         require(params.get('sort', 'order') in ('order', 'asked'), 'Unknown sort order')
         if params.get('sort') == 'asked':
             found = sorted(found, key=lambda n: -sum(q['frequency'] for q, _ in linked.get(n['id'], [])))
+        elif params.get('view') == 'knowledge' and not params.get('query', '').strip():
+            area_order = {(c['name'], a['id']): i for c in bundle['collections']
+                          for i, a in enumerate(c.get('organization', {}).get('areas', []))}
+            topic_order = {(c['name'], t['id']): i for c in bundle['collections']
+                           for a in c.get('organization', {}).get('areas', []) for i, t in enumerate(a['topics'])}
+            found = sorted(found, key=lambda n: (list(collections).index(n['collection']),
+                           area_order.get((n['collection'], n['organization']['area']), 999),
+                           topic_order.get((n['collection'], n['organization']['topic']), 999), n['order']))
         card = lambda n: notebook.note_card(n, collections[n['collection']], [q for q, _ in linked.get(n['id'], [])])
         return {
-            'collections': [{'name': c['name'], 'title': c['title'], 'origin': c.get('origin', ''), 'total': len(c['notes']),
-                             'chapters': [{'index': ch['index'], 'title': ch['title'], 'count': ch['notes'], 'intro': ch['intro']}
-                                          for ch in c['chapters']]} for c in bundle['collections']],
+            'collections': [note_organization.collection_card(c, linked) for c in bundle['collections']],
             'summary': {'notes': len(bundle['notes']), 'marked': sum(bool(n['marks']) for n in bundle['notes']),
                         'asked': sum(n['id'] in linked for n in bundle['notes'])},
+            'facets': {'tags': sorted({t for n in scoped for t in n['organization']['tags']}),
+                       'kinds': dict(Counter(n['organization']['kind'] for n in scoped)),
+                       'verification': dict(Counter(n['organization']['verification'] for n in scoped))},
             'total': len(found), 'offset': offset, 'limit': limit, 'ids': [n['id'] for n in found],
             'notes': [card(n) for n in found[offset:offset + limit]],
         }
@@ -359,7 +383,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(403, {'error': f'仅支持本机访问：请打开 Agent 提供的 http://127.0.0.1:{port}/ 链接。'})
         path = urlsplit(self.path).path
         assets = {'/': ('index.html', 'text/html; charset=utf-8'), '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
-                  '/app.css': ('app.css', 'text/css; charset=utf-8'), '/login.js': ('login.js', 'text/javascript; charset=utf-8')}
+                  '/app.css': ('app.css', 'text/css; charset=utf-8'), '/login.js': ('login.js', 'text/javascript; charset=utf-8'),
+                  '/notes-ui.js': ('notes-ui.js', 'text/javascript; charset=utf-8')}
         if path in assets and not post:
             name, mime = assets[path]
             if path == '/' and self.server.login and not self.user():

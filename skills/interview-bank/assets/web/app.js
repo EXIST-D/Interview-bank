@@ -64,6 +64,91 @@ const TEXT = {
     stat_marked: '重点', stat_asked: '面经考过', empty_notes: '没有符合条件的条目。', marked: '重点', asked_times: '面经考过 {n} 次',
     note_answer: '原文答案', no_note_answer: '原文没有给出答案。', note_source: '出处', source_line: '{file} 第 {line} 行',
     imported: '导入于 {d}', asked_in: '面经里这样问 · {n}', related_notes: '相关八股 · {n}',
+    notes_home_eyebrow: '个人学习资料',
+    notes_home_title: '八股资料库',
+    notes_home_hint: '按来源收藏，按知识学习。原文与出处始终保留。',
+    notes_search_all: '搜索全部来源…',
+    notes_search_all_hint: '搜索全部来源，结果保留各自出处。',
+    notes_home_summary: '{s} 个来源 · {n} 条学习资料 · {i} 条来源说明',
+    notes_source_count: '{n} 条学习资料',
+    notes_source_linked: '{n} 条资料关联面经',
+    notes_progress: '{r} / {n} 已读',
+    notes_continue: '继续阅读',
+    notes_start: '进入来源',
+    notes_sources: '来源总览',
+    notes_source_all: '全部来源',
+    notes_source_info: '资料信息',
+    notes_navigation: '资料目录',
+    notes_view: '目录方式',
+    notes_knowledge: '知识目录',
+    notes_original: '原书目录',
+    notes_original_chapter: '原章节',
+    notes_area: '领域',
+    notes_topic: '专题',
+    notes_area_all: '全部领域',
+    notes_topic_all: '全部专题',
+    notes_tags: '标签',
+    notes_tags_all: '全部标签',
+    notes_kind: '内容类型',
+    notes_kind_study: '全部学习资料',
+    notes_kind_material: '资料',
+    notes_kind_qa: '问答',
+    notes_kind_knowledge: '知识点',
+    notes_kind_case: '场景案例',
+    notes_kind_reading: '延伸阅读',
+    notes_kind_info: '来源与许可说明',
+    notes_verification: '核对状态',
+    notes_verification_all: '全部核对状态',
+    notes_verification_reference: '原文参考',
+    notes_verification_verified: '已记录核验',
+    notes_verification_needs_review: '待核对',
+    notes_verification_outdated: '待更新',
+    notes_learning: '学习状态',
+    notes_learning_all: '全部学习状态',
+    notes_learning_unread: '未读',
+    notes_learning_read: '已读',
+    notes_learning_review: '待复习',
+    notes_learning_mastered: '已掌握',
+    notes_local_hint: '学习状态保存在当前浏览器；资料核验状态单独记录。',
+    notes_search_scope: '搜索范围',
+    notes_scope_source: '当前来源',
+    notes_scope_topic: '当前专题',
+    notes_scope_all: '全部来源',
+    notes_source_author: '作者',
+    notes_source_license: '许可',
+    notes_source_version: '资料版本',
+    notes_source_language: '语言',
+    notes_source_imported: '原文导入',
+    notes_source_upstream_updated: '原资料更新',
+    notes_source_updated: '目录整理',
+    notes_unknown: '未提供',
+    notes_source_original: '原始资料',
+    notes_source_license_link: '原许可证',
+    notes_source_history: '目录更新记录',
+    notes_source_changed: '原资料已更新，目录映射需要重新核对。',
+    notes_no_history: '尚无目录更新记录。',
+    notes_history_item: '{a} · {c} 个章节规则 · {n} 个条目规则',
+    notes_history_directory: '整理知识目录',
+    notes_history_metadata: '更新资料信息',
+    notes_manage_hint: '资料更新与分类调整由 Agent 执行；原文、个人题目和面经关联分别保留。',
+    notes_license_full: '完整来源与许可说明',
+    notes_no_description: '保留原文与章节的学习资料。',
+    notes_other_sources: '其他来源',
+    notes_all_source: '本来源全部资料',
+    notes_stat_material: '学习资料',
+    notes_stat_sources: '来源',
+    notes_language_zh: '中文',
+    notes_language_en: '英文',
+    notes_language_mixed: '中英',
+    notes_set_review: '标记待复习',
+    notes_set_mastered: '标记已掌握',
+    notes_reset_learning: '清除学习标记',
+    notes_learning_saved: '学习标记已保存到当前浏览器',
+    notes_original_text: '原资料（参考）',
+    notes_warning_reference: '原资料仅作参考，尚未逐条核验；请结合版本与适用条件。',
+    notes_warning_verified: '已记录核对来源，仍请结合版本与适用条件。',
+    notes_warning_needs_review: '这条资料需要核对，暂时不要直接采用结论。',
+    notes_warning_outdated: '这条资料需要更新，请查看原文与版本条件。',
     relation_answers: '同一题', relation_covers: '相关知识点',
     repo: 'GitHub 开源仓库', random: '随机一题', random_hint: '优先未读', random_none: '当前列表是空的。', fold_all: '全部折叠', unfold_all: '全部展开',
     to_top: '回到顶部', text_size: '字号', size_0: '字号：标准', size_1: '字号：大', size_2: '字号：特大',
@@ -130,6 +215,91 @@ const TEXT = {
     stat_marked: 'Key', stat_asked: 'Asked', empty_notes: 'No notes match.', marked: 'Key', asked_times: 'Asked {n}×',
     note_answer: 'Answer in the collection', no_note_answer: 'The collection gives no answer.', note_source: 'Source', source_line: '{file}, line {line}',
     imported: 'imported {d}', asked_in: 'Asked in interviews · {n}', related_notes: 'Related notes · {n}',
+    notes_home_eyebrow: 'Your learning collection',
+    notes_home_title: 'Study library',
+    notes_home_hint: 'Collect by source. Learn by topic. Keep the original and its provenance.',
+    notes_search_all: 'Search all sources…',
+    notes_search_all_hint: 'Searching all sources; every result retains its provenance.',
+    notes_home_summary: '{s} sources · {n} learning entries · {i} source notices',
+    notes_source_count: '{n} learning entries',
+    notes_source_linked: '{n} notes linked to interviews',
+    notes_progress: '{r} / {n} read',
+    notes_continue: 'Continue reading',
+    notes_start: 'Browse source',
+    notes_sources: 'Source library',
+    notes_source_all: 'All sources',
+    notes_source_info: 'Source information',
+    notes_navigation: 'Source navigation',
+    notes_view: 'Navigation view',
+    notes_knowledge: 'Knowledge topics',
+    notes_original: 'Original chapters',
+    notes_original_chapter: 'Chapter',
+    notes_area: 'Area',
+    notes_topic: 'Topic',
+    notes_area_all: 'All areas',
+    notes_topic_all: 'All topics',
+    notes_tags: 'Tags',
+    notes_tags_all: 'All tags',
+    notes_kind: 'Content type',
+    notes_kind_study: 'All learning entries',
+    notes_kind_material: 'Material',
+    notes_kind_qa: 'Q&A',
+    notes_kind_knowledge: 'Knowledge',
+    notes_kind_case: 'Case study',
+    notes_kind_reading: 'Further reading',
+    notes_kind_info: 'Source and license',
+    notes_verification: 'Verification',
+    notes_verification_all: 'All verification states',
+    notes_verification_reference: 'Original reference',
+    notes_verification_verified: 'Verification recorded',
+    notes_verification_needs_review: 'Needs checking',
+    notes_verification_outdated: 'Needs updating',
+    notes_learning: 'Learning',
+    notes_learning_all: 'All learning states',
+    notes_learning_unread: 'Unread',
+    notes_learning_read: 'Read',
+    notes_learning_review: 'To review',
+    notes_learning_mastered: 'Mastered',
+    notes_local_hint: 'Learning stays in this browser. Content verification is recorded separately.',
+    notes_search_scope: 'Search scope',
+    notes_scope_source: 'Current source',
+    notes_scope_topic: 'Current topic',
+    notes_scope_all: 'All sources',
+    notes_source_author: 'Author',
+    notes_source_license: 'License',
+    notes_source_version: 'Source version',
+    notes_source_language: 'Language',
+    notes_source_imported: 'Imported',
+    notes_source_upstream_updated: 'Upstream updated',
+    notes_source_updated: 'Organization updated',
+    notes_unknown: 'Not supplied',
+    notes_source_original: 'Original source',
+    notes_source_license_link: 'Original license',
+    notes_source_history: 'Organization history',
+    notes_source_changed: 'The source changed; review its navigation mapping.',
+    notes_no_history: 'No organization changes recorded yet.',
+    notes_history_item: '{a} · {c} chapter rules · {n} entry rules',
+    notes_history_directory: 'Knowledge directory organized',
+    notes_history_metadata: 'Source information updated',
+    notes_manage_hint: 'An Agent updates sources and categories. Published text, personal questions and links remain separate.',
+    notes_license_full: 'Full source and license notice',
+    notes_no_description: 'Learning material with the original text and chapters.',
+    notes_other_sources: 'Other sources',
+    notes_all_source: 'All entries in this source',
+    notes_stat_material: 'Entries',
+    notes_stat_sources: 'Sources',
+    notes_language_zh: 'Chinese',
+    notes_language_en: 'English',
+    notes_language_mixed: 'Mixed',
+    notes_set_review: 'Mark for review',
+    notes_set_mastered: 'Mark mastered',
+    notes_reset_learning: 'Clear learning mark',
+    notes_learning_saved: 'Learning mark saved in this browser',
+    notes_original_text: 'Original material (reference)',
+    notes_warning_reference: 'Original reference, not individually verified. Check its version and conditions.',
+    notes_warning_verified: 'Verification sources recorded. Still check version and conditions.',
+    notes_warning_needs_review: 'This entry needs checking before you rely on its conclusions.',
+    notes_warning_outdated: 'This entry needs updating. Check the original and version conditions.',
     relation_answers: 'Same question', relation_covers: 'Related topic',
     repo: 'Open source on GitHub', random: 'Random pick', random_hint: 'unread first', random_none: 'The list is empty.', fold_all: 'Collapse all', unfold_all: 'Expand all',
     to_top: 'Back to top', text_size: 'Text size', size_0: 'Text: normal', size_1: 'Text: large', size_2: 'Text: larger',
@@ -154,7 +324,8 @@ function applyLanguage(code) {
   for (const node of document.querySelectorAll('[data-i18n-aria]')) node.setAttribute('aria-label', t(node.dataset.i18nAria));
   document.title = 'Interview Bank · ' + t('titles_all');
   $('search').placeholder = t(state.mode === 'notes' ? 'search_notes' : 'search');
-  applyTheme(stored('ibank-theme', 'auto'));
+  installNotesUI();
+applyTheme(stored('ibank-theme', 'auto'));
   applyLayout();
   offerResume();
 }
@@ -169,7 +340,8 @@ const state = {
   group: '', offset: 0, limit: 30, questions: [], ids: [], data: null, load: 0, detail: 0,
   current: null, revealed: true, cache: new Map(), round: null, merges: [],
   // 'bank': your interview questions; 'notes': 八股 collections. Both share the list and the reader.
-  mode: 'bank', notes: { collection: '', chapter: '', marked: false, asked: false, sort: 'order' }, notesData: null,
+  mode: 'bank', notes: { home: true, collection: '', chapter: '', area: '', topic: '', tag: '', kind: 'study',
+    verification: '', learning: 'all', view: 'knowledge', scope: 'source', marked: false, asked: false, sort: 'order' }, notesData: null,
 };
 const launch = new URLSearchParams(location.hash.slice(1));
 let token = launch.get('token');
@@ -449,7 +621,7 @@ function closeReader() {
   state.current = null;
   document.body.classList.remove('reading-open');
   $('reader').hidden = true;
-  $('empty-reader').hidden = !wide.matches;
+  $('empty-reader').hidden = !wide.matches || (state.mode === 'notes' && state.notes.home);
   updateNav();
   offerContinue();
 }
@@ -462,7 +634,15 @@ async function openQuestion(id, fromList = false) {
     const opening = !document.body.classList.contains('reading-open');
     state.current = q.id;
     state.revealed = !stored('ibank-think-first', false);
-    if (isNote(q.id)) renderNote(q); else renderReading(q);
+    if (isNote(q.id)) {
+      if (state.notes.home && state.mode === 'notes') {
+        Object.assign(state.notes, { home: false, collection: q.collection, area: '', topic: '', chapter: '', kind: q.kind === 'info' ? 'info' : 'study' });
+        await loadNotes(true);
+        if (generation !== state.detail) return;
+      }
+      if (q.kind !== 'info') recordNoteVisit(q.id);
+      renderNote(q);
+    } else renderReading(q);
     document.body.classList.add('reading-open');
     $('reader').hidden = false;
     $('empty-reader').hidden = true;
@@ -759,18 +939,24 @@ function renderNote(n) {
   const reading = $('reading');
   reading.replaceChildren();
   const top = el('p', 'reading-meta');
-  top.append(el('span', 'topic', n.chapter_title), el('span', '', [n.collection_title, n.group].filter(Boolean).join(' · ')));
+  top.append(el('span', 'topic', [n.area_title, n.topic_title].filter(Boolean).join(' › ') || n.chapter_title), el('span', '', n.collection_title));
   reading.append(top, el('h1', 'reading-title', n.title));
   const tags = el('div', 'tags');
+  if (n.kind !== 'info') tags.append(el('span', 'tag', t('notes_verification_' + n.verification)));
+  for (const value of n.tags || []) tags.append(el('span', 'tag', value));
   if (n.marked) tags.append(el('span', 'tag mark', t('marked')));
   if (n.asked) tags.append(el('span', 'tag asked', t('asked_times', { n: n.asked })));
   if (tags.childNodes.length) reading.append(tags);
+  if (n.kind !== 'info') {
+    reading.append(el('p', 'note-reference-warning', t('notes_warning_' + n.verification)), noteLearningControls(n));
+    for (const url of n.evidence || []) { const link = safeLink(url); if (link) reading.append(link); }
+  }
   $('toggle-answer').hidden = !n.body;
   if (!n.body) {
     reading.append(el('p', 'no-answer', t('no_note_answer')), sourceBox(n.source));
   } else {
     const body = el('section', 'answer-body');
-    body.append(el('h2', 'answer-head', t('note_answer')), markdown(n.body), sourceBox(n.source));
+    body.append(el('h2', 'answer-head', t(n.kind === 'info' ? 'notes_kind_info' : 'notes_original_text')), markdown(n.body), sourceBox(n.source));
     reading.append(button(t('show_answer'), 'reveal button primary', () => setReveal(true)), body);
     setReveal(state.revealed);
   }
@@ -829,6 +1015,7 @@ function setMode(mode, keepReader = false) {
   state.mode = mode;
   store('ibank-mode', mode);
   document.body.classList.toggle('notes-mode', mode === 'notes');
+  document.body.classList.toggle('notes-home', mode === 'notes' && state.notes.home);
   for (const tab of document.querySelectorAll('[data-mode]')) tab.setAttribute('aria-selected', String(tab.dataset.mode === mode));
   $('search').value = '';
   $('search').placeholder = t(mode === 'notes' ? 'search_notes' : 'search');
@@ -839,146 +1026,14 @@ function setMode(mode, keepReader = false) {
 
 async function jump(mode, id) {
   // From a question to its notes and back; the list behind switches too, the reader stays open.
+  if (mode === 'notes') {
+    const note = await question(id);
+    Object.assign(state.notes, { home: false, collection: note.collection, area: '', topic: '', chapter: '',
+      kind: note.kind === 'info' ? 'info' : 'study', tag: '', verification: '', learning: 'all', scope: 'source' });
+  }
   if (state.mode !== mode) await setMode(mode, true);
-  openQuestion(id);
-}
-
-async function loadNotes(reset = false) {
-  const generation = ++state.load;
-  if (reset) { state.offset = 0; state.questions = []; }
-  $('question-list').setAttribute('aria-busy', 'true');
-  message('error', '');
-  try {
-    const f = state.notes;
-    // Notes load whole (a few hundred short cards), so chapters can fold and count what was read.
-    const query = new URLSearchParams({ offset: state.offset, limit: NOTES_PAGE, sort: f.sort });
-    // A search looks through every collection; the chosen chapter comes back when the search is cleared.
-    const words = $('search').value.trim();
-    if (words) query.set('query', words);
-    if (f.collection && !words) query.set('collection', f.collection);
-    if (f.collection && f.chapter !== '' && !words) query.set('chapter', f.chapter);
-    if (f.marked) query.set('marked', '1');
-    if (f.asked) query.set('asked', '1');
-    const data = await api('/api/notes?' + query);
-    if (generation !== state.load) return;
-    state.notesData = data;
-    state.ids = data.ids;
-    state.questions = state.offset ? [...state.questions, ...data.notes] : data.notes;
-    renderNoteFilters(data);
-    $('result-count').textContent = t('notes_count', { n: data.total });
-    renderNoteList();
-    offerContinue();
-    if (state.current && !state.ids.includes(state.current) && wide.matches) closeReader();
-    else updateNav();
-  } catch (error) {
-    if (generation === state.load) message('error', error.message || t('connection'));
-  } finally {
-    if (generation === state.load) $('question-list').setAttribute('aria-busy', 'false');
-  }
-}
-
-function pickNotes(changes) {
-  if ('collection' in changes || 'chapter' in changes) $('search').value = '';
-  Object.assign(state.notes, changes);
-  store('ibank-notes', state.notes);
-  loadNotes(true);
-}
-
-function renderNoteFilters(data) {
-  const searching = Boolean($('search').value.trim());
-  const f = searching ? { ...state.notes, collection: '', chapter: '' } : state.notes;
-  const current = data.collections.find(c => c.name === f.collection);
-  // Phones: a row of collections and, inside one, a row of its chapters.
-  const collections = $('collections');
-  collections.replaceChildren();
-  for (const item of [{ name: '', title: t('notes_all'), total: data.summary.notes }, ...data.collections]) {
-    const chip = button('', 'chip' + (f.collection === item.name ? ' active' : ''), () => pickNotes({ collection: item.name, chapter: '' }));
-    chip.append(el('span', '', item.title), el('small', '', String(item.total)));
-    chip.setAttribute('aria-pressed', String(f.collection === item.name));
-    collections.append(chip);
-  }
-  const groups = $('groups');
-  groups.replaceChildren();
-  groups.hidden = !current;
-  if (current) {
-    for (const chapter of [{ index: '', title: t('all_chapters'), count: current.total }, ...current.chapters]) {
-      const active = String(f.chapter) === String(chapter.index);
-      const chip = button('', 'chip' + (active ? ' active' : ''), () => pickNotes({ chapter: String(chapter.index) }));
-      chip.append(el('span', '', chapter.title), el('small', '', String(chapter.count)));
-      chip.setAttribute('aria-pressed', String(active));
-      groups.append(chip);
-    }
-    groups.querySelector('.active')?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
-  }
-  const chapter = current && f.chapter !== '' ? current.chapters[Number(f.chapter)] : null;
-  $('chapter-intro').textContent = chapter?.intro ? chapter.intro.replace(/^\s*>\s?/gm, '').replace(/\*\*/g, '') : '';
-  $('chapter-intro').hidden = !chapter?.intro;
-  for (const [id, on] of [['marked-only', f.marked], ['asked-only', f.asked], ['asked-sort', f.sort === 'asked']]) $(id).setAttribute('aria-pressed', String(on));
-  // Wide screens: the sidebar lists every collection with its chapters.
-  for (const [key, label, value] of [['total', 'stat_notes', data.summary.notes], ['answered', 'stat_marked', data.summary.marked], ['topics', 'stat_asked', data.summary.asked]]) {
-    $(`stat-${key}`).textContent = value;
-    $(`stat-${key}-label`).textContent = t(label);
-  }
-  const side = $('side-notes');
-  side.replaceChildren();
-  const entry = (parent, label, count, active, action, cls = '') => {
-    const node = button('', 'side-item' + cls + (active ? ' active' : ''), action);
-    node.append(el('span', '', label), el('small', '', count === undefined ? '' : String(count)));
-    parent.append(node);
-  };
-  const section = (title, key) => {
-    const head = el('p', 'side-title', title);
-    const body = el('div', 'side-list');
-    side.append(head, body);
-    foldable(head, body, key);
-    return body;
-  };
-  const views = section(t('mode_notes'), 'side:notes');
-  entry(views, t('notes_all'), data.summary.notes, !f.collection && !f.marked && !f.asked, () => pickNotes({ collection: '', chapter: '', marked: false, asked: false }));
-  entry(views, t('marked_only'), data.summary.marked, f.marked, () => pickNotes({ marked: !f.marked }));
-  entry(views, t('asked_only'), data.summary.asked, f.asked, () => pickNotes({ asked: !f.asked }));
-  for (const c of data.collections) {
-    const body = section(c.title, 'side:c:' + c.name);
-    entry(body, t('all_chapters'), c.total, f.collection === c.name && f.chapter === '', () => pickNotes({ collection: c.name, chapter: '' }));
-    for (const ch of c.chapters) {
-      entry(body, ch.title, ch.count, f.collection === c.name && String(f.chapter) === String(ch.index),
-            () => pickNotes({ collection: c.name, chapter: String(ch.index) }), ' side-sub');
-    }
-  }
-}
-
-function grouped() {
-  // Chapter headers only where the list is in chapter order and spans several chapters.
-  const f = state.notes;
-  return f.sort === 'order' && !$('search').value.trim() && !(f.collection && f.chapter !== '');
-}
-
-function renderNoteList() {
-  const list = $('question-list');
-  list.replaceChildren();
-  const groups = grouped();
-  $('group-tools').hidden = !groups || !state.questions.length;
-  let head = null;
-  for (const n of state.questions) {
-    const key = `${n.collection}:${n.chapter}`;
-    if (groups && head?.dataset.group !== key) {
-      head = el('li', 'group');
-      head.dataset.group = key;
-      head.dataset.label = state.notes.collection ? n.chapter_title : `${n.collection_title} › ${n.chapter_title}`;
-      head.append(button('', 'group-head', () => { setFolded('list:' + key, !folded.has('list:' + key)); syncGroup(key); }));
-      list.append(head);
-    }
-    const meta = el('span', 'question-meta');
-    meta.append(el('span', '', n.group || n.chapter_title));
-    if (n.marked) meta.append(el('span', 'mark', t('marked')));
-    if (n.asked) meta.append(el('span', 'has-answer', t('asked_times', { n: n.asked })));
-    const item = listRow(n.id, n.title, meta);
-    if (groups) item.dataset.member = key;
-    list.append(item);
-  }
-  for (const node of list.querySelectorAll('li.group')) syncGroup(node.dataset.group);
-  if (!state.questions.length) list.append(el('li', 'empty', t('empty_notes')));
-  $('more').hidden = state.questions.length >= (state.notesData?.total || 0);
+  else if (mode === 'notes') await loadNotes(true);
+  return openQuestion(id);
 }
 
 // ---------------------------------------------------------------- list rows, folding and reading comfort
@@ -1559,6 +1614,7 @@ window.addEventListener('beforeunload', event => {
   if (state.round && $('practice-response')?.value) { event.preventDefault(); event.returnValue = ''; }
 });
 
+installNotesUI();
 applyTheme(stored('ibank-theme', 'auto'));
 applyLayout();
 document.body.dataset.size = String(stored('ibank-text-size', 0));
@@ -1578,4 +1634,4 @@ loadLibrary(true)
     $('search').placeholder = t('search_notes');
     return loadNotes(true);
   })
-  .then(() => { if (openOnLoad) openQuestion(openOnLoad, true); });
+  .then(() => { if (openOnLoad) return jump(isNote(openOnLoad) ? 'notes' : 'bank', openOnLoad); });

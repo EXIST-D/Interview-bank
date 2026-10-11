@@ -151,6 +151,23 @@ def main():
         assert run("taxonomy", "--dimension", "domains", "--query", "向量")["items"][0]["id"] == "backend.database.vector"
         assert run("validate")["valid"]
         assert not run("doctor")["incomplete_runs"]
+        notes_source = directory / "notes-source"
+        notes_source.mkdir()
+        (notes_source / "01.md").write_text("# Redis\n\n## 缓存穿透？\n\n原文参考。\n", encoding="utf-8")
+        run("notes", "import", "--source", str(notes_source), "--name", "package-notes")
+        catalog = run("notes", "catalog", "--name", "package-notes")
+        organization = directory / "notes-organization.json"
+        organization.write_text(json.dumps({
+            "schema_version": 1, "collection": "package-notes", "source_digest": catalog["source_digest"],
+            "organization_digest": catalog["organization_digest"],
+            "areas": [{"id": "storage", "title": "Storage", "topics": [{"id": "redis", "title": "Redis"}]}],
+            "chapters": {"01.md": {"area": "storage", "topic": "redis", "kind": "qa", "tags": ["Redis"]}}
+        }), encoding="utf-8")
+        original = bank.joinpath("collections/package-notes.json").read_bytes()
+        assert run("notes", "organize", "--name", "package-notes", "--input", str(organization), "--preview")["preview"]
+        assert not bank.joinpath("collections/_organization.json").exists()
+        assert run("notes", "organize", "--name", "package-notes", "--input", str(organization))["changed"]
+        assert bank.joinpath("collections/package-notes.json").read_bytes() == original
         demo = subprocess.run([sys.executable, "-B", str(cli), "demo", "--bank", str(directory / "demo-bank"), "--json"],
                               capture_output=True, text=True, encoding="utf-8", cwd=directory)
         assert demo.returncode == 0 and json.loads(demo.stdout)["result"]["answered"] == 8, demo.stderr
@@ -173,13 +190,19 @@ def main():
                     raise AssertionError("Packaged Web did not become ready")
             launch = json.loads(line)["result"]["url"]
             origin, token = launch.split('/#token=')
-            for route, expected in (("/", b"Interview Bank"), ("/app.js", b"saveRating"), ("/app.css", b"--canvas")):
+            for route, expected in (("/", b"Interview Bank"), ("/app.js", b"saveRating"),
+                                    ("/notes-ui.js", b"renderSourceCards"), ("/app.css", b"--canvas")):
                 with urllib.request.urlopen(origin+route, timeout=5) as response:
                     assert expected in response.read()
             request = urllib.request.Request(origin+'/api/library', headers={'X-Interview-Token':token})
             with urllib.request.urlopen(request, timeout=5) as response:
                 library = json.load(response)
                 assert library['total'] == 2 and library['read_only'] and not library['can_record']
+            request = urllib.request.Request(origin+'/api/notes?view=knowledge&topic=redis&kind=study',
+                                             headers={'X-Interview-Token':token})
+            with urllib.request.urlopen(request, timeout=5) as response:
+                notes = json.load(response)
+                assert notes['total'] == 1 and notes['notes'][0]['topic_title'] == 'Redis'
         finally:
             process.terminate()
             process.communicate(timeout=10)

@@ -117,7 +117,8 @@ def load_notes(bank):
     known = {n["id"] for n in notes}
     links_path = bank_file(bank, "collections/links.jsonl")
     links = [link for link in (read_jsonl(links_path) if links_path.is_file() else []) if link["note_id"] in known]
-    return {"collections": collections, "notes": notes, "links": links}
+    from . import note_organization
+    return note_organization.enrich({"collections": collections, "notes": notes, "links": links}, note_organization.load(bank))
 
 
 def signature(bank):
@@ -202,7 +203,8 @@ def chapter_title(collection, note):
 def note_card(note, collection, linked=()):
     return {"id": note["id"], "title": note["title"], "collection": collection["name"], "collection_title": collection["title"],
             "chapter": note["chapter"], "chapter_title": chapter_title(collection, note), "group": note["group"],
-            "marked": bool(note["marks"]), "linked": len(linked), "asked": sum(q["frequency"] for q in linked)}
+            "marked": bool(note["marks"]), "linked": len(linked), "asked": sum(q["frequency"] for q in linked),
+            **note.get("organization", {})}
 
 
 def source_of(note, collection):
@@ -396,6 +398,12 @@ def add_parsers(sub, common):
     imp.add_argument("--origin", help="Where the collection comes from, shown with every answer")
     imp.add_argument("--order", type=int, help="Position among collections (lower first)")
     action.add_parser("list", parents=[common], help="Collections, chapters and link counts")
+    catalog = action.add_parser("catalog", parents=[common], help="Source-local classification catalog and concurrency digests")
+    catalog.add_argument("--name", required=True)
+    organize = action.add_parser("organize", parents=[common], help="Preview or apply separate source navigation metadata")
+    organize.add_argument("--name", required=True)
+    organize.add_argument("--input", type=P, required=True)
+    organize.add_argument("--preview", action="store_true")
     find = action.add_parser("search", parents=[common], help="Find notes by words in the title or answer")
     find.add_argument("--query", required=True)
     find.add_argument("--limit", type=int, default=20)
@@ -417,6 +425,11 @@ def dispatch(bank, args):
         return import_collection(bank, args.source, args.name, args.title, args.origin, args.order)
     if name == "list":
         return summary(bank)
+    if name in ("catalog", "organize"):
+        from . import note_organization
+        if name == "catalog":
+            return note_organization.catalog(bank, args.name)
+        return note_organization.organize(bank, args.name, read_json(args.input), args.preview)
     if name == "search":
         return search_notes(bank, args.query, args.limit)
     if name == "show":

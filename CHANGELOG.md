@@ -2,6 +2,19 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.17.0] - 2026-10-11
+
+### Added
+- Source overview cards in the notes reader, with content counts, language, linked interview questions and browser-local reading progress.
+- Source-local knowledge areas and topics, an alternative original chapter view, explicit current-topic/current-source/all-source search, and tag, content-kind, verification and learning filters.
+- Source information with author, license, upstream version/date, import date, organization history and a separate view for source/license notices.
+- `notes catalog --name` and `notes organize --name --input [--preview]`: an atomic, digest-checked metadata overlay in `collections/_organization.json`. Original collection files, note IDs, bodies, frequency and interview links stay unchanged. Protected classifications require explicit user words; a verified label requires evidence URLs.
+- Manual read/review/mastered learning marks kept in the current browser. They do not certify a source or sync across devices. Hosted readers stay read-only.
+
+### Changed
+- Backups and the existing collection sync include organization metadata. Existing collections work without it; no V1/V2 migration is required. A re-import that changes the source marks its organization mapping for review.
+- Noninteractive test subprocesses explicitly close stdin, so tests do not wait for a human confirmation when run from an interactive terminal.
+
 ## [1.16.1] - 2026-10-10
 
 ### Added

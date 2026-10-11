@@ -51,8 +51,11 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
   The person sees both questions and the agent's reason, chooses 是同一题 / 相关但不同 / 不同的题 with a required note, and the choice is saved next to the stage
   (`runs/<run>/human-decisions.json`, actor local_web).
   Nothing canonical changes until the agent runs `dedupe --resolve <run>`, which re-stages the run with those decisions, and commits it.
-- 八股 notes: once a collection is imported, a 面经 / 八股 switch appears. Notes read in chapter order (key-only, asked-only,
-  most-asked views), show the collection's answer with its source, and link both ways to interview questions.
+- 八股 notes: once a collection is imported, a 面经 / 八股 switch appears. Source cards lead to a source-local knowledge
+  directory or its original chapters. Search explicitly scopes to the current topic, current source or all sources;
+  tag, content kind, verification and browser-local learning filters supplement key-only and most-asked views.
+  Notes show the collection's original answer with its source, and link both ways to interview questions.
+  Source information separates notices from learning content. Directory maintenance stays with the Agent CLI.
   See [notes](notes.md).
 - Reading aids: each row can unfold a peek at its answer; opened questions count as read (this browser only), and
   chapter headers in the notes list fold and show how many were read (全部折叠 turns the list into a table of contents).

@@ -7,6 +7,7 @@
   <meta name="robots" content="noindex, nofollow">
   <title>Interview Bank</title>
   <link rel="stylesheet" href="app.css">
+  <script src="notes-ui.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -79,7 +80,37 @@
       <button type="button" role="tab" data-mode="bank" aria-selected="true" data-i18n="mode_bank">面经</button>
       <button type="button" role="tab" data-mode="notes" aria-selected="false" data-i18n="mode_notes">八股</button>
     </div>
+    <section id="notes-overview" class="notes-only notes-overview" hidden aria-labelledby="notes-home-title">
+      <div class="notes-home-heading"><span class="notes-eyebrow" data-i18n="notes_home_eyebrow">个人学习资料</span><h1 id="notes-home-title" data-i18n="notes_home_title">八股资料库</h1><p data-i18n="notes_home_hint">按来源收藏，按知识学习。原文与出处始终保留。</p></div>
+      <label class="source-search"><span aria-hidden="true">⌕</span><input id="source-search" type="search" data-i18n-placeholder="notes_search_all" data-i18n-aria="notes_search_all" placeholder="搜索全部来源…" aria-label="搜索全部来源"></label>
+      <div id="notes-home-summary" class="notes-home-summary" aria-live="polite"></div>
+      <div id="source-cards" class="source-cards"></div>
+      <p class="notes-local-hint" data-i18n="notes_local_hint">学习状态保存在当前浏览器；资料核验状态单独记录。</p>
+    </section>
+    <section id="notes-navigation" class="notes-only notes-navigation" hidden aria-label="资料目录" data-i18n-aria="notes_navigation">
+      <div class="notes-breadcrumb"><button id="notes-home" class="link" type="button" data-i18n="notes_sources">来源总览</button><span aria-hidden="true">/</span><span id="notes-source-name"></span><button id="notes-source-info" class="link" type="button" data-i18n="notes_source_info">资料信息</button></div>
+      <h1 id="notes-source-title" class="notes-source-title"></h1>
+      <p id="notes-source-description" class="notes-source-description"></p>
+      <div class="notes-view-switch" role="group" aria-label="目录方式" data-i18n-aria="notes_view">
+        <button id="notes-view-knowledge" type="button" aria-pressed="true" data-i18n="notes_knowledge">知识目录</button>
+        <button id="notes-view-original" type="button" aria-pressed="false" data-i18n="notes_original">原书目录</button>
+      </div>
+      <div class="notes-directory-controls">
+        <label id="notes-area-label"><span data-i18n="notes_area">领域</span><select id="notes-area"></select></label>
+        <label><span id="notes-topic-label" data-i18n="notes_topic">专题</span><select id="notes-topic"></select></label>
+      </div>
+    </section>
     <label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="搜索题目…" aria-label="搜索题目" data-i18n-placeholder="search" data-i18n-aria="search_label"></label>
+    <div id="notes-filters" class="notes-only notes-filters" hidden>
+      <label class="notes-search-scope"><span data-i18n="notes_search_scope">搜索范围</span><select id="notes-search-scope"><option value="source" data-i18n="notes_scope_source">当前来源</option><option value="topic" data-i18n="notes_scope_topic">当前专题</option><option value="all" data-i18n="notes_scope_all">全部来源</option></select></label>
+      <div class="notes-filter-grid">
+        <label><span data-i18n="notes_tags">标签</span><select id="notes-tag"></select></label>
+        <label><span data-i18n="notes_kind">内容类型</span><select id="notes-kind"></select></label>
+        <label><span data-i18n="notes_verification">核对状态</span><select id="notes-verification"></select></label>
+        <label><span data-i18n="notes_learning">学习状态</span><select id="notes-learning"><option value="all" data-i18n="notes_learning_all">全部状态</option><option value="unread" data-i18n="notes_learning_unread">未读</option><option value="read" data-i18n="notes_learning_read">已读</option><option value="review" data-i18n="notes_learning_review">待复习</option><option value="mastered" data-i18n="notes_learning_mastered">已掌握</option></select></label>
+      </div>
+      <button id="notes-reset" class="link" type="button" data-i18n="reset">重置筛选</button>
+    </div>
     <div id="inline-filters" class="inline-filters bank-only" hidden></div>
     <nav id="collections" class="chips notes-only" aria-label="八股" data-i18n-aria="mode_notes"></nav>
     <nav id="groups" class="chips" aria-label="主题" data-i18n-aria="topics"></nav>
@@ -160,6 +191,10 @@
 <dialog id="info-dialog" class="sheet" aria-labelledby="info-title">
   <header class="sheet-head"><h2 id="info-title"></h2><button id="close-info" class="icon-button" type="button" aria-label="关闭" data-i18n-aria="close">×</button></header>
   <div class="sheet-body"><p id="info-text" class="info-text"></p><pre id="info-example" class="info-example"></pre><p class="hint" data-i18n="info_soon">网页内直接操作会在后续版本提供。</p></div>
+</dialog>
+<dialog id="source-info-dialog" class="sheet wide" aria-labelledby="source-info-title">
+  <header class="sheet-head"><h2 id="source-info-title" data-i18n="notes_source_info">资料信息</h2><button id="close-source-info" class="icon-button" type="button" aria-label="关闭" data-i18n-aria="close">×</button></header>
+  <div id="source-info-body" class="sheet-body"></div>
 </dialog>
 <div id="toast" class="toast" role="status" hidden></div>
 </body>

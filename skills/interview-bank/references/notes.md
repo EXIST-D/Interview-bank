@@ -27,6 +27,61 @@ notes import --source <folder> --name <id> --title "<display name>" --origin "<w
 - `notes list` shows collections and chapters; `notes search --query <words>`; `notes show <note_id>`;
   `notes remove --name <id>` deletes a collection and its links.
 
+## Organise one source
+
+Keep each upstream source as its own collection, even when another source asks the same question. Within a source,
+prefer a small set of knowledge areas, each with topics. Map the original chapter filenames to those topics;
+use note overrides for exceptions. Tags are supplementary labels, not another deep directory tree.
+Do not infer human mastery, review, author, license or publication date from the title alone.
+
+1. Run `notes catalog --name <id> --bank <bank> --json`. Read the returned chapter/heading inventory and current
+   rules. Large catalogs may be capped; read `_page.full_output` when present. Read relevant original notes with
+   `notes show` before judging ambiguous headings. This command does not download or rewrite source bodies.
+2. Prepare a response using both returned digests. IDs for areas/topics are unique within this source;
+   chapter keys are original filenames and note keys are existing note IDs. For example:
+
+```json
+{
+  "schema_version": 1,
+  "collection": "java",
+  "source_digest": "<from catalog>",
+  "organization_digest": "<from catalog>",
+  "metadata": {"description": "Java study notes", "language": "zh-CN"},
+  "areas": [{"id": "storage", "title": "数据库与缓存", "topics": [{"id": "redis", "title": "Redis"}]}],
+  "chapters": {"08-Redis.md": {"area": "storage", "topic": "redis", "tags": ["Redis"], "kind": "qa"}},
+  "notes": {}
+}
+```
+
+3. Run `notes organize --name <id> --input <response> --preview`, inspect the change counts, then run the same
+   command without `--preview`. Supply `--bank <bank> --json` as usual. This command applies one source atomically;
+   no separate `commit` is required. If either digest is stale, regenerate the catalog and reconcile the changes.
+4. Verify counts, IDs, source bodies and interview links. Repeating an unchanged response with fresh digests is
+   a no-op and does not add history. Changes retain the latest 30 organization history summaries.
+
+Optional metadata: `description`, `author`, `homepage`, `license`, `license_url`, `version`, `updated_at`, `language`.
+Use the upstream commit/version and date with evidence; unspecified metadata remains unknown. URLs must use
+HTTP(S) and contain no credentials. Collection metadata and area lists are display/navigation data, not claims
+that every answer has been verified.
+
+Rules support `area`, `topic`, `tags`, `kind`, `verification`, `language`, `evidence`, `locked`, `user_quote`.
+Kinds: `material` (default), `qa`, `knowledge`, `case`, `reading`, `info` (source/license notices). Verification:
+`reference` (default), `verified`, `needs_review`, `outdated`. Only mark `verified` after actually checking the content
+against appropriate sources, supply their URLs in `evidence`, and explain the scope to the user. The CLI validates
+the evidence fields, not the truth of a URL's content. Never auto-promote imported public answers to verified.
+
+Metadata keys merge with the existing source; `areas` replaces the directory list. Chapter/note rules are partial
+patches, with note rules overriding chapter rules. A `null` rule removes an unprotected override. If specifying a
+topic on an override, include its area. Every retained rule must still reference a valid area/topic. To protect a
+classification, use `locked: true` and the user's actual `user_quote`; further changes to effective protected rules
+require explicit user words, including attempts to override a protected chapter on a single note.
+
+The overlay lives in `collections/_organization.json`, separate from original collections and `links.jsonl`.
+Backups include it. Re-import keeps the overlay but signals a changed source digest: inspect new/removed headings
+and reconcile mappings. A new chapter with no rule remains available in the original view. Older collections
+without an overlay retain their original chapter navigation. Do not write this file or canonical data by hand.
+Whole-bank sync can overwrite it; in a multi-computer setup use the current server copy before syncing a whole bank.
+
 ## Link questions to notes
 
 1. `notes link-candidates [--question <id> …] [--unlinked] [--top-k 6]` writes a task. Each active question gets
@@ -49,9 +104,18 @@ A link task is stale after a re-import, as dedupe tasks are after commits; creat
 ## Reader and server
 
 - The Web reader shows a 面经 / 八股 switch once a collection exists. In the notes view:
-  - chapters in order, with 重点, 面经考过 and 按考频 (most asked first);
+  - an overview of separate source cards; learning content and source/license notices count separately;
+  - knowledge areas/topics or original chapters, with 重点, 面经考过 and 按考频 (most asked first);
+  - explicit current-topic/current-source/all-source search; tags, content kinds and verification filters;
+  - source metadata and organization history, including links to full source/license notices;
+  - read/review/mastered learning marks and filters, kept only in this browser/account namespace; reading never
+    implies verification, and the Agent must not manufacture these marks;
   - Markdown answers (lists, tables, quotes, code);
   - the source line under every answer.
+- Source cards show linked **note** counts, not distinct interview-question counts. A note can link to several questions.
+- Original answers stay verbatim and marked as reference; unverified material displays its verification status.
+- Hosted readers remain read-only. Editing directories, importing sources and setting evidence-backed verification
+  use the Agent CLI. Cross-device progress sync and direct Web editing are not implemented.
 - A hosted reader gets notes through `tools/deploy/sync.sh`, which sends `collections/` with `data/`.
 - Backups include `collections/`.
 - Collections are the user's private material: never copy them into the Skill, a repository or a public page.
