@@ -4,23 +4,22 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.17.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.17.1**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## What's new: 1.17 source shelves and knowledge directories
+## This update: 1.17.1 navigation and list refinements
 
-- **Source overview:** separate cards with content counts, language, linked notes and this browser's reading progress. Source/license notices count separately.
-- **Two directories:** study a source by knowledge area and topic, or switch to its original chapters. Original answers, provenance and bidirectional interview links remain available.
-- **Explicit search scope:** current topic, current source or all sources, with tag, content-kind, verification and learning filters. Cross-source results retain their source labels.
-- **Source management:** author, license, version, dates and organization history. The agent previews and updates one source with `notes catalog` / `notes organize --preview`; digest checks guard against stale edits and metadata lives separately from original collections.
-- **Learning marks:** manually mark review/mastered, separately from content verification. They stay in this browser and do not sync across devices. Hosted readers remain read-only.
+- **Clearer navigation:** compact study icons and collapsible groups for the current notes source and other sources.
+- **Compact list controls:** the result count and a collapse button live in the list; directory, material filters and question filters start folded.
+- **The reader stays the same:** fold either left panel or focus on reading; the title, answer, spacing, text sizes, reader toolbar and previous/next controls are unchanged.
+- **Desktop and phone support:** desktop filters unfold inside the list; phones retain the existing filter sheet and full-screen reader. New controls support both UI languages, dark mode and keyboard use.
 
-See [notes](skills/interview-bank/references/notes.md). Updating the Skill never rewrites a personal bank; existing collections without knowledge mappings still use original chapters.
+This UI patch does not migrate the bank or modify questions, original text, answers or interview links. See the [Web reader guide](skills/interview-bank/references/web.md).
 
 ## Interface preview
 
 On a computer: navigation, question list and reader in three columns; a question lists its related notes.
 
-![Interview Bank on a computer: navigation and topics, question list, reference answer with sources and related notes](assets/readme/web-preview.png)
+![Interview Bank on a computer: navigation and topics, question list, reference answer with sources and related notes](assets/readme/left-panels-preview.webp)
 
 The notes section: chapters that fold, a peek at an answer in the list, and a note with its source and how interviews asked it.
 
@@ -197,7 +196,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 ## Status and plans
 
-**v1.17.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
+**v1.17.1** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
 
 **Not implemented yet:**
 
@@ -211,7 +210,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 **Other limits:** review queues are generated on demand with no background reminders; exact token and cost figures depend on the host; splitting an arbitrary historical merge is not supported, only undoing the latest eligible operation.
 
-**Verification:** v1.17.0 completed 325 regression tests on this Windows host (324 passed, one POSIX-only test skipped), 21 notes/compatibility tests on the Linux server, lint and a standalone package check. The CI configuration covers Windows, macOS and Linux × Python 3.10–3.13, plus the legacy snapshot format; run the suite with `python -B -m unittest discover -s tests`. Evaluation results and host checks are in [evals](evals/README.md): dedupe retrieval recall@10 is 1.00; blind dedupe judgments made 0 % false merges and 3.4 % missed merges (Opus and Sonnet); blind answers scored 1.7 / 2 from a separate judge with no unsupported claims; on Claude Code the trigger suite passes with Sonnet, while Haiku's recall (0.73–0.80) is below the gate. Extracted content and reference answers still need checking against the original material, sources and scope.
+**Verification:** v1.17.1 passed 28 targeted Windows Web tests, a Linux candidate check, lint and the standalone package check. Desktop/phone folding, filters, directories, theme and bilingual labels were exercised. CI covers Windows, macOS and Linux × Python 3.10–3.13, the legacy snapshot format and packages on all three systems; run the suite with `python -B -m unittest discover -s tests`. Historical Evaluation results and host checks are in [evals](evals/README.md): dedupe retrieval recall@10 is 1.00; blind dedupe judgments made 0 % false merges and 3.4 % missed merges (Opus and Sonnet); blind answers scored 1.7 / 2 from a separate judge with no unsupported claims; on Claude Code the trigger suite passes with Sonnet, while Haiku's recall (0.73–0.80) is below the gate. Extracted content and reference answers still need checking against the original material, sources and scope.
 
 The repository contains the Skill, tests, evaluations and development tools, documentation, license and the README image. Personal material, banks, research ledgers and local environments are not published; test and evaluation data are synthetic.
 

@@ -95,7 +95,7 @@ class WebTests(BankFixture):
 
     def test_static_assets_and_no_arbitrary_file_server(self):
         self.start()
-        for path,mime in (('/','text/html'),('/app.js','text/javascript'),('/app.css','text/css'),('/notes-ui.js','text/javascript')):
+        for path,mime in (('/','text/html'),('/app.js','text/javascript'),('/app.css','text/css'),('/notes-ui.js','text/javascript'),('/left-panels.js','text/javascript'),('/left-panels.css','text/css')):
             status,headers,body=self.request(path);self.assertEqual(status,200);self.assertIn(mime,headers['Content-Type']);self.assertIn("frame-ancestors 'none'",headers['Content-Security-Policy']);self.assertNotIn(self.server.token.encode(),body)
         for path in ('/../manifest.json','/data/questions.jsonl','/assets/../../SKILL.md','/api/migrate'):
             self.assertEqual(self.request(path)[0],404)

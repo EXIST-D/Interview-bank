@@ -57,6 +57,9 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
   Notes show the collection's original answer with its source, and link both ways to interview questions.
   Source information separates notices from learning content. Directory maintenance stays with the Agent CLI.
   See [notes](notes.md).
+- Left panels: result count and list collapse stay within the list column. Directory, material filters and
+  question filters start folded and open on demand. Current/other notes sources form collapsible sidebar groups.
+  The original reader toolbar, text styling, spacing and full-screen phone reading remain unchanged.
 - Reading aids: each row can unfold a peek at its answer; opened questions count as read (this browser only), and
   chapter headers in the notes list fold and show how many were read (全部折叠 turns the list into a table of contents).
   随机一题 opens a random question of the current list, unread ones first. In the reader, Aa changes the text size
@@ -82,7 +85,7 @@ The server accepts both `http://127.0.0.1:<port>` and `http://localhost:<port>`;
 ## Service boundary and validation
 
 Bind exclusively to `127.0.0.1`; no LAN/public binding option.
-The custom handler serves only three bundled assets and a small authenticated API, with Host/Origin checks, per-process token, bounded JSON bodies, no CORS grants and a restrictive content policy.
+The custom handler serves only explicitly allowlisted bundled assets and a small authenticated API, with Host/Origin checks, per-process token, bounded JSON bodies, no CORS grants and a restrictive content policy.
 Question/answer HTML is rendered as text, source links accept only HTTP(S), and no remote scripts/fonts or file-upload endpoints are used.
 It is a personal helper, not a multi-user service. Never tunnel or expose the port itself; reading on a phone goes
 through your own server as below, only when the user asks for it.

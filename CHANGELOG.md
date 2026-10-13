@@ -2,6 +2,13 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.17.1] - 2026-10-13
+
+### Changed
+- Refined only the existing sidebar and question list: study icons, collapsible source groups, a list-local count/collapse control and initially folded directory/filter panels.
+- Retained the original reader HTML, app.js, app.css and notes-ui.js, including independent panel folding, focus, typography and phone full-screen reading.
+- Bundled the extra local CSS/JavaScript in the static asset allowlist; no external assets, framework, build step or bank migration. New labels support Chinese and English; desktop filters also recover their open state after a viewport resize.
+
 ## [1.17.0] - 2026-10-11
 
 ### Added
