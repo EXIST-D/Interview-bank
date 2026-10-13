@@ -103,7 +103,16 @@ A link task is stale after a re-import, as dedupe tasks are after commits; creat
 
 ## Reader and server
 
+For public interview records and career articles, read [public experiences](public-experiences.md).
+`notes organize` also accepts source-local `experiences` groups with quoted company/date facts. They appear
+under 八股 → 公开面经, separate from knowledge and private interview occurrences. Multilingual Chinese-only
+cleanup must preserve code, citations and an exclusion audit; original single-language English sources stay
+labelled as such unless the user asks to remove them too.
+
 - The Web reader shows a 面经 / 八股 switch once a collection exists. In the notes view:
+  - knowledge materials and public interview articles, with independent source shelves and counts;
+  - public articles distinguish interview accounts, company question lists and career advice, with company and
+    explicit interview-year filters; unknown dates never inherit publication/import dates;
   - an overview of separate source cards; learning content and source/license notices count separately;
   - knowledge areas/topics or original chapters, with 重点, 面经考过 and 按考频 (most asked first);
   - explicit current-topic/current-source/all-source search; tags, content kinds and verification filters;

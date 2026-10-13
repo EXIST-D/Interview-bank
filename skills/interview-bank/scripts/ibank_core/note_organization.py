@@ -118,7 +118,8 @@ def _patch_items(existing, patch, known):
 def organize(bank, name, payload, preview=False):
     """Patch one collection atomically with optimistic concurrency and no original-content writes."""
     require(isinstance(payload, dict) and set(payload) <= {
-        'schema_version', 'collection', 'source_digest', 'organization_digest', 'metadata', 'areas', 'chapters', 'notes'
+        'schema_version', 'collection', 'source_digest', 'organization_digest', 'metadata', 'areas', 'chapters', 'notes',
+        'experiences'
     }, 'Invalid organization payload')
     require(payload.get('schema_version') == 1 and payload.get('collection') == name, 'Wrong organization collection/version')
     from .notes import load_notes
@@ -144,6 +145,16 @@ def organize(bank, name, payload, preview=False):
                                              {c['file'] for c in collection['chapters']})
         candidate['notes'] = _patch_items(candidate.get('notes', {}), payload.get('notes', {}),
                                           {n['id'] for n in collection['notes']})
+        from . import note_experiences
+        if 'experiences' in payload:
+            require(isinstance(payload['experiences'], dict), 'Invalid experience patch')
+            candidate['experiences'] = copy.deepcopy(candidate.get('experiences', {}))
+            for key, value in payload['experiences'].items():
+                if value is None:
+                    candidate['experiences'].pop(key, None)
+                else:
+                    candidate['experiences'][key] = copy.deepcopy(value)
+        note_experiences.validate(candidate.get('experiences', {}), collection)
         for value in candidate['chapters'].values():
             _item(value, area_ids, topic_areas)
         for note in collection['notes']:
@@ -165,6 +176,7 @@ def organize(bank, name, payload, preview=False):
                        ('chapters', previous.get('chapters', {}), candidate['chapters']),
                        ('notes', previous.get('notes', {}), candidate['notes']))}
         changed['areas'] = int(previous.get('areas', []) != candidate['areas'])
+        changed['experiences'] = int(previous.get('experiences', {}) != candidate.get('experiences', {}))
         changed['source'] = int(bool(previous.get('source_digest') and
                                      previous['source_digest'] != source_digest(collection)))
         changes = any(changed.values())
@@ -178,6 +190,7 @@ def organize(bank, name, payload, preview=False):
             atomic_write(bank_file(bank, PATH), dumps(all_profiles) + '\n')
         return {'collection': name, 'preview': preview, 'changed': changes, 'changes': changed,
                 'areas': len(candidate['areas']), 'topics': sum(len(a['topics']) for a in candidate['areas']),
+                'experiences': len(candidate.get('experiences', {})),
                 'source_unchanged': True, 'links_unchanged': True,
                 'organization_digest': profile_digest(candidate if changes and not preview else previous)}
 
@@ -200,24 +213,37 @@ def enrich(bundle, profiles):
                 'language': value.get('language', profile.get('metadata', {}).get('language', '')),
                 'evidence': value.get('evidence', []), 'locked': bool(value.get('locked')),
             }})
-        collections.append({**source, 'notes': notes, 'organization': profile})
+        from . import note_experiences
+        enriched = {**source, 'notes': notes, 'organization': profile}
+        collections.append({**enriched, 'experiences': note_experiences.project(enriched)})
     return {**bundle, 'collections': collections, 'notes': [n for c in collections for n in c['notes']]}
 
 
-def collection_card(collection, linked=()):
+def collection_card(collection, linked=(), section='all'):
+    from . import note_experiences
     notes = collection['notes']
-    active = [n for n in notes if n['organization']['kind'] != 'info']
+    raw_active = [n for n in notes if n['organization']['kind'] != 'info']
+    excluded = note_experiences.members(collection)
+    knowledge = [n for n in raw_active if n['id'] not in excluded]
+    articles = collection.get('experiences', [])
+    active = articles if section == 'experiences' else knowledge if section == 'knowledge' else raw_active
     profile = collection.get('organization', {})
     areas = []
-    for area in profile.get('areas', []):
+    directory = profile.get('areas', []) if section != 'experiences' else [
+        {'id': 'public-experiences', 'title': '公开面经', 'topics': [
+            {'id': k, 'title': note_experiences.LABELS[k]} for k in note_experiences.KINDS]}]
+    for area in directory:
         mine = [n for n in active if n['organization']['area'] == area['id']]
         areas.append({**area, 'count': len(mine), 'topics': [
             {**t, 'count': sum(n['organization']['topic'] == t['id'] for n in mine)} for t in area['topics']]})
     return {'name': collection['name'], 'title': collection['title'], 'origin': collection.get('origin', ''),
             'imported_at': collection['imported_at'], 'total': len(notes), 'content_total': len(active),
-            'information_total': len(notes) - len(active), 'content_ids': [n['id'] for n in active],
+            'information_total': len(notes) - len(raw_active), 'content_ids': [n['id'] for n in active],
+            'raw_content_total': len(raw_active), 'knowledge_total': len(knowledge), 'experience_total': len(articles),
+            'experience_member_total': sum(n['id'] in excluded for n in raw_active),
             'information_ids': [n['id'] for n in notes if n['organization']['kind'] == 'info'],
-            'marked': sum(bool(n['marks']) for n in active), 'linked': sum(n['id'] in linked for n in active),
+            'marked': sum(bool(n['marks']) for n in active), 'linked': sum(
+                any(i in linked for i in n.get('experience', {}).get('note_ids', [n['id']])) for n in active),
             'chapters': [{**ch, 'count': sum(n['chapter'] == ch['index'] for n in active)} for ch in collection['chapters']],
             'areas': areas, 'uncategorized': sum(not n['organization']['area'] for n in active),
             'tags': sorted({t for n in active for t in n['organization']['tags']}),
@@ -239,6 +265,6 @@ def catalog(bank, name):
         return {'collection': name, 'source_digest': source_digest(collection), 'organization_digest': profile_digest(profile),
                 'metadata': profile.get('metadata', {}), 'areas': profile.get('areas', []),
                 'chapters': collection['chapters'], 'chapter_rules': profile.get('chapters', {}),
-                'note_rules': profile.get('notes', {}), 'notes': [
+                'note_rules': profile.get('notes', {}), 'experiences': profile.get('experiences', {}), 'notes': [
                     {'id': n['id'], 'title': n['title'], 'file': n['file'], 'group': n['group'],
                      'classification': n['organization']} for n in collection['notes']]}

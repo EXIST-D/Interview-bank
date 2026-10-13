@@ -10,6 +10,7 @@ const TEXT = {
     sidebar: '导航', stat_total: '题目', stat_answered: '有答案', stat_topics: '主题', study: '学习', view_all_long: '全部题目',
     tools: '工具', import: '导入题目', research: '补充答案', export: '导出报告', via_agent: 'Agent', think_first_short: '先想再看',
     info_soon: '网页内直接操作会在后续版本提供。',
+    entry_missing: '这条内容已移除或更新，请从当前列表重新选择。',
     info_import_title: '导入题目', info_import_text: '题目由电脑上的 Agent 从截图、文字或音视频中抽取、去重后写入题库，再同步到这里。在电脑上对 Agent 说：',
     info_import_example: '用 interview-bank 把 <截图目录> 里的面试题整理进我的题库，然后同步到服务器',
     info_research_title: '补充答案', info_research_text: '参考答案由 Agent 阅读官方文档等原始资料后撰写，每个要点都附出处，再同步到这里。在电脑上对 Agent 说：',
@@ -97,6 +98,18 @@ const TEXT = {
     notes_kind_case: '场景案例',
     notes_kind_reading: '延伸阅读',
     notes_kind_info: '来源与许可说明',
+    notes_sections: '八股内容分区', notes_section_knowledge: '知识资料', notes_section_experiences: '公开面经',
+    notes_experiences_summary: '{s} 个来源 · {n} 篇公开面经与经验',
+    notes_experiences_hint: '按来源分区，区分面试记录、公司题单和求职经验。公司与时间以原文为准。',
+    notes_browse_experiences: '浏览全部公开面经 →',
+    notes_source_split: '{k} 条知识资料 · {e} 篇公开面经',
+    notes_kind_interview: '面试记录', notes_kind_company_questions: '公司题单', notes_kind_career: '求职经验',
+    notes_experience_company: '公司', notes_experience_company_all: '全部公司', notes_experience_company_unknown: '公司未标注',
+    notes_experience_year: '面试年份', notes_experience_year_all: '全部年份', notes_experience_year_unknown: '年份未标注',
+    notes_experience_time: '面试时间', notes_experience_time_unknown: '面试时间未标注', notes_experience_published: '发布时间',
+    notes_experience_order: '来源顺序', notes_experience_recent: '面试时间由近到远',
+    notes_experience_warning: '面经与经验为来源记述，答复仅供参考，不代表公司官方口径。',
+    notes_experience_incomplete: '部分原文章节已变动，请核对完整出处。', notes_experience_evidence: '公司与时间依据',
     notes_verification: '核对状态',
     notes_verification_all: '全部核对状态',
     notes_verification_reference: '原文参考',
@@ -161,6 +174,7 @@ const TEXT = {
     sidebar: 'Navigation', stat_total: 'Questions', stat_answered: 'Answered', stat_topics: 'Topics', study: 'Study', view_all_long: 'All questions',
     tools: 'Tools', import: 'Import questions', research: 'Add answers', export: 'Export reports', via_agent: 'Agent', think_first_short: 'Think first',
     info_soon: 'Doing this directly in the page is planned for a later version.',
+    entry_missing: 'This entry was removed or updated. Choose an item from the current list.',
     info_import_title: 'Import questions', info_import_text: 'The agent on your computer extracts and deduplicates questions from screenshots, text or recordings, then syncs the bank here. Ask the agent, for example',
     info_import_example: 'Use interview-bank to add the interview questions in <screenshot folder> to my bank, then sync it to the server',
     info_research_title: 'Add answers', info_research_text: 'The agent writes reference answers from official docs and other primary sources, with a source for every key point, then syncs. Ask the agent, for example',
@@ -248,6 +262,18 @@ const TEXT = {
     notes_kind_case: 'Case study',
     notes_kind_reading: 'Further reading',
     notes_kind_info: 'Source and license',
+    notes_sections: 'Material sections', notes_section_knowledge: 'Knowledge', notes_section_experiences: 'Public interviews',
+    notes_experiences_summary: '{s} sources · {n} public interview and career articles',
+    notes_experiences_hint: 'Separate interview accounts, company question lists and career advice, with original source facts.',
+    notes_browse_experiences: 'Browse all public interviews →',
+    notes_source_split: '{k} knowledge entries · {e} public articles',
+    notes_kind_interview: 'Interview account', notes_kind_company_questions: 'Company question list', notes_kind_career: 'Career advice',
+    notes_experience_company: 'Company', notes_experience_company_all: 'All companies', notes_experience_company_unknown: 'Company unspecified',
+    notes_experience_year: 'Interview year', notes_experience_year_all: 'All years', notes_experience_year_unknown: 'Year unspecified',
+    notes_experience_time: 'Interview date', notes_experience_time_unknown: 'Interview date unspecified', notes_experience_published: 'Publication date',
+    notes_experience_order: 'Source order', notes_experience_recent: 'Latest interview first',
+    notes_experience_warning: 'Source accounts and advice are references, not official company answers.',
+    notes_experience_incomplete: 'Some original sections have changed. Check the complete source.', notes_experience_evidence: 'Company and date evidence',
     notes_verification: 'Verification',
     notes_verification_all: 'All verification states',
     notes_verification_reference: 'Original reference',
@@ -340,7 +366,7 @@ const state = {
   group: '', offset: 0, limit: 30, questions: [], ids: [], data: null, load: 0, detail: 0,
   current: null, revealed: true, cache: new Map(), round: null, merges: [],
   // 'bank': your interview questions; 'notes': 八股 collections. Both share the list and the reader.
-  mode: 'bank', notes: { home: true, collection: '', chapter: '', area: '', topic: '', tag: '', kind: 'study',
+  mode: 'bank', notes: { home: true, section: 'knowledge', company: '', year: '', collection: '', chapter: '', area: '', topic: '', tag: '', kind: 'study',
     verification: '', learning: 'all', view: 'knowledge', scope: 'source', marked: false, asked: false, sort: 'order' }, notesData: null,
 };
 const launch = new URLSearchParams(location.hash.slice(1));
@@ -453,7 +479,11 @@ async function api(path, body) {
   try { result = await response.json(); } catch (_) { throw new Error(t('unreachable')); }
   // A hosted reader whose session ended shows its login page again.
   if (response.status === 401 && result.login) { location.reload(); return new Promise(() => {}); }
-  if (!response.ok) throw new Error(result.error || t('failed'));
+  if (!response.ok) {
+    const error = new Error(result.error || t('failed'));
+    error.status = response.status;
+    throw error;
+  }
   return result;
 }
 
@@ -558,6 +588,7 @@ async function loadLibrary(reset = false) {
     $('account').textContent = data.account || data.name;
     $('side-logout').hidden = !data.can_logout;
     $('logout').hidden = !data.can_logout;
+    $('version').textContent = `${data.name} · v${data.version}`;
     if (state.mode !== 'bank') {
       if (data.notes?.total) return;
       setMode('bank');  // the notes were removed since last time
@@ -568,7 +599,6 @@ async function loadLibrary(reset = false) {
     updateFacets(data.facets);
     updateSidebar(data);
     filterCount();
-    $('version').textContent = `${data.name} · v${data.version}`;
     $('logout').hidden = !data.can_logout;
     $('result-count').textContent = t('count_answered', { n: data.total, a: data.total_answered });
     message('notice', data.read_only ? t('notice_read_only') : data.schema_version === 1 ? t('notice_v1') : '');
@@ -636,7 +666,8 @@ async function openQuestion(id, fromList = false) {
     state.revealed = !stored('ibank-think-first', false);
     if (isNote(q.id)) {
       if (state.notes.home && state.mode === 'notes') {
-        Object.assign(state.notes, { home: false, collection: q.collection, area: '', topic: '', chapter: '', kind: q.kind === 'info' ? 'info' : 'study' });
+        Object.assign(state.notes, { home: false, section: q.experience ? 'experiences' : 'knowledge', company: '', year: '',
+          collection: q.collection, area: '', topic: '', chapter: '', kind: q.kind === 'info' ? 'info' : 'study' });
         await loadNotes(true);
         if (generation !== state.detail) return;
       }
@@ -947,8 +978,20 @@ function renderNote(n) {
   if (n.marked) tags.append(el('span', 'tag mark', t('marked')));
   if (n.asked) tags.append(el('span', 'tag asked', t('asked_times', { n: n.asked })));
   if (tags.childNodes.length) reading.append(tags);
+  if (n.experience) {
+    const facts = el('p', 'reading-meta');
+    const value = n.experience;
+    const company = value.company || t('notes_experience_company_unknown');
+    const time = value.interview_time ? t('notes_experience_time') + '：' + value.interview_time +
+      (!value.year ? ' · ' + t('notes_experience_year_unknown') : '') : t('notes_experience_time_unknown');
+    facts.textContent = [company, value.role, value.round, n.kind === 'interview' ? time : '',
+      value.published_time ? t('notes_experience_published') + '：' + value.published_time : ''].filter(Boolean).join(' · ');
+    reading.append(facts);
+    if (value.summary) reading.append(el('p', 'hint', value.summary));
+    if (value.incomplete) reading.append(el('p', 'notice', t('notes_experience_incomplete')));
+  }
   if (n.kind !== 'info') {
-    reading.append(el('p', 'note-reference-warning', t('notes_warning_' + n.verification)), noteLearningControls(n));
+    reading.append(el('p', 'note-reference-warning', t(n.experience ? 'notes_experience_warning' : 'notes_warning_' + n.verification)), noteLearningControls(n));
     for (const url of n.evidence || []) { const link = safeLink(url); if (link) reading.append(link); }
   }
   $('toggle-answer').hidden = !n.body;
@@ -959,6 +1002,20 @@ function renderNote(n) {
     body.append(el('h2', 'answer-head', t(n.kind === 'info' ? 'notes_kind_info' : 'notes_original_text')), markdown(n.body), sourceBox(n.source));
     reading.append(button(t('show_answer'), 'reveal button primary', () => setReveal(true)), body);
     setReveal(state.revealed);
+  }
+  if (n.experience?.facts.length) {
+    const evidence = el('details', 'source-evidence');
+    evidence.append(el('summary', '', t('notes_experience_evidence')));
+    const quotes = new Set();
+    for (const fact of n.experience.facts) {
+      const key = fact.quote + '\n' + (fact.url || '');
+      if (quotes.has(key)) continue;
+      quotes.add(key);
+      evidence.append(el('p', 'hint', fact.quote));
+      const link = fact.url ? safeLink(fact.url) : null;
+      if (link) evidence.append(link);
+    }
+    reading.append(evidence);
   }
   if (n.questions.length) {
     const box = el('section', 'linked');
@@ -1028,7 +1085,8 @@ async function jump(mode, id) {
   // From a question to its notes and back; the list behind switches too, the reader stays open.
   if (mode === 'notes') {
     const note = await question(id);
-    Object.assign(state.notes, { home: false, collection: note.collection, area: '', topic: '', chapter: '',
+    Object.assign(state.notes, { home: false, section: note.experience ? 'experiences' : 'all', company: '', year: '',
+      collection: note.collection, area: '', topic: '', chapter: '',
       kind: note.kind === 'info' ? 'info' : 'study', tag: '', verification: '', learning: 'all', scope: 'source' });
   }
   if (state.mode !== mode) await setMode(mode, true);
@@ -1634,4 +1692,10 @@ loadLibrary(true)
     $('search').placeholder = t('search_notes');
     return loadNotes(true);
   })
-  .then(() => { if (openOnLoad) return jump(isNote(openOnLoad) ? 'notes' : 'bank', openOnLoad); });
+  .then(() => { if (openOnLoad) return jump(isNote(openOnLoad) ? 'notes' : 'bank', openOnLoad); })
+  .catch(error => {
+    if (error.status === 400 || error.status === 404) {
+      closeReader();
+      toast(t('entry_missing'));
+    } else message('error', error.message || t('connection'));
+  });

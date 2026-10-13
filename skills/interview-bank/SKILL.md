@@ -4,7 +4,7 @@ description: Build and maintain a personal interview question bank (面试题库
 license: MIT
 metadata:
   author: EXIST-D
-  version: "1.17.1"
+  version: "1.18.0"
   repository: https://github.com/EXIST-D/Interview-bank
 ---
 
@@ -12,7 +12,7 @@ metadata:
 
 A local interview question bank that keeps every question's provenance.
 You read screenshots, recordings and web pages, judge meaning and research answers.
-The bundled Python CLI validates your structured responses, stores them transactionally and renders reports.
+The Python CLI validates responses, stores them transactionally and renders reports.
 No command reads images, infers meaning or browses (only the optional `media-transcribe` runs a model).
 Prepare the JSON yourself; never ask the user to write it.
 
@@ -54,7 +54,7 @@ Prepare the JSON yourself; never ask the user to write it.
 | keep a bank over time, protect edits, recover, free space | [maintenance](references/maintenance.md) | `migrate`, `backup`, `policy`, `workflow`, `undo`, `gc` |
 | prepare for a role or a JD | [study sets](references/studysets.md) | `studyset` |
 | review weak questions or run a mock interview | [practice](references/practice.md) | `study`, `interview turn`, `interview review` |
-| organise 八股 sources and topics | [notes](references/notes.md) | `notes` |
+| organise 八股 sources, topics or public interview accounts | [notes](references/notes.md) | `notes` |
 | browse, practise or review in a browser | [local Web](references/web.md) | `web` |
 | set up a new host or check its tools | [portability](references/portability.md) | `capabilities`, `media-plan` |
 

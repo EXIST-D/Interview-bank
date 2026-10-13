@@ -26,6 +26,7 @@ from .selection import apply_expression
 from .messages import group_title, label, language
 from . import notes as notebook
 from . import note_organization
+from . import note_experiences
 from .timestamps import parse_timestamp
 
 ASSETS = Path(__file__).resolve().parents[2] / 'assets' / 'web'
@@ -33,7 +34,7 @@ FILTERS = {'query', 'domain', 'role', 'technology', 'company', 'industry', 'answ
 ANSWERED = ('source_backed', 'reviewed')
 VIEWS = {'all', 'due', 'weak', 'unseen'}
 NOTE_FILTERS = {'collection', 'chapter', 'query', 'marked', 'asked', 'sort', 'offset', 'limit',
-                'area', 'topic', 'tag', 'kind', 'verification', 'view'}
+                'area', 'topic', 'tag', 'kind', 'verification', 'view', 'section', 'company', 'year'}
 
 
 def progress(data, rows):
@@ -188,7 +189,8 @@ class WebApp:
             rows = select(data, config, self.bank)
         linked = notebook.linked_questions(bundle, rows)
         collections = {c['name']: c for c in bundle['collections']}
-        found = bundle['notes']
+        section = params.get('section', 'all')
+        found = note_experiences.select(bundle, section)
         # A collection remembered by the browser may have been removed since: show everything instead.
         if params.get('collection') in collections:
             found = [n for n in found if n['collection'] == params['collection']]
@@ -203,9 +205,16 @@ class WebApp:
         if params.get('tag'):
             found = [n for n in found if params['tag'] in n['organization']['tags']]
         if params.get('kind'):
-            require(params['kind'] in (*note_organization.KINDS, 'study'), 'Unknown content kind')
+            require(params['kind'] in (*note_organization.KINDS, *note_experiences.KINDS, 'study'), 'Unknown content kind')
             found = [n for n in found if n['organization']['kind'] != 'info'] if params['kind'] == 'study' else [
                 n for n in found if n['organization']['kind'] == params['kind']]
+        if params.get('company'):
+            require(section == 'experiences' and len(params['company']) <= 160, 'Company filter needs public experiences')
+            found = [n for n in found if (n['experience']['company'] or 'unknown') == params['company']]
+        if params.get('year'):
+            require(section == 'experiences' and (params['year'] == 'unknown' or
+                    len(params['year']) == 4 and params['year'].isdigit()), 'Invalid interview year')
+            found = [n for n in found if (n['experience']['year'] or 'unknown') == params['year']]
         require(params.get('view', 'original') in ('original', 'knowledge'), 'Unknown notes view')
         if params.get('query', '').strip():
             needle = params['query'].strip().casefold()
@@ -215,9 +224,21 @@ class WebApp:
             found = [n for n in found if n['marks']]
         if params.get('asked') == '1':
             found = [n for n in found if n['id'] in linked]
-        require(params.get('sort', 'order') in ('order', 'asked'), 'Unknown sort order')
+        require(params.get('sort', 'order') in ('order', 'asked') or
+                section == 'experiences' and params.get('sort') == 'recent', 'Unknown sort order')
+        article_links = lambda n: note_experiences.linked(n, linked)
         if params.get('sort') == 'asked':
-            found = sorted(found, key=lambda n: -sum(q['frequency'] for q, _ in linked.get(n['id'], [])))
+            found = sorted(found, key=lambda n: -sum(q['frequency'] for q, _ in article_links(n)))
+        elif params.get('sort') == 'recent':
+            # Unknown interview years stay last. Publication/import dates are not interview dates.
+            import re
+            def date_key(n):
+                value = n['experience']
+                parts = re.findall(r'\d+', value['interview_time'])
+                if parts and (len(parts[0]) == 4 or '年' in value['interview_time']):
+                    parts = parts[1:]
+                return (value['year'], *(int(p) for p in (parts + ['0', '0'])[:2]))
+            found = sorted(found, key=date_key, reverse=True)
         elif params.get('view') == 'knowledge' and not params.get('query', '').strip():
             area_order = {(c['name'], a['id']): i for c in bundle['collections']
                           for i, a in enumerate(c.get('organization', {}).get('areas', []))}
@@ -226,14 +247,21 @@ class WebApp:
             found = sorted(found, key=lambda n: (list(collections).index(n['collection']),
                            area_order.get((n['collection'], n['organization']['area']), 999),
                            topic_order.get((n['collection'], n['organization']['topic']), 999), n['order']))
-        card = lambda n: notebook.note_card(n, collections[n['collection']], [q for q, _ in linked.get(n['id'], [])])
+        card = lambda n: notebook.note_card(n, collections[n['collection']], [q for q, _ in article_links(n)])
         return {
-            'collections': [note_organization.collection_card(c, linked) for c in bundle['collections']],
+            'section': section,
+            'collections': [note_organization.collection_card(c, linked, section) for c in bundle['collections']],
             'summary': {'notes': len(bundle['notes']), 'marked': sum(bool(n['marks']) for n in bundle['notes']),
                         'asked': sum(n['id'] in linked for n in bundle['notes'])},
+            'section_counts': {'knowledge': sum(n['organization']['kind'] != 'info' for n in note_experiences.select(bundle, 'knowledge')),
+                               'experiences': len(note_experiences.select(bundle, 'experiences'))},
             'facets': {'tags': sorted({t for n in scoped for t in n['organization']['tags']}),
                        'kinds': dict(Counter(n['organization']['kind'] for n in scoped)),
-                       'verification': dict(Counter(n['organization']['verification'] for n in scoped))},
+                       'verification': dict(Counter(n['organization']['verification'] for n in scoped)),
+                       'companies': sorted({n['experience']['company'] for n in scoped if n.get('experience', {}).get('company')}),
+                       'years': sorted({n['experience']['year'] for n in scoped if n.get('experience', {}).get('year')}, reverse=True),
+                       'unknown_company': any('experience' in n and not n['experience']['company'] for n in scoped),
+                       'unknown_year': any('experience' in n and not n['experience']['year'] for n in scoped)},
             'total': len(found), 'offset': offset, 'limit': limit, 'ids': [n['id'] for n in found],
             'notes': [card(n) for n in found[offset:offset + limit]],
         }
@@ -242,10 +270,10 @@ class WebApp:
         with open_bank(self.bank, shared=True) as (_, config, data):
             bundle = self._notes(data)
             rows = select(data, config, self.bank)
-        note = next((n for n in bundle['notes'] if n['id'] == note_id), None)
+        note = note_experiences.find(bundle, note_id)
         require(note is not None, 'This note is no longer available; refresh the list')
         collection = next(c for c in bundle['collections'] if c['name'] == note['collection'])
-        linked = notebook.linked_questions(bundle, rows).get(note_id, [])
+        linked = note_experiences.linked(note, notebook.linked_questions(bundle, rows))
         linked.sort(key=lambda pair: (pair[1]['relation'] != 'answers', -pair[0]['frequency']))
         return {**notebook.note_card(note, collection, [q for q, _ in linked]), 'body': note['body'],
                 'source': notebook.source_of(note, collection),

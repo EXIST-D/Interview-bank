@@ -2,6 +2,19 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.18.0] - 2026-10-14
+
+### Added
+- A public-interview shelf inside notes, separate from knowledge and private interview occurrences. Source-owned articles project ordered existing note sections into interview accounts, company question lists or career advice.
+- Quoted source facts for company, role, round, interview time and publication time. Interview years are derived only from explicit interview dates; incomplete source groups are flagged for review.
+- Company/year filters, recent-interview ordering and source-preserving search. Existing private-question links are deduplicated within an article without changing frequency or original links.
+- `experiences` in digest-checked `notes organize` overlays and `--section` in `notes search`; article IDs work with `notes show`. Existing collections require no V1/V2 migration.
+
+### Changed
+- Knowledge directories omit public-article fragments while original note IDs remain available. Source cards distinguish knowledge and article counts; topics expand for the selected area in the existing left navigation.
+- Bookmarks to retired entries recover to the current list with a readable notice; metadata remains visible when starting directly in notes mode.
+- Documented Chinese-edition cleanup, event-boundary/provenance checks and exclusions for mixed public repositories. Imported datasets remain outside the repository and Skill package; imported answers are references, not automatically fact-verified.
+
 ## [1.17.1] - 2026-10-13
 
 ### Changed

@@ -204,7 +204,7 @@ def note_card(note, collection, linked=()):
     return {"id": note["id"], "title": note["title"], "collection": collection["name"], "collection_title": collection["title"],
             "chapter": note["chapter"], "chapter_title": chapter_title(collection, note), "group": note["group"],
             "marked": bool(note["marks"]), "linked": len(linked), "asked": sum(q["frequency"] for q in linked),
-            **note.get("organization", {})}
+            **note.get("organization", {}), **({'experience': note['experience']} if 'experience' in note else {})}
 
 
 def source_of(note, collection):
@@ -241,14 +241,16 @@ def summary(bank):
             "links": len(bundle["links"]), "linked_questions": len({link["question_id"] for link in bundle["links"]})}
 
 
-def search_notes(bank, query, limit=20):
+def search_notes(bank, query, limit=20, section='all'):
     require(isinstance(query, str) and query.strip(), "Give --query")
     needle = query.strip().casefold()
     with open_bank(bank, shared=True):
         bundle = load_notes(bank)
     by_name = {c["name"]: c for c in bundle["collections"]}
-    hits = [n for n in bundle["notes"] if needle in n["title"].casefold()] + \
-           [n for n in bundle["notes"] if needle not in n["title"].casefold() and needle in n["body"].casefold()]
+    from . import note_experiences
+    selected = note_experiences.select(bundle, section)
+    hits = [n for n in selected if needle in n["title"].casefold()] + \
+           [n for n in selected if needle not in n["title"].casefold() and needle in n["body"].casefold()]
     return {"total": len(hits), "notes": [note_card(n, by_name[n["collection"]]) | {"excerpt": _excerpt(n)} for n in hits[:limit]]}
 
 
@@ -257,10 +259,11 @@ def show_note(bank, note_id):
     with open_bank(bank, shared=True) as (_, config, data):
         bundle = resolve_links(load_notes(bank), data)
         rows = select(data, config, bank)
-    note = next((n for n in bundle["notes"] if n["id"] == note_id), None)
+    from . import note_experiences
+    note = note_experiences.find(bundle, note_id)
     require(note is not None, f"Unknown note: {note_id}")
     collection = next(c for c in bundle["collections"] if c["name"] == note["collection"])
-    linked = linked_questions(bundle, rows).get(note_id, [])
+    linked = note_experiences.linked(note, linked_questions(bundle, rows))
     return {**note_card(note, collection, [q for q, _ in linked]), "body": note["body"], "source": source_of(note, collection),
             "questions": [{"id": q["id"], "canonical": q["canonical"], "frequency": q["frequency"], "relation": link["relation"]}
                           for q, link in linked]}
@@ -407,6 +410,7 @@ def add_parsers(sub, common):
     find = action.add_parser("search", parents=[common], help="Find notes by words in the title or answer")
     find.add_argument("--query", required=True)
     find.add_argument("--limit", type=int, default=20)
+    find.add_argument("--section", choices=('all', 'knowledge', 'experiences'), default='all')
     show = action.add_parser("show", parents=[common], help="One note with its answer, source and linked questions")
     show.add_argument("note_id")
     remove = action.add_parser("remove", parents=[common], help="Delete a collection and its links")
@@ -431,7 +435,7 @@ def dispatch(bank, args):
             return note_organization.catalog(bank, args.name)
         return note_organization.organize(bank, args.name, read_json(args.input), args.preview)
     if name == "search":
-        return search_notes(bank, args.query, args.limit)
+        return search_notes(bank, args.query, args.limit, args.section)
     if name == "show":
         return show_note(bank, args.note_id)
     if name == "remove":
