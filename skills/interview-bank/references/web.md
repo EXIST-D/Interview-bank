@@ -85,7 +85,8 @@ The server accepts both `http://127.0.0.1:<port>` and `http://localhost:<port>`;
 ## Service boundary and validation
 
 Bind exclusively to `127.0.0.1`; no LAN/public binding option.
-The custom handler serves only explicitly allowlisted bundled assets and a small authenticated API, with Host/Origin checks, per-process token, bounded JSON bodies, no CORS grants and a restrictive content policy.
+The custom handler serves only explicitly allowlisted bundled assets and a small authenticated API,
+with Host/Origin checks, per-process token, bounded JSON bodies, no CORS grants and a restrictive content policy.
 Question/answer HTML is rendered as text, source links accept only HTTP(S), and no remote scripts/fonts or file-upload endpoints are used.
 It is a personal helper, not a multi-user service. Never tunnel or expose the port itself; reading on a phone goes
 through your own server as below, only when the user asks for it.
