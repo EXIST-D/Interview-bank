@@ -47,6 +47,32 @@ function noteLearningControls(note) {
   return box;
 }
 
+function renderStudyRelations(reading, note) {
+  if (note.study_links_incomplete) reading.append(el('p', 'notice', t('notes_relation_incomplete')));
+  for (const [key, label, section] of [['study_notes', 'notes_study_related', 'knowledge'],
+    ['public_experiences', 'notes_public_related', 'experiences']]) {
+    const edges = note[key] || [];
+    if (!edges.length) continue;
+    const box = el('details', 'source-evidence linked');
+    box.append(el('summary', '', t(label, { n: edges.length })), el('p', 'hint', t('notes_relation_hint')));
+    const list = el('ul', 'linked-list');
+    for (const edge of edges) {
+      const row = el('li');
+      row.append(el('p', '', edge.question_quote));
+      const entry = button('', 'linked-item', () => jump('notes', edge.id, section));
+      entry.append(el('span', 'linked-title', edge.title), el('span', 'question-meta',
+        [edge.company, edge.interview_time, edge.area_title, edge.topic_title, t('relation_' + edge.relation)].filter(Boolean).join(' · ')));
+      const evidence = el('details', 'source-evidence');
+      evidence.append(el('summary', '', t('notes_relation_evidence')), el('p', 'hint', edge.reason),
+        el('blockquote', '', edge.answer_quote));
+      row.append(entry, evidence);
+      list.append(row);
+    }
+    box.append(list);
+    reading.append(box);
+  }
+}
+
 function notesParams(offset = 0) {
   const f = state.notes;
   const words = $('search').value.trim();
@@ -61,7 +87,8 @@ function notesParams(offset = 0) {
     }
   }
   if (words) query.set('query', words);
-  for (const key of ['tag', 'kind', 'verification']) if (f[key]) query.set(key, f[key]);
+  for (const key of ['tag', 'kind', 'verification', 'connection']) if (f[key]) query.set(key, f[key]);
+  if (f.section !== 'experiences' && f.question_type) query.set('question_type', f.question_type);
   if (f.section === 'experiences') for (const key of ['company', 'year']) if (f[key]) query.set(key, f[key]);
   if (f.marked) query.set('marked', '1');
   if (f.asked) query.set('asked', '1');
@@ -89,6 +116,7 @@ async function loadNotes(reset = false) {
       if (f.chapter !== '' && !current.chapters.some(c => String(c.index) === String(f.chapter))) recovered.chapter = '';
     }
     if (f.tag && !data.facets.tags.includes(f.tag)) recovered.tag = '';
+    if (f.question_type && !(f.question_type in data.facets.question_types)) recovered.question_type = '';
     if (f.kind && !['study', 'info'].includes(f.kind) && !(f.kind in data.facets.kinds)) recovered.kind = 'study';
     if (f.section === 'experiences') {
       if (f.company && !(f.company === 'unknown' ? data.facets.unknown_company : data.facets.companies.includes(f.company))) recovered.company = '';
@@ -143,7 +171,7 @@ function pickNotes(changes) {
 function enterNotesSource(source, continueReading = false) {
   const last = stored('ibank-last-note', null);
   return pickNotes({ home: false, collection: source.name, chapter: '', area: '', topic: '', tag: '',
-    kind: 'study', company: '', year: '', verification: '', learning: 'all', marked: false, asked: false, scope: 'source', sort: 'order' })
+    kind: 'study', company: '', year: '', question_type: '', connection: '', verification: '', learning: 'all', marked: false, asked: false, scope: 'source', sort: 'order' })
     .then(() => {
       if (continueReading && last && source.content_ids.includes(last.id)) return openQuestion(last.id, true);
     });
@@ -151,7 +179,7 @@ function enterNotesSource(source, continueReading = false) {
 
 function selectNotesSection(section, home = true) {
   return pickNotes({ section, home, collection: '', chapter: '', area: '', topic: '', tag: '', kind: 'study',
-    company: '', year: '', verification: '', learning: 'all', marked: false, asked: false, view: 'knowledge',
+    company: '', year: '', question_type: '', connection: '', verification: '', learning: 'all', marked: false, asked: false, view: 'knowledge',
     scope: home ? 'source' : 'all', sort: 'order' });
 }
 
@@ -183,7 +211,8 @@ function renderSourceCards(data) {
     const description = el('p', 'source-card-description', meta.description || source.origin || t('notes_no_description'));
     const facts = el('p', 'source-card-facts');
     facts.append(el('strong', '', t('notes_source_split', { k: source.knowledge_total, e: source.experience_total })),
-      el('span', '', t('notes_source_linked', { n: source.linked })));
+      el('span', '', t('notes_source_linked', { n: source.linked })),
+      el('span', '', t(experiences ? 'notes_source_experiences_linked' : 'notes_source_public_linked', { n: source.public_linked })));
     const topics = el('div', 'source-card-topics');
     for (const area of source.areas.filter(a => a.count).slice(0, 4)) topics.append(el('span', 'tag', area.title));
     if (!source.areas.length) topics.append(el('span', 'tag', t('notes_original')));
@@ -272,6 +301,11 @@ function renderNoteFilters(data) {
     const disableDirectory = Boolean($('search').value.trim() && f.scope !== 'topic');
     $('notes-area').disabled = $('notes-topic').disabled = disableDirectory;
     notesOptions($('notes-tag'), [{ id: '', title: t('notes_tags_all') }, ...data.facets.tags.map(tag => ({ id: tag, title: tag }))], f.tag);
+    $('notes-question-type-field').hidden = experiences;
+    notesOptions($('notes-question-type'), [{ id: '', title: t('notes_question_type_all') },
+      ...Object.entries(data.facets.question_types).map(([id, count]) => ({ id, title: t('notes_question_type_' + id) + ' · ' + count }))], f.question_type);
+    notesOptions($('notes-connection'), [{ id: '', title: t('notes_connection_all') },
+      ...['any', 'personal', 'public', 'none'].map(id => ({ id, title: t('notes_connection_' + id) }))], f.connection);
     notesOptions($('notes-kind'), [{ id: 'study', title: t('notes_kind_study') },
       ...Object.keys(data.facets.kinds).filter(k => k !== 'info').map(k => ({ id: k, title: t('notes_kind_' + k) })),
       ...(f.kind === 'info' ? [{ id: 'info', title: t('notes_kind_info') }] : [])], f.kind);
@@ -369,6 +403,9 @@ function renderNoteList() {
     if (n.experience) meta.append(el('span', '', [n.experience.company || t('notes_experience_company_unknown'),
       n.experience.interview_time || (n.kind === 'interview' ? t('notes_experience_time_unknown') : '')].filter(Boolean).join(' · ')));
     if (n.marked) meta.append(el('span', 'mark', t('marked')));
+    if (n.question_type) meta.append(el('span', '', t('notes_question_type_' + n.question_type)));
+    if (n.public_experience_count) meta.append(el('span', '', t('notes_public_count', { n: n.public_experience_count })));
+    if (n.study_note_count) meta.append(el('span', '', t('notes_study_count', { n: n.study_note_count })));
     if (n.asked) meta.append(el('span', 'has-answer', t('asked_times', { n: n.asked })));
     const item = listRow(n.id, n.title, meta);
     if (groups) item.dataset.member = key;
@@ -443,13 +480,14 @@ function installNotesUI() {
     pickNotes({ area: area?.id || state.notes.area, topic, chapter: '' });
   });
   for (const [id, key] of [['notes-tag', 'tag'], ['notes-kind', 'kind'], ['notes-verification', 'verification'],
+    ['notes-question-type', 'question_type'], ['notes-connection', 'connection'],
     ['notes-learning', 'learning'], ['notes-search-scope', 'scope'], ['notes-experience-company', 'company'],
     ['notes-experience-year', 'year'], ['notes-experience-sort', 'sort']]) {
     $(id).addEventListener('change', () => pickNotes({ [key]: $(id).value }));
   }
   $('notes-reset').addEventListener('click', () => {
     $('search').value = '';
-    pickNotes({ chapter: '', area: '', topic: '', tag: '', kind: 'study', company: '', year: '', verification: '', learning: 'all',
+    pickNotes({ chapter: '', area: '', topic: '', tag: '', kind: 'study', company: '', year: '', question_type: '', connection: '', verification: '', learning: 'all',
       marked: false, asked: false, sort: 'order', scope: state.notes.collection ? 'source' : 'all' });
   });
   let timer;
@@ -460,7 +498,7 @@ function installNotesUI() {
       if (!words) return;
       $('search').value = words;
       Object.assign(state.notes, { home: false, collection: '', chapter: '', area: '', topic: '', scope: 'all',
-        tag: '', kind: 'study', company: '', year: '', verification: '', learning: 'all', marked: false, asked: false, sort: 'order' });
+        tag: '', kind: 'study', company: '', year: '', question_type: '', connection: '', verification: '', learning: 'all', marked: false, asked: false, sort: 'order' });
       store('ibank-notes', state.notes);
       loadNotes(true).then(() => $('search').focus());
     }, 350);

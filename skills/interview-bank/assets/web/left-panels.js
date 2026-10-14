@@ -125,7 +125,8 @@
     const topic = byId('notes-topic');
     const selected = topic.selectedOptions[0]?.textContent || '';
     setLabel(directory.value, isNotes ? (topic.value ? selected : directoryText) : '');
-    const activeNotes = ['notes-tag', 'notes-verification', 'notes-experience-company', 'notes-experience-year'].filter(id => byId(id).value).length
+    const activeNotes = ['notes-tag', 'notes-verification', 'notes-experience-company', 'notes-experience-year',
+      'notes-question-type', 'notes-connection'].filter(id => byId(id).value).length
       + (byId('notes-kind').value && byId('notes-kind').value !== 'study' ? 1 : 0)
       + (byId('notes-learning').value !== 'all' ? 1 : 0);
     setLabel(notesFilter.value, activeNotes ? label('conditions', activeNotes) : label('materials'));

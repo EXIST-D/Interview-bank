@@ -2,6 +2,19 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.19.0] - 2026-10-14
+
+### Added
+- Optional source-local question types, independent of content kind and verification, with Web facets and filters.
+- Evidence-bearing public-interview → knowledge links in `notes organize`: same-source direction checks, exact excerpts, reasons, duplicate checks and atomic patches. Reads exclude stale links and flag surviving affected entries.
+- Bidirectional study navigation and separate personal/public association filters and source-card counts. Public links never increase personal occurrence frequency; legacy summary fields and raw note IDs remain available.
+- A reusable protocol for per-question taxonomy review, ambiguous headings, project context and conservative association decisions. No personal-bank migration or external dependencies.
+
+### Changed
+- Large personal-link candidate tasks shortlist titles and rescore bodies with a bounded cache, reducing memory use. Scores remain retrieval aids; agents must search beyond the shortlist and review actual explanations.
+- Candidate computation releases the bank lock and checks source/bank revisions before publishing a task. Link writes reject stale personal-link snapshots, reconcile merged question IDs without duplicate associations, and make identical retries a no-op.
+- The reader retains its layout and original text; related public questions and study evidence appear in collapsible sections.
+
 ## [1.18.0] - 2026-10-14
 
 ### Added

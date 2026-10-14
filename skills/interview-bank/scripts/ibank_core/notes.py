@@ -10,6 +10,7 @@ Layout inside the bank: ``collections/<name>.json`` (one file per collection, re
 """
 import hashlib
 import re
+from functools import lru_cache
 from pathlib import Path
 
 from .dedupe import grams, retrieval_text
@@ -204,7 +205,10 @@ def note_card(note, collection, linked=()):
     return {"id": note["id"], "title": note["title"], "collection": collection["name"], "collection_title": collection["title"],
             "chapter": note["chapter"], "chapter_title": chapter_title(collection, note), "group": note["group"],
             "marked": bool(note["marks"]), "linked": len(linked), "asked": sum(q["frequency"] for q in linked),
-            **note.get("organization", {}), **({'experience': note['experience']} if 'experience' in note else {})}
+            **note.get("organization", {}), **({'experience': note['experience']} if 'experience' in note else {}),
+            'study_note_count': len(note.get('study_notes', [])),
+            'public_experience_count': len({e['id'] for e in note.get('public_experiences', [])}),
+            'study_links_incomplete': note.get('study_links_incomplete', 0)}
 
 
 def source_of(note, collection):
@@ -264,7 +268,8 @@ def show_note(bank, note_id):
     require(note is not None, f"Unknown note: {note_id}")
     collection = next(c for c in bundle["collections"] if c["name"] == note["collection"])
     linked = note_experiences.linked(note, linked_questions(bundle, rows))
-    return {**note_card(note, collection, [q for q, _ in linked]), "body": note["body"], "source": source_of(note, collection),
+    from .note_relations import detail
+    return {**note_card(note, collection, [q for q, _ in linked]), **detail(note), "body": note["body"], "source": source_of(note, collection),
             "questions": [{"id": q["id"], "canonical": q["canonical"], "frequency": q["frequency"], "relation": link["relation"]}
                           for q, link in linked]}
 
@@ -291,41 +296,70 @@ def _score(question, note, body):
     return round(0.5 * contained + 0.3 * jaccard + 0.2 * covered, 6)
 
 
+def _rank_candidates(query, profiles, top_k, body_profile):
+    """Bound full-text tokenisation on large sources; scores still only retrieve candidates."""
+    # Keep title profiles, not thousands of 800-character body sets, resident in memory.
+    shortlist = sorted(((_score(query, title, ()), n, title) for n, title in profiles),
+                       key=lambda row: (-row[0], row[1]['order']))[:max(60, top_k * 12)]
+    return sorted(((_score(query, title, body_profile(n['id'])), n) for _, n, title in shortlist),
+                  key=lambda row: (-row[0], row[1]['order']))[:top_k]
+
+
+def _notes_revision(bundle):
+    from .note_organization import source_digest
+    return fingerprint(sorted((c['name'], source_digest(c)) for c in bundle['collections']))
+
+
 def link_candidates(bank, question_ids=None, top_k=TOP_K, unlinked=False):
     """A task with the closest notes for each active question. The agent returns links with notes link."""
     from .studysets import select
     require(1 <= top_k <= 20, "top-k must be 1..20")
-    with open_bank(bank) as (_, config, data):
-        bundle = resolve_links(load_notes(bank), data)
+    with open_bank(bank, shared=True) as (_, config, data):
+        bundle = load_notes(bank)
+        links_revision = fingerprint(bundle['links'])
+        bundle = resolve_links(bundle, data)
         require(bool(bundle["notes"]), "No notes yet: import a collection first (notes import)")
         rows = select(data, config, bank, ids=question_ids) if question_ids else select(data, config, bank)
         if unlinked:
             judged = {link["question_id"] for link in bundle["links"]} | set(_judged_without_links(bank))
             rows = [q for q in rows if q["id"] not in judged]
         require(bool(rows), "No questions selected")
-        by_name = {c["name"]: c for c in bundle["collections"]}
-        profiles = [(n, _profile(n["title"]), _profile(n["body"][:800])) for n in bundle["notes"]]
-        items = []
-        for q in rows:
-            mine = _profile(q["canonical"])
-            ranked = sorted(((_score(mine, title, body), n) for n, title, body in profiles), key=lambda x: (-x[0], x[1]["order"]))
-            current = {link["note_id"]: link["relation"] for link in bundle["links"] if link["question_id"] == q["id"]}
-            candidates = [{"note_id": n["id"], "title": n["title"],
-                           "where": f"{by_name[n['collection']]['title']} › {chapter_title(by_name[n['collection']], n)}",
-                           "score": score, "excerpt": _excerpt(n), **({"current": current[n["id"]]} if n["id"] in current else {})}
-                          for score, n in ranked[:top_k]]
-            for note_id, relation in current.items():
-                if all(c["note_id"] != note_id for c in candidates):
-                    n = next(n for n in bundle["notes"] if n["id"] == note_id)
-                    candidates.append({"note_id": note_id, "title": n["title"], "where": chapter_title(by_name[n["collection"]], n),
-                                       "score": None, "excerpt": _excerpt(n), "current": relation})
-            items.append({"question": {"id": q["id"], "canonical": q["canonical"], "frequency": q["frequency"]}, "candidates": candidates})
-        # Word overlap misses paraphrases: in a real bank about half of the judged links were outside the candidates.
-        catalog = [f"{n['id']}\t{by_name[n['collection']]['title']} › {chapter_title(by_name[n['collection']], n)}"
-                   f"{' › ' + n['group'] if n['group'] else ''}\t{n['title']}"
-                   for n in bundle["notes"]] if len(bundle["notes"]) <= CATALOG_LIMIT else None
+        notes_stamp = signature(bank)
+        snapshot_stamp = fingerprint({'data': data, 'config': config})
+    by_name = {c["name"]: c for c in bundle["collections"]}
+    profiles = [(n, _profile(n["title"])) for n in bundle["notes"]]
+    by_id = {n['id']: n for n in bundle['notes']}
+    @lru_cache(maxsize=128)
+    def body_profile(note_id):
+        return _profile(by_id[note_id]['body'][:800])
+    items = []
+    for q in rows:
+        mine = _profile(q["canonical"])
+        ranked = _rank_candidates(mine, profiles, top_k, body_profile)
+        current = {link["note_id"]: link["relation"] for link in bundle["links"] if link["question_id"] == q["id"]}
+        candidates = [{"note_id": n["id"], "title": n["title"],
+                       "where": f"{by_name[n['collection']]['title']} › {chapter_title(by_name[n['collection']], n)}",
+                       "score": score, "excerpt": _excerpt(n), **({"current": current[n["id"]]} if n["id"] in current else {})}
+                      for score, n in ranked[:top_k]]
+        for note_id, relation in current.items():
+            if all(c["note_id"] != note_id for c in candidates):
+                n = next(n for n in bundle["notes"] if n["id"] == note_id)
+                candidates.append({"note_id": note_id, "title": n["title"], "where": chapter_title(by_name[n["collection"]], n),
+                                   "score": None, "excerpt": _excerpt(n), "current": relation})
+        items.append({"question": {"id": q["id"], "canonical": q["canonical"], "frequency": q["frequency"]}, "candidates": candidates})
+    # Word overlap misses paraphrases: in a real bank about half of the judged links were outside the candidates.
+    catalog = [f"{n['id']}\t{by_name[n['collection']]['title']} › {chapter_title(by_name[n['collection']], n)}"
+               f"{' › ' + n['group'] if n['group'] else ''}\t{n['title']}"
+               for n in bundle["notes"]] if len(bundle["notes"]) <= CATALOG_LIMIT else None
+    with open_bank(bank) as (_, current_config, current_data):
+        require(notes_stamp == signature(bank) and snapshot_stamp ==
+                fingerprint({'data': current_data, 'config': current_config}),
+                'Bank or notes changed during candidate retrieval; retry the task')
         task = write_task(bank, "notes-link", data, config, items, notes_digest=fingerprint(sorted(n["id"] for n in bundle["notes"])),
                           catalog=catalog,
+                          notes_revision=_notes_revision(bundle), links_revision=links_revision,
+                          retrieval={'title_shortlist': max(60, top_k * 12), 'body_chars': 800,
+                                     'body_cache_entries': 128},
                           instruction="For each question, link the notes that a candidate could study to answer it. relation "
                                       "'answers': the note is about the same question; 'covers': the note explains a core part "
                                       "of it. Skip notes that only share a word or a broad topic. Any note ID is allowed: scan "
@@ -359,6 +393,8 @@ def stage_links(bank, response):
         bundle = load_notes(bank)
         require(task["notes_digest"] == fingerprint(sorted(n["id"] for n in bundle["notes"])),
                 "Task is stale: the notes changed; create a new link task")
+        require('notes_revision' not in task or task['notes_revision'] == _notes_revision(bundle),
+                'Task is stale: note content changed; create a new link task')
         questions = {item["question"]["id"] for item in task["items"]}
         notes = {n["id"] for n in bundle["notes"]}
         offered = {(item["question"]["id"], c["note_id"]) for item in task["items"] for c in item["candidates"]}
@@ -377,15 +413,24 @@ def stage_links(bank, response):
                          "outside_candidates": key not in offered, "created_at": now})
         links_path = bank_file(bank, "collections/links.jsonl")
         existing = read_jsonl(links_path) if links_path.is_file() else []
-        kept = [row for row in existing if row["question_id"] not in questions]
-        atomic_write(links_path, jsonl_text(kept + rows))
+        targets = {q['id']: q['merged_into'] or q['id'] for q in data['questions']}
+        resolved = [{**r, 'question_id': targets.get(r['question_id'], r['question_id'])} for r in existing]
+        kept = [raw for raw, active in zip(existing, resolved) if active['question_id'] not in questions]
         linked = {row["question_id"] for row in rows}
-        judged = (set(_judged_without_links(bank)) - linked) | (questions - linked)
-        atomic_write(_judged_path(bank), dumps({"schema_version": 1, "questions": sorted(judged)}) + "\n")
+        prior_judged = set(_judged_without_links(bank))
+        content = lambda values: sorted((r['question_id'], r['note_id'], r['relation'], r.get('reason', '')) for r in values)
+        scoped = [r for r in resolved if r['question_id'] in questions]
+        already_applied = content(scoped) == content(rows) and questions - linked <= prior_judged
+        require('links_revision' not in task or task['links_revision'] == fingerprint(bundle['links']) or already_applied,
+                'Task is stale: interview links changed; create a new link task')
+        if not already_applied:
+            atomic_write(links_path, jsonl_text(kept + rows))
+            judged = (prior_judged - linked) | (questions - linked)
+            atomic_write(_judged_path(bank), dumps({"schema_version": 1, "questions": sorted(judged)}) + "\n")
     return {"task_id": task["id"], "questions": len(questions), "linked_questions": len(linked), "links": len(rows),
             "answers": sum(r["relation"] == "answers" for r in rows), "covers": sum(r["relation"] == "covers" for r in rows),
             "outside_candidates": sum(r["outside_candidates"] for r in rows), "without_links": len(questions - linked),
-            "replaced": len(existing) - len(kept)}
+            "replaced": 0 if already_applied else len(existing) - len(kept), "already_applied": already_applied}
 
 
 # ---------------------------------------------------------------- CLI

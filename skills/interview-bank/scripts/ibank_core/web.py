@@ -34,7 +34,8 @@ FILTERS = {'query', 'domain', 'role', 'technology', 'company', 'industry', 'answ
 ANSWERED = ('source_backed', 'reviewed')
 VIEWS = {'all', 'due', 'weak', 'unseen'}
 NOTE_FILTERS = {'collection', 'chapter', 'query', 'marked', 'asked', 'sort', 'offset', 'limit',
-                'area', 'topic', 'tag', 'kind', 'verification', 'view', 'section', 'company', 'year'}
+                'area', 'topic', 'tag', 'kind', 'verification', 'view', 'section', 'company', 'year',
+                'question_type', 'connection'}
 
 
 def progress(data, rows):
@@ -197,10 +198,13 @@ class WebApp:
             if params.get('chapter', '') != '':
                 found = [n for n in found if str(n['chapter']) == params['chapter']]
         scoped = found
-        for field in ('area', 'topic', 'verification'):
+        article_links = lambda n: note_experiences.linked(n, linked)
+        for field in ('area', 'topic', 'verification', 'question_type'):
             if params.get(field):
                 if field == 'verification':
                     require(params[field] in note_organization.VERIFICATIONS, 'Unknown verification state')
+                if field == 'question_type':
+                    require(params[field] in note_organization.QUESTION_TYPES, 'Unknown question type')
                 found = [n for n in found if n['organization'][field] == params[field]]
         if params.get('tag'):
             found = [n for n in found if params['tag'] in n['organization']['tags']]
@@ -223,10 +227,18 @@ class WebApp:
         if params.get('marked') == '1':
             found = [n for n in found if n['marks']]
         if params.get('asked') == '1':
-            found = [n for n in found if n['id'] in linked]
+            found = [n for n in found if article_links(n)]
+        if params.get('connection'):
+            connection = params['connection']
+            require(connection in ('any', 'personal', 'public', 'none'), 'Unknown connection scope')
+            def matches(n):
+                personal = bool(article_links(n))
+                public = bool(n.get('study_notes') or n.get('public_experiences'))
+                return {'any': personal or public, 'personal': personal, 'public': public,
+                        'none': not personal and not public}[connection]
+            found = [n for n in found if matches(n)]
         require(params.get('sort', 'order') in ('order', 'asked') or
                 section == 'experiences' and params.get('sort') == 'recent', 'Unknown sort order')
-        article_links = lambda n: note_experiences.linked(n, linked)
         if params.get('sort') == 'asked':
             found = sorted(found, key=lambda n: -sum(q['frequency'] for q, _ in article_links(n)))
         elif params.get('sort') == 'recent':
@@ -257,6 +269,8 @@ class WebApp:
                                'experiences': len(note_experiences.select(bundle, 'experiences'))},
             'facets': {'tags': sorted({t for n in scoped for t in n['organization']['tags']}),
                        'kinds': dict(Counter(n['organization']['kind'] for n in scoped)),
+                       'question_types': dict(Counter(n['organization'].get('question_type') for n in scoped
+                                                      if n['organization'].get('question_type'))),
                        'verification': dict(Counter(n['organization']['verification'] for n in scoped)),
                        'companies': sorted({n['experience']['company'] for n in scoped if n.get('experience', {}).get('company')}),
                        'years': sorted({n['experience']['year'] for n in scoped if n.get('experience', {}).get('year')}, reverse=True),
@@ -275,7 +289,8 @@ class WebApp:
         collection = next(c for c in bundle['collections'] if c['name'] == note['collection'])
         linked = note_experiences.linked(note, notebook.linked_questions(bundle, rows))
         linked.sort(key=lambda pair: (pair[1]['relation'] != 'answers', -pair[0]['frequency']))
-        return {**notebook.note_card(note, collection, [q for q, _ in linked]), 'body': note['body'],
+        from .note_relations import detail
+        return {**notebook.note_card(note, collection, [q for q, _ in linked]), **detail(note), 'body': note['body'],
                 'source': notebook.source_of(note, collection),
                 'questions': [{'id': q['id'], 'canonical': q['canonical'], 'frequency': q['frequency'], 'relation': link['relation'],
                                'answered': q['answer_status'] in ANSWERED} for q, link in linked]}

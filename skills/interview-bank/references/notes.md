@@ -64,7 +64,7 @@ Use the upstream commit/version and date with evidence; unspecified metadata rem
 HTTP(S) and contain no credentials. Collection metadata and area lists are display/navigation data, not claims
 that every answer has been verified.
 
-Rules support `area`, `topic`, `tags`, `kind`, `verification`, `language`, `evidence`, `locked`, `user_quote`.
+Rules support `area`, `topic`, `tags`, `kind`, `question_type`, `verification`, `language`, `evidence`, `locked`, `user_quote`.
 Kinds: `material` (default), `qa`, `knowledge`, `case`, `reading`, `info` (source/license notices). Verification:
 `reference` (default), `verified`, `needs_review`, `outdated`. Only mark `verified` after actually checking the content
 against appropriate sources, supply their URLs in `evidence`, and explain the scope to the user. The CLI validates
@@ -84,9 +84,18 @@ Whole-bank sync can overwrite it; in a multi-computer setup use the current serv
 
 ## Link questions to notes
 
+For question-level taxonomy, typed filters and evidence-backed links from **public interviews** to same-source
+knowledge, read [knowledge taxonomy and study links](knowledge-taxonomy.md). Personal question links below are a
+separate relation: public articles never contribute private occurrence frequency. When augmenting existing personal
+links, include all current links for every task question in the response; `notes link` replaces that question's set.
+
 1. `notes link-candidates [--question <id> …] [--unlinked] [--top-k 6]` writes a task. Each active question gets
    its lexically closest notes, and `catalog` lists every note (ID, collection › chapter, title). Read `task_file`;
    with many questions, judge in batches. Candidates only share words: scan the catalog for paraphrases too.
+   Large-source retrieval first shortlists titles, then rescores excerpts with a bounded cache. Body-only matches can
+   be missed: use `notes search` beyond candidates, including when `catalog_in_task` is false. On a small server, use
+   repeated `--question` batches to bound work per job. Computation releases the bank lock; the CLI rechecks both
+   bank and note snapshots before writing the task and rejects concurrent changes instead of overwriting them.
 2. For each question, keep only the notes someone should study to answer it:
    - `answers`: the same question or its core.
    - `covers`: a core part of the answer, such as one sub-question.
@@ -99,7 +108,10 @@ Whole-bank sync can overwrite it; in a multi-computer setup use the current serv
    so `--unlinked` later offers only new questions.
 4. Report linked questions, links, and how many came from outside the candidates.
 
-A link task is stale after a re-import, as dedupe tasks are after commits; create a new one.
+A link task is stale after source contents, headings or interview links change, as dedupe tasks are after commits;
+create a new one. Organization-only edits retain the source revision. Older task packets keep their legacy ID check.
+An identical already-applied response is a no-op. When task questions have absorbed merged aliases, replacement
+reconciles the old alias links with the active IDs; it must not retain a duplicate association under both IDs.
 
 ## Reader and server
 
@@ -115,7 +127,8 @@ labelled as such unless the user asks to remove them too.
     explicit interview-year filters; unknown dates never inherit publication/import dates;
   - an overview of separate source cards; learning content and source/license notices count separately;
   - knowledge areas/topics or original chapters, with 重点, 面经考过 and 按考频 (most asked first);
-  - explicit current-topic/current-source/all-source search; tags, content kinds and verification filters;
+  - explicit current-topic/current-source/all-source search; tags, content kinds, question types, personal/public
+    interview-link scopes and verification filters;
   - source metadata and organization history, including links to full source/license notices;
   - read/review/mastered learning marks and filters, kept only in this browser/account namespace; reading never
     implies verification, and the Agent must not manufacture these marks;

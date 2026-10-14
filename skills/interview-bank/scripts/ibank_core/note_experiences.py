@@ -94,7 +94,7 @@ def project(collection):
                        'experience': details, 'organization': {
                            'area': 'public-experiences', 'area_title': '公开面经',
                            'topic': kind, 'topic_title': LABELS[kind], 'kind': kind,
-                           'tags': [], 'verification': verification, 'language': first['organization']['language'],
+                           'tags': [], 'question_type': '', 'verification': verification, 'language': first['organization']['language'],
                            'evidence': [], 'locked': False,
                        }})
     return result

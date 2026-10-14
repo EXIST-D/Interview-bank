@@ -72,7 +72,20 @@ const TEXT = {
     notes_search_all_hint: '搜索全部来源，结果保留各自出处。',
     notes_home_summary: '{s} 个来源 · {n} 条学习资料 · {i} 条来源说明',
     notes_source_count: '{n} 条学习资料',
-    notes_source_linked: '{n} 条资料关联面经',
+    notes_source_linked: '{n} 条关联个人面经',
+    notes_source_public_linked: '{n} 条资料关联公开面经',
+    notes_source_experiences_linked: '{n} 篇已关联学习考点',
+    notes_question_type: '题型', notes_question_type_all: '全部题型',
+    notes_question_type_concept: '概念原理', notes_question_type_comparison: '对比辨析',
+    notes_question_type_implementation: '实现与实践', notes_question_type_design: '方案设计',
+    notes_question_type_coding: '代码与算法', notes_question_type_troubleshooting: '排障与优化',
+    notes_question_type_reference: '指南与资料',
+    notes_connection: '面经关联', notes_connection_all: '全部关联状态', notes_connection_any: '已关联面经',
+    notes_connection_personal: '关联个人面经', notes_connection_public: '关联公开面经', notes_connection_none: '尚未关联',
+    notes_public_count: '公开面经 {n} 篇', notes_study_count: '学习考点 {n} 个',
+    notes_public_related: '公开面经中的考法 · {n}', notes_study_related: '这些考点可以这样学 · {n}',
+    notes_relation_incomplete: '部分考点关联的原文已变化，需要重新核对；未计入有效关联。',
+    notes_relation_evidence: '关联依据（原文）', notes_relation_hint: '以下是同一来源的学习关联；原作者答案仅供参考，不代表已逐条事实核验。',
     notes_progress: '{r} / {n} 已读',
     notes_continue: '继续阅读',
     notes_start: '进入来源',
@@ -236,7 +249,20 @@ const TEXT = {
     notes_search_all_hint: 'Searching all sources; every result retains its provenance.',
     notes_home_summary: '{s} sources · {n} learning entries · {i} source notices',
     notes_source_count: '{n} learning entries',
-    notes_source_linked: '{n} notes linked to interviews',
+    notes_source_linked: '{n} linked to personal interviews',
+    notes_source_public_linked: '{n} entries linked to public interviews',
+    notes_source_experiences_linked: '{n} articles linked to study topics',
+    notes_question_type: 'Question type', notes_question_type_all: 'All question types',
+    notes_question_type_concept: 'Concepts', notes_question_type_comparison: 'Comparisons',
+    notes_question_type_implementation: 'Implementation', notes_question_type_design: 'System design',
+    notes_question_type_coding: 'Code & algorithms', notes_question_type_troubleshooting: 'Troubleshooting',
+    notes_question_type_reference: 'Guides & references',
+    notes_connection: 'Interview links', notes_connection_all: 'All link states', notes_connection_any: 'Linked',
+    notes_connection_personal: 'Personal interviews', notes_connection_public: 'Public interviews', notes_connection_none: 'Unlinked',
+    notes_public_count: '{n} public interviews', notes_study_count: '{n} study topics',
+    notes_public_related: 'Questions in public interviews · {n}', notes_study_related: 'Study these topics · {n}',
+    notes_relation_incomplete: 'Some source quotes changed. These links need review and are excluded from active counts.',
+    notes_relation_evidence: 'Source evidence', notes_relation_hint: 'Study links stay within this source. The original answers are references, not individually fact-checked claims.',
     notes_progress: '{r} / {n} read',
     notes_continue: 'Continue reading',
     notes_start: 'Browse source',
@@ -367,7 +393,7 @@ const state = {
   current: null, revealed: true, cache: new Map(), round: null, merges: [],
   // 'bank': your interview questions; 'notes': 八股 collections. Both share the list and the reader.
   mode: 'bank', notes: { home: true, section: 'knowledge', company: '', year: '', collection: '', chapter: '', area: '', topic: '', tag: '', kind: 'study',
-    verification: '', learning: 'all', view: 'knowledge', scope: 'source', marked: false, asked: false, sort: 'order' }, notesData: null,
+    question_type: '', connection: '', verification: '', learning: 'all', view: 'knowledge', scope: 'source', marked: false, asked: false, sort: 'order' }, notesData: null,
 };
 const launch = new URLSearchParams(location.hash.slice(1));
 let token = launch.get('token');
@@ -667,7 +693,9 @@ async function openQuestion(id, fromList = false) {
     if (isNote(q.id)) {
       if (state.notes.home && state.mode === 'notes') {
         Object.assign(state.notes, { home: false, section: q.experience ? 'experiences' : 'knowledge', company: '', year: '',
-          collection: q.collection, area: '', topic: '', chapter: '', kind: q.kind === 'info' ? 'info' : 'study' });
+          collection: q.collection, area: '', topic: '', chapter: '', kind: q.kind === 'info' ? 'info' : 'study',
+          question_type: '', connection: '', tag: '', verification: '', learning: 'all',
+          marked: false, asked: false, sort: 'order', scope: 'source' });
         await loadNotes(true);
         if (generation !== state.detail) return;
       }
@@ -974,6 +1002,7 @@ function renderNote(n) {
   reading.append(top, el('h1', 'reading-title', n.title));
   const tags = el('div', 'tags');
   if (n.kind !== 'info') tags.append(el('span', 'tag', t('notes_verification_' + n.verification)));
+  if (n.question_type) tags.append(el('span', 'tag', t('notes_question_type_' + n.question_type)));
   for (const value of n.tags || []) tags.append(el('span', 'tag', value));
   if (n.marked) tags.append(el('span', 'tag mark', t('marked')));
   if (n.asked) tags.append(el('span', 'tag asked', t('asked_times', { n: n.asked })));
@@ -1034,6 +1063,7 @@ function renderNote(n) {
     box.append(items);
     reading.append(box);
   }
+  renderStudyRelations(reading, n);
 }
 
 function sourceBox(source) {
@@ -1081,13 +1111,15 @@ function setMode(mode, keepReader = false) {
   return reload(true);
 }
 
-async function jump(mode, id) {
+async function jump(mode, id, section) {
   // From a question to its notes and back; the list behind switches too, the reader stays open.
   if (mode === 'notes') {
     const note = await question(id);
-    Object.assign(state.notes, { home: false, section: note.experience ? 'experiences' : 'all', company: '', year: '',
+    $('search').value = '';
+    Object.assign(state.notes, { home: false, section: section || (note.experience ? 'experiences' : 'all'), company: '', year: '',
       collection: note.collection, area: '', topic: '', chapter: '',
-      kind: note.kind === 'info' ? 'info' : 'study', tag: '', verification: '', learning: 'all', scope: 'source' });
+      kind: note.kind === 'info' ? 'info' : 'study', tag: '', question_type: '', connection: '',
+      verification: '', learning: 'all', scope: 'source', marked: false, asked: false, sort: 'order' });
   }
   if (state.mode !== mode) await setMode(mode, true);
   else if (mode === 'notes') await loadNotes(true);
