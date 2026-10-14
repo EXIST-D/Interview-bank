@@ -4,15 +4,15 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.19.1**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.20.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.19.1 a primary public-interview entry
+## This update: 1.20 public-interview catalogue and navigation
 
-- **Personal / Notes / Public** are three primary entries on desktop and mobile. Public interviews have their own source groups instead of a secondary switch inside notes.
-- Changing entries clears the previous source and filters. Study-link navigation updates the selected entry while retaining the existing reader layout.
-- Add `#section=experiences` to the reader URL to open public interviews directly; `#section=knowledge` opens knowledge sources and `#section=bank` opens the personal bank.
+- Desktop navigation uses full-width vertical rows; mobile keeps compact single-line entries without wrapped labels.
+- Public interviews open a global article list, grouped by interview year or content topic, with combined company/year/topic filters. Known recent interviews appear first; unknown years stay separate.
+- Every article retains source provenance, original text and study links. Knowledge shelves keep their source groups; the existing reader and focus layout remain.
 
-This changes navigation only: no migration or changes to questions, answers, occurrence counts or source data. See the [public-interview protocol](skills/interview-bank/references/public-experiences.md).
+Topics are navigation heuristics based on headings, role descriptions and content. Ambiguous accounts stay unclassified. No migration or changes to questions, answers, occurrence counts or source data are needed. See the [public-interview protocol](skills/interview-bank/references/public-experiences.md).
 
 ## Interface preview
 
@@ -139,7 +139,7 @@ Open the local Web reader; I want to review answers myself and settle the uncert
 
 The agent organises the bank; the Web page is for reading it. The page runs no AI and searches nothing online; it only reads your bank.
 
-- **Two sections:** *Interviews* holds your collected questions, most frequent first, with sourced reference answers. *Notes* separates knowledge materials from public interview accounts and career advice, keeping each source independent. Browse knowledge by area or original chapter; filter public accounts by company, interview year and type. Existing private-question links remain available.
+- **Three sections:** *Personal* holds your collected questions, most frequent first, with sourced reference answers. *Notes* keeps knowledge shelves independent by source and browsable by topic or original chapter. *Public* groups interviews across sources by topic or year, with company/year/type filters and provenance on each article. Existing private-question links remain available.
 - **Made for spare minutes:** on a phone, a list and a full-screen reader with previous/next at the bottom or a swipe; a peek at any answer from the list; read marks and chapter progress; a random pick that prefers unread questions; Think first hides answers by default.
 - **Three columns on a computer:** navigation, list and reader. The navigation and the list fold away, and Focus lets the reader fill the window at a comfortable line length.
 - **Easy on the eyes:** three text sizes, a reading progress bar, light / dark / system themes, highlighted search words; tables, code, quotes and nested lists in long answers render properly. Read marks, folds, text size and theme stay in the browser.
@@ -195,7 +195,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 ## Status and plans
 
-**v1.19.1** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
+**v1.20.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
 
 **Not implemented yet:**
 

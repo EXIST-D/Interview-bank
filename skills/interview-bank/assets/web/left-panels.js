@@ -58,6 +58,8 @@
   const panels = text('div', 'lb-panels');
   library.insertBefore(panels, search.nextSibling);
   const navigation = byId('notes-navigation');
+  // Public accounts use a global topic/date catalogue; advanced study filters remain collapsible.
+  navigation.append(byId('notes-experience-filters'));
   const noteFilters = byId('notes-filters');
   const scopeLabel = byId('notes-search-scope').closest('label');
   const scope = text('div', 'lb-scope');
@@ -76,6 +78,10 @@
   // Existing controls keep their original listeners and data model.
   byId('hide-side').replaceChildren(svg('collapse'));
   function decorateViews() {
+    for (const control of document.querySelectorAll('.modes [data-mode]')) {
+      if (!control.querySelector('.lb-icon')) control.prepend(svg(control.dataset.mode === 'bank' ? 'all' :
+        control.dataset.section === 'experiences' ? 'due' : 'book'));
+    }
     for (const control of side.querySelectorAll('[data-view]')) {
       const first = control.querySelector('span');
       if (first && !first.querySelector('.lb-icon')) first.prepend(svg(control.dataset.view));
@@ -107,7 +113,8 @@
     if (node.textContent !== value) node.textContent = value;
   }
   function sync() {
-    for (const item of [directory, notesFilter, bankFilter]) setLabel(item.heading, label(item.title));
+    for (const item of [directory, notesFilter, bankFilter]) setLabel(item.heading,
+      item === directory && state.notes.section === 'experiences' ? t('notes_public_group') : label(item.title));
     collapse.setAttribute('aria-label', t('hide_list'));
     collapse.title = t('hide_list');
     // placeFilters() moves the original controls between the dialog and the list on resize.
@@ -116,7 +123,7 @@
     const isHome = document.body.classList.contains('notes-home');
     directory.details.hidden = !isNotes || isHome || navigation.hidden;
     notesFilter.details.hidden = !isNotes || isHome || noteFilters.hidden;
-    scope.hidden = !isNotes || isHome;
+    scope.hidden = !isNotes || isHome || state.notes.section === 'experiences';
     bankFilter.details.hidden = isNotes || !roomy.matches;
     const activeBank = filters.filter(name => byId(name).value).length
       + (byId('view').value !== 'all') + (byId('sort').value !== 'frequency');
@@ -125,7 +132,7 @@
     const topic = byId('notes-topic');
     const selected = topic.selectedOptions[0]?.textContent || '';
     setLabel(directory.value, isNotes ? (topic.value ? selected : directoryText) : '');
-    const activeNotes = ['notes-tag', 'notes-verification', 'notes-experience-company', 'notes-experience-year',
+    const activeNotes = ['notes-tag', 'notes-verification', 'notes-experience-company', 'notes-experience-year', 'notes-experience-domain',
       'notes-question-type', 'notes-connection'].filter(id => byId(id).value).length
       + (byId('notes-kind').value && byId('notes-kind').value !== 'study' ? 1 : 0)
       + (byId('notes-learning').value !== 'all' ? 1 : 0);

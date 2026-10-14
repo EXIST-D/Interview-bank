@@ -23,10 +23,10 @@
       <div><strong id="stat-answered">—</strong><small id="stat-answered-label" data-i18n="stat_answered">有答案</small></div>
       <div><strong id="stat-topics">—</strong><small id="stat-topics-label" data-i18n="stat_topics">主题</small></div>
     </div>
-    <div id="side-modes" class="modes side-modes" role="tablist" aria-label="板块" data-i18n-aria="modes" hidden>
-      <button type="button" role="tab" data-mode="bank" aria-selected="true" data-i18n="mode_bank">个人面经</button>
-      <button type="button" role="tab" data-mode="notes" data-section="knowledge" aria-selected="false" data-i18n="mode_notes">八股</button>
-      <button type="button" role="tab" data-mode="notes" data-section="experiences" aria-selected="false" data-i18n="mode_public">公开面经</button>
+    <div id="side-modes" class="modes side-modes" role="tablist" aria-orientation="vertical" aria-label="板块" data-i18n-aria="modes" hidden>
+      <button type="button" role="tab" data-mode="bank" aria-selected="true"><span data-i18n="mode_bank">个人面经</span></button>
+      <button type="button" role="tab" data-mode="notes" data-section="knowledge" aria-selected="false"><span data-i18n="mode_notes">八股</span></button>
+      <button type="button" role="tab" data-mode="notes" data-section="experiences" aria-selected="false"><span data-i18n="mode_public">公开面经</span></button>
     </div>
     <p class="side-title bank-only" data-fold="views" data-i18n="study">学习</p>
     <nav id="views" class="side-list bank-only">
@@ -80,9 +80,9 @@
       <small id="version" class="menu-version"></small>
     </div>
     <div id="modes" class="modes" role="tablist" aria-label="板块" data-i18n-aria="modes" hidden>
-      <button type="button" role="tab" data-mode="bank" aria-selected="true" data-i18n="mode_bank">个人面经</button>
-      <button type="button" role="tab" data-mode="notes" data-section="knowledge" aria-selected="false" data-i18n="mode_notes">八股</button>
-      <button type="button" role="tab" data-mode="notes" data-section="experiences" aria-selected="false" data-i18n="mode_public">公开面经</button>
+      <button type="button" role="tab" data-mode="bank" aria-selected="true"><span data-i18n="mode_bank">个人面经</span></button>
+      <button type="button" role="tab" data-mode="notes" data-section="knowledge" aria-selected="false"><span data-i18n="mode_notes">八股</span></button>
+      <button type="button" role="tab" data-mode="notes" data-section="experiences" aria-selected="false"><span data-i18n="mode_public">公开面经</span></button>
     </div>
     <div id="notes-sections" class="notes-only notes-sections" role="group" aria-label="八股内容分区" data-i18n-aria="notes_sections" hidden>
       <button id="notes-section-knowledge" type="button" aria-pressed="true"><span data-i18n="notes_section_knowledge">知识资料</span><small id="notes-knowledge-count"></small></button>
@@ -110,6 +110,14 @@
       </div>
     </section>
     <label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="搜索题目…" aria-label="搜索题目" data-i18n-placeholder="search" data-i18n-aria="search_label"></label>
+    <div id="public-directory" class="notes-only public-directory" hidden>
+      <div class="public-directory-heading"><strong data-i18n="mode_public">公开面经</strong><small id="public-total"></small></div>
+      <div class="public-group-switch" role="group" data-i18n-aria="notes_public_group" aria-label="面经分组">
+        <button type="button" data-public-group="year" aria-pressed="true" data-i18n="notes_public_by_year">按年份</button>
+        <button type="button" data-public-group="domain" aria-pressed="false" data-i18n="notes_public_by_domain">按领域</button>
+      </div>
+      <div id="public-active-filters" class="public-active-filters"></div>
+    </div>
     <div id="notes-filters" class="notes-only notes-filters" hidden>
       <label class="notes-search-scope"><span data-i18n="notes_search_scope">搜索范围</span><select id="notes-search-scope"><option value="source" data-i18n="notes_scope_source">当前来源</option><option value="topic" data-i18n="notes_scope_topic">当前专题</option><option value="all" data-i18n="notes_scope_all">全部来源</option></select></label>
       <div class="notes-filter-grid">
@@ -121,6 +129,7 @@
         <label><span data-i18n="notes_learning">学习状态</span><select id="notes-learning"><option value="all" data-i18n="notes_learning_all">全部状态</option><option value="unread" data-i18n="notes_learning_unread">未读</option><option value="read" data-i18n="notes_learning_read">已读</option><option value="review" data-i18n="notes_learning_review">待复习</option><option value="mastered" data-i18n="notes_learning_mastered">已掌握</option></select></label>
       </div>
       <div id="notes-experience-filters" class="notes-filter-grid" hidden>
+        <label><span data-i18n="notes_public_domain">内容领域</span><select id="notes-experience-domain"></select></label>
         <label><span data-i18n="notes_experience_company">公司</span><select id="notes-experience-company"></select></label>
         <label><span data-i18n="notes_experience_year">面试年份</span><select id="notes-experience-year"></select></label>
         <label><span data-i18n="sort">排序</span><select id="notes-experience-sort"><option value="order" data-i18n="notes_experience_order">来源顺序</option><option value="recent" data-i18n="notes_experience_recent">面试时间由近到远</option></select></label>

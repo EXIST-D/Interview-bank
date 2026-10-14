@@ -61,6 +61,13 @@ const TEXT = {
     merge_saved: '已保存。全部裁决后请让 Agent 运行 dedupe --resolve {run}。', merge_decided: '已裁决：{a}',
     unreachable: '连不上题库服务，请稍后重试。', failed: '操作未完成，请重试。', connection: '连接失败，请稍后重试。',
     modes: '板块', mode_bank: '个人面经', mode_notes: '八股', mode_public: '公开面经',
+    notes_public_all: '全部公开面经', notes_public_group: '面经分组', notes_public_by_year: '按年份', notes_public_by_domain: '按领域',
+    notes_public_domain: '内容领域', notes_public_domain_all: '全部领域', notes_public_source: '来源',
+    notes_public_total: '{n} 篇', notes_public_latest: '最新优先', notes_public_clear: '清除筛选：{value}',
+    notes_public_topic_hint: '跨来源查阅；领域按标题、岗位描述与正文考点归纳，仅用于浏览。未知年份单独保留。',
+    notes_domain_agent: 'Agent 与 AI 应用', notes_domain_llm: '大模型与机器学习', notes_domain_multimodal: '多模态与视觉',
+    notes_domain_backend: '后端与数据库', notes_domain_frontend: '前端与客户端', notes_domain_fullstack: '全栈开发',
+    notes_domain_infra: '基础设施与系统', notes_domain_coding: '算法与编程', notes_domain_career: '求职与面试经验', notes_domain_other: '综合 / 待分类',
     search_notes: '搜索八股…', search_public: '搜索公开面经…', marked_only: '重点', asked_only: '面经考过',
     asked_sort: '按考频', notes_count: '{n} 条', notes_all: '全部八股', all_chapters: '全部章节', stat_notes: '八股',
     stat_marked: '重点', stat_asked: '面经考过', empty_notes: '没有符合条件的条目。', marked: '重点', asked_times: '面经考过 {n} 次',
@@ -114,14 +121,14 @@ const TEXT = {
     notes_kind_info: '来源与许可说明',
     notes_sections: '八股内容分区', notes_section_knowledge: '知识资料', notes_section_experiences: '公开面经',
     notes_experiences_summary: '{s} 个来源 · {n} 篇公开面经与经验',
-    notes_experiences_hint: '按来源分区，区分面试记录、公司题单和求职经验。公司与时间以原文为准。',
+    notes_experiences_hint: '按领域、公司与面试年份查阅，逐篇保留原文出处。',
     notes_browse_experiences: '浏览全部公开面经 →',
     notes_source_split: '{k} 条知识资料 · {e} 篇公开面经',
     notes_kind_interview: '面试记录', notes_kind_company_questions: '公司题单', notes_kind_career: '求职经验',
     notes_experience_company: '公司', notes_experience_company_all: '全部公司', notes_experience_company_unknown: '公司未标注',
     notes_experience_year: '面试年份', notes_experience_year_all: '全部年份', notes_experience_year_unknown: '年份未标注',
     notes_experience_time: '面试时间', notes_experience_time_unknown: '面试时间未标注', notes_experience_published: '发布时间',
-    notes_experience_order: '来源顺序', notes_experience_recent: '面试时间由近到远',
+    notes_experience_order: '原始顺序', notes_experience_recent: '面试时间由近到远',
     notes_experience_warning: '面经与经验为来源记述，答复仅供参考，不代表公司官方口径。',
     notes_experience_incomplete: '部分原文章节已变动，请核对完整出处。', notes_experience_evidence: '公司与时间依据',
     notes_verification: '核对状态',
@@ -239,6 +246,13 @@ const TEXT = {
     merge_saved: 'Saved. When all are decided, ask the agent to run dedupe --resolve {run}.', merge_decided: 'Decided: {a}',
     unreachable: 'Cannot reach the bank server; try again shortly.', failed: 'That did not work; please retry.', connection: 'Connection failed; try again shortly.',
     modes: 'Sections', mode_bank: 'Personal', mode_notes: 'Notes', mode_public: 'Public',
+    notes_public_all: 'All public interviews', notes_public_group: 'Group interviews', notes_public_by_year: 'By year', notes_public_by_domain: 'By topic',
+    notes_public_domain: 'Content topic', notes_public_domain_all: 'All topics', notes_public_source: 'Source',
+    notes_public_total: '{n} articles', notes_public_latest: 'Latest first', notes_public_clear: 'Clear filter: {value}',
+    notes_public_topic_hint: 'Browse across sources. Topics come from headings, role descriptions and content, for navigation only. Unknown years stay separate.',
+    notes_domain_agent: 'Agents & AI applications', notes_domain_llm: 'LLMs & machine learning', notes_domain_multimodal: 'Multimodal & vision',
+    notes_domain_backend: 'Backend & databases', notes_domain_frontend: 'Frontend & clients', notes_domain_fullstack: 'Full stack',
+    notes_domain_infra: 'Infrastructure & systems', notes_domain_coding: 'Algorithms & coding', notes_domain_career: 'Career & interviews', notes_domain_other: 'General / Unclassified',
     search_notes: 'Search notes…', search_public: 'Search public interviews…', marked_only: 'Key', asked_only: 'Asked',
     asked_sort: 'Most asked', notes_count: '{n} notes', notes_all: 'All notes', all_chapters: 'All chapters', stat_notes: 'Notes',
     stat_marked: 'Key', stat_asked: 'Asked', empty_notes: 'No notes match.', marked: 'Key', asked_times: 'Asked {n}×',
@@ -292,14 +306,14 @@ const TEXT = {
     notes_kind_info: 'Source and license',
     notes_sections: 'Material sections', notes_section_knowledge: 'Knowledge', notes_section_experiences: 'Public interviews',
     notes_experiences_summary: '{s} sources · {n} public interview and career articles',
-    notes_experiences_hint: 'Separate interview accounts, company question lists and career advice, with original source facts.',
+    notes_experiences_hint: 'Browse by topic, company and interview year, with provenance on every article.',
     notes_browse_experiences: 'Browse all public interviews →',
     notes_source_split: '{k} knowledge entries · {e} public articles',
     notes_kind_interview: 'Interview account', notes_kind_company_questions: 'Company question list', notes_kind_career: 'Career advice',
     notes_experience_company: 'Company', notes_experience_company_all: 'All companies', notes_experience_company_unknown: 'Company unspecified',
     notes_experience_year: 'Interview year', notes_experience_year_all: 'All years', notes_experience_year_unknown: 'Year unspecified',
     notes_experience_time: 'Interview date', notes_experience_time_unknown: 'Interview date unspecified', notes_experience_published: 'Publication date',
-    notes_experience_order: 'Source order', notes_experience_recent: 'Latest interview first',
+    notes_experience_order: 'Original order', notes_experience_recent: 'Latest interview first',
     notes_experience_warning: 'Source accounts and advice are references, not official company answers.',
     notes_experience_incomplete: 'Some original sections have changed. Check the complete source.', notes_experience_evidence: 'Company and date evidence',
     notes_verification: 'Verification',
@@ -394,7 +408,7 @@ const state = {
   group: '', offset: 0, limit: 30, questions: [], ids: [], data: null, load: 0, detail: 0,
   current: null, revealed: true, cache: new Map(), round: null, merges: [],
   // 'bank': your interview questions; 'notes': 八股 collections. Both share the list and the reader.
-  mode: 'bank', notes: { home: true, section: 'knowledge', company: '', year: '', collection: '', chapter: '', area: '', topic: '', tag: '', kind: 'study',
+  mode: 'bank', notes: { home: true, section: 'knowledge', company: '', year: '', experience_domain: '', experience_group: 'year', collection: '', chapter: '', area: '', topic: '', tag: '', kind: 'study',
     question_type: '', connection: '', verification: '', learning: 'all', view: 'knowledge', scope: 'source', marked: false, asked: false, sort: 'order' }, notesData: null,
 };
 const launch = new URLSearchParams(location.hash.slice(1));
@@ -610,7 +624,8 @@ async function loadLibrary(reset = false) {
     query.set('offset', state.offset);
     query.set('limit', state.limit);
     const data = await api('/api/library?' + query);
-    if (generation !== state.load) return;
+    // A quick section switch can cancel the rows while initial metadata is still needed for the tabs.
+    if (generation !== state.load && state.data) return;
     if (!state.data || state.data.language !== data.language) applyLanguage(data.language);
     state.data = data;
     $('modes').hidden = $('side-modes').hidden = !data.notes?.total;
@@ -618,6 +633,7 @@ async function loadLibrary(reset = false) {
     $('side-logout').hidden = !data.can_logout;
     $('logout').hidden = !data.can_logout;
     $('version').textContent = `${data.name} · v${data.version}`;
+    if (generation !== state.load) return;
     if (state.mode !== 'bank') {
       if (data.notes?.total) return;
       setMode('bank');  // the notes were removed since last time
@@ -695,10 +711,10 @@ async function openQuestion(id, fromList = false) {
     state.revealed = !stored('ibank-think-first', false);
     if (isNote(q.id)) {
       if (state.notes.home && state.mode === 'notes') {
-        Object.assign(state.notes, { home: false, section: q.experience ? 'experiences' : 'knowledge', company: '', year: '',
-          collection: q.collection, area: '', topic: '', chapter: '', kind: q.kind === 'info' ? 'info' : 'study',
+        Object.assign(state.notes, { home: false, section: q.experience ? 'experiences' : 'knowledge', company: '', year: '', experience_domain: '',
+          collection: q.experience ? '' : q.collection, area: '', topic: '', chapter: '', kind: q.kind === 'info' ? 'info' : 'study',
           question_type: '', connection: '', tag: '', verification: '', learning: 'all',
-          marked: false, asked: false, sort: 'order', scope: 'source' });
+          marked: false, asked: false, sort: q.experience ? 'recent' : 'order', scope: q.experience ? 'all' : 'source' });
         await loadNotes(true);
         if (generation !== state.detail) return;
       }
@@ -1001,7 +1017,8 @@ function renderNote(n) {
   const reading = $('reading');
   reading.replaceChildren();
   const top = el('p', 'reading-meta');
-  top.append(el('span', 'topic', [n.area_title, n.topic_title].filter(Boolean).join(' › ') || n.chapter_title), el('span', '', n.collection_title));
+  top.append(el('span', 'topic', [n.experience ? t('notes_domain_' + n.experience.domain) : n.area_title, n.topic_title].filter(Boolean).join(' › ') || n.chapter_title),
+    el('span', '', (n.experience ? t('notes_public_source') + '：' : '') + n.collection_title));
   reading.append(top, el('h1', 'reading-title', n.title));
   const tags = el('div', 'tags');
   if (n.kind !== 'info') tags.append(el('span', 'tag', t('notes_verification_' + n.verification)));
@@ -1137,10 +1154,10 @@ async function jump(mode, id, section) {
   if (mode === 'notes') {
     const note = await question(id);
     $('search').value = '';
-    Object.assign(state.notes, { home: false, section: section || (note.experience ? 'experiences' : 'all'), company: '', year: '',
-      collection: note.collection, area: '', topic: '', chapter: '',
+    Object.assign(state.notes, { home: false, section: section || (note.experience ? 'experiences' : 'all'), company: '', year: '', experience_domain: '',
+      collection: note.experience ? '' : note.collection, area: '', topic: '', chapter: '',
       kind: note.kind === 'info' ? 'info' : 'study', tag: '', question_type: '', connection: '',
-      verification: '', learning: 'all', scope: 'source', marked: false, asked: false, sort: 'order' });
+      verification: '', learning: 'all', scope: note.experience ? 'all' : 'source', marked: false, asked: false, sort: note.experience ? 'recent' : 'order' });
   }
   if (state.mode !== mode) await setMode(mode, true);
   else if (mode === 'notes') await loadNotes(true);
@@ -1582,13 +1599,14 @@ for (const tabs of [$('modes'), $('side-modes')]) {
     if (tab) selectPrimarySection(tab.dataset.mode, tab.dataset.section);
   });
   tabs.addEventListener('keydown', event => {
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    const vertical = tabs.getAttribute('aria-orientation') === 'vertical';
+    if (!(vertical ? ['ArrowUp', 'ArrowDown', 'Home', 'End'] : ['ArrowLeft', 'ArrowRight', 'Home', 'End']).includes(event.key)) return;
     const items = [...tabs.querySelectorAll('[role="tab"]')];
     const index = items.indexOf(event.target.closest('[role="tab"]'));
     if (index < 0) return;
     event.preventDefault();
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 :
-      (index + (event.key === 'ArrowRight' ? 1 : -1) + items.length) % items.length;
+      (index + (['ArrowRight', 'ArrowDown'].includes(event.key) ? 1 : -1) + items.length) % items.length;
     items[next].focus();
     items[next].click();
   });
@@ -1601,7 +1619,8 @@ window.addEventListener('hashchange', () => {
 });
 $('marked-only').addEventListener('click', () => pickNotes({ marked: !state.notes.marked }));
 $('asked-only').addEventListener('click', () => pickNotes({ asked: !state.notes.asked }));
-$('asked-sort').addEventListener('click', () => pickNotes({ sort: state.notes.sort === 'asked' ? 'order' : 'asked' }));
+$('asked-sort').addEventListener('click', () => pickNotes({ sort: state.notes.sort === 'asked' ?
+  state.notes.section === 'experiences' ? 'recent' : 'order' : 'asked' }));
 $('open-filters').addEventListener('click', () => {
   if (roomy.matches) $('inline-filters').hidden = !$('inline-filters').hidden;
   else $('filter-dialog').showModal();
@@ -1751,6 +1770,10 @@ $('side-think-first').checked = $('think-first').checked;
 placeFilters();
 $('answered-only').setAttribute('aria-pressed', String(stored('ibank-answered-only', false)));
 state.notes = { ...state.notes, ...stored('ibank-notes', {}) };
+if (state.notes.section === 'experiences' && state.notes.public_navigation !== 2) {
+  Object.assign(state.notes, notesSectionSelection('experiences'));
+  store('ibank-notes', state.notes);
+}
 if (openSection && openSection !== 'bank' && !openOnLoad) {
   Object.assign(state.notes, notesSectionSelection(openSection));
   store('ibank-notes', state.notes);

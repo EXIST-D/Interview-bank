@@ -89,7 +89,10 @@ function notesParams(offset = 0) {
   if (words) query.set('query', words);
   for (const key of ['tag', 'kind', 'verification', 'connection']) if (f[key]) query.set(key, f[key]);
   if (f.section !== 'experiences' && f.question_type) query.set('question_type', f.question_type);
-  if (f.section === 'experiences') for (const key of ['company', 'year']) if (f[key]) query.set(key, f[key]);
+  if (f.section === 'experiences') {
+    for (const key of ['company', 'year', 'experience_domain']) if (f[key]) query.set(key, f[key]);
+    if (f.experience_group === 'domain' && f.sort === 'recent') query.set('sort', 'domain');
+  }
   if (f.marked) query.set('marked', '1');
   if (f.asked) query.set('asked', '1');
   return query;
@@ -119,6 +122,7 @@ async function loadNotes(reset = false) {
     if (f.question_type && !(f.question_type in data.facets.question_types)) recovered.question_type = '';
     if (f.kind && !['study', 'info'].includes(f.kind) && !(f.kind in data.facets.kinds)) recovered.kind = 'study';
     if (f.section === 'experiences') {
+      if (f.experience_domain && !(f.experience_domain in data.facets.experience_domains)) recovered.experience_domain = '';
       if (f.company && !(f.company === 'unknown' ? data.facets.unknown_company : data.facets.companies.includes(f.company))) recovered.company = '';
       if (f.year && !(f.year === 'unknown' ? data.facets.unknown_year : data.facets.years.includes(f.year))) recovered.year = '';
     }
@@ -179,9 +183,10 @@ function enterNotesSource(source, continueReading = false) {
 }
 
 function notesSectionSelection(section, home = true) {
-  return { section, home, collection: '', chapter: '', area: '', topic: '', tag: '', kind: 'study',
+  return { section, home: section === 'experiences' ? false : home, public_navigation: 2,
+    experience_domain: '', experience_group: 'year', collection: '', chapter: '', area: '', topic: '', tag: '', kind: 'study',
     company: '', year: '', question_type: '', connection: '', verification: '', learning: 'all', marked: false, asked: false, view: 'knowledge',
-    scope: home ? 'source' : 'all', sort: 'order' };
+    scope: section === 'experiences' || !home ? 'all' : 'source', sort: section === 'experiences' ? 'recent' : 'order' };
 }
 
 function selectNotesSection(section, home = true) {
@@ -258,6 +263,9 @@ function renderNoteFilters(data) {
   const searchingAll = $('search').value.trim() && f.scope === 'all';
   const current = data.collections.find(c => c.name === f.collection);
   const experiences = f.section === 'experiences';
+  document.body.classList.toggle('public-experiences', experiences);
+  $('public-directory').hidden = !experiences;
+  if (experiences) renderPublicDirectory(data);
   syncPrimaryNavigation();
   $('notes-knowledge-count').textContent = data.section_counts.knowledge;
   $('notes-experience-count').textContent = data.section_counts.experiences;
@@ -275,18 +283,19 @@ function renderNoteFilters(data) {
     renderSourceCards(data);
     $('empty-reader').hidden = true;
   } else {
-    const title = searchingAll || !current ? t(experiences ? 'notes_section_experiences' : 'notes_source_all') : current.title;
+    const title = experiences ? t('notes_section_experiences') : searchingAll || !current ? t('notes_source_all') : current.title;
+    $('notes-home').textContent = t(experiences ? 'notes_public_all' : 'notes_sources');
     $('notes-source-name').textContent = title;
     $('notes-source-title').textContent = title;
-    $('notes-source-description').textContent = searchingAll ? t('notes_search_all_hint') : current?.metadata.description || '';
-    $('notes-source-info').hidden = !current || Boolean(searchingAll);
+    $('notes-source-description').textContent = experiences ? t('notes_public_topic_hint') : searchingAll ? t('notes_search_all_hint') : current?.metadata.description || '';
+    $('notes-source-info').hidden = experiences || !current || Boolean(searchingAll);
     $('notes-view-knowledge').setAttribute('aria-pressed', String(f.view === 'knowledge'));
     $('notes-view-original').setAttribute('aria-pressed', String(f.view === 'original'));
     $('notes-view-original').parentElement.hidden = experiences;
     $('notes-area-label').parentElement.hidden = experiences;
     $('notes-area-label').hidden = f.view === 'original' || !current || Boolean(searchingAll);
     $('notes-topic-label').textContent = t(f.view === 'original' ? 'notes_original_chapter' : 'notes_topic');
-    $('notes-topic').closest('label').hidden = !current || Boolean(searchingAll);
+    $('notes-topic').closest('label').hidden = experiences || !current || Boolean(searchingAll);
     notesOptions($('notes-area'), [{ id: '', title: t('notes_area_all') }, ...(current?.areas || []).filter(a => a.count).map(a =>
       ({ id: a.id, title: a.title + ' · ' + a.count }))], f.area);
     if (f.view === 'original') {
@@ -319,6 +328,11 @@ function renderNoteFilters(data) {
       ...Object.keys(data.facets.verification).map(k => ({ id: k, title: t('notes_verification_' + k) }))], f.verification);
     $('notes-learning').value = f.learning;
     $('notes-experience-filters').hidden = !experiences;
+    if (experiences) {
+      notesOptions($('notes-experience-domain'), [{ id: '', title: t('notes_public_domain_all') },
+        ...Object.entries(data.facets.experience_domains).map(([id, count]) =>
+          ({ id, title: t('notes_domain_' + id) + ' · ' + count }))], f.experience_domain);
+    }
     notesOptions($('notes-experience-company'), [{ id: '', title: t('notes_experience_company_all') },
       ...data.facets.companies.map(company => ({ id: company, title: company })),
       ...(data.facets.unknown_company ? [{ id: 'unknown', title: t('notes_experience_company_unknown') }] : [])], f.company);
@@ -333,7 +347,8 @@ function renderNoteFilters(data) {
   for (const [key, label, value] of [
     ['total', experiences ? 'notes_section_experiences' : 'notes_stat_material', data.collections.reduce((n, c) => n + c.content_total, 0)],
     ['answered', 'stat_asked', data.collections.reduce((n, c) => n + c.linked, 0)],
-    ['topics', 'notes_stat_sources', data.collections.filter(c => c.content_total > 0).length],
+    ['topics', experiences ? 'notes_public_domain' : 'notes_stat_sources', experiences ?
+      Object.keys(data.facets.experience_domains).length : data.collections.filter(c => c.content_total > 0).length],
   ]) {
     $(`stat-${key}`).textContent = value;
     $(`stat-${key}-label`).textContent = t(label);
@@ -346,7 +361,23 @@ function renderNoteFilters(data) {
     node.setAttribute('aria-current', active ? 'page' : 'false');
     parent.append(node);
   };
-  entry(side, '← ' + t('notes_sources'), data.collections.filter(c => !experiences || c.content_total > 0).length, home,
+  if (experiences) {
+    entry(side, t('notes_public_all'), data.section_counts.experiences,
+      !f.experience_domain && !f.year && !f.company, () => selectNotesSection('experiences'));
+    side.append(el('p', 'side-title', t('notes_public_by_domain')));
+    for (const [id, count] of Object.entries(data.facets.experience_domains)) {
+      entry(side, t('notes_domain_' + id), count, f.experience_domain === id,
+        () => pickNotes({ experience_domain: f.experience_domain === id ? '' : id, collection: '', scope: 'all' }));
+    }
+    side.append(el('p', 'side-title', t('notes_public_by_year')));
+    const years = Object.entries(data.facets.experience_years).sort(([a], [b]) => b.localeCompare(a));
+    for (const [id, count] of years.filter(([id]) => id !== 'unknown').concat(years.filter(([id]) => id === 'unknown'))) {
+      entry(side, id === 'unknown' ? t('notes_experience_year_unknown') : id, count, f.year === id,
+        () => pickNotes({ year: f.year === id ? '' : id, collection: '', scope: 'all' }));
+    }
+    return;
+  }
+  entry(side, '← ' + t('notes_sources'), data.collections.length, home,
     () => selectNotesSection(experiences ? 'experiences' : 'knowledge'));
   if (!home && current && !searchingAll) {
     side.append(el('p', 'side-title', current.title));
@@ -381,6 +412,7 @@ function renderNoteFilters(data) {
 
 function grouped() {
   const f = state.notes;
+  if (f.section === 'experiences') return !$('search').value.trim() && f.sort === 'recent';
   return !f.home && f.sort === 'order' && !$('search').value.trim() &&
     !(f.collection && (f.view === 'original' ? f.chapter !== '' : Boolean(f.topic)));
 }
@@ -394,18 +426,23 @@ function renderNoteList() {
   let head = null;
   for (const n of state.questions) {
     const knowledge = state.notes.view === 'knowledge';
-    const key = `${n.collection}:${knowledge ? n.area + ':' + n.topic : n.chapter}`;
+    const experience = n.experience;
+    const byDomain = state.notes.experience_group === 'domain';
+    const key = experience ? 'public:' + (byDomain ? experience.domain : experience.year || 'unknown') :
+      `${n.collection}:${knowledge ? n.area + ':' + n.topic : n.chapter}`;
     const topic = knowledge ? n.topic_title || n.area_title || n.chapter_title : n.chapter_title;
     if (groups && head?.dataset.group !== key) {
       head = el('li', 'group');
       head.dataset.group = key;
-      head.dataset.label = state.notes.collection ? topic : n.collection_title + ' › ' + topic;
+      head.dataset.label = experience ? byDomain ? t('notes_domain_' + experience.domain) :
+        experience.year || t('notes_experience_year_unknown') : state.notes.collection ? topic : n.collection_title + ' › ' + topic;
       head.append(button('', 'group-head', () => { setFolded('list:' + key, !folded.has('list:' + key)); syncGroup(key); }));
       list.append(head);
     }
     const meta = el('span', 'question-meta');
     const crossSource = !state.notes.collection || ($('search').value.trim() && state.notes.scope === 'all');
-    meta.append(el('span', '', (crossSource ? n.collection_title + ' · ' : '') + topic));
+    meta.append(el('span', '', experience ? t('notes_domain_' + experience.domain) + ' · ' + topic :
+      (crossSource ? n.collection_title + ' · ' : '') + topic));
     if (n.experience) meta.append(el('span', '', [n.experience.company || t('notes_experience_company_unknown'),
       n.experience.interview_time || (n.kind === 'interview' ? t('notes_experience_time_unknown') : '')].filter(Boolean).join(' · ')));
     if (n.marked) meta.append(el('span', 'mark', t('marked')));
@@ -413,6 +450,7 @@ function renderNoteList() {
     if (n.public_experience_count) meta.append(el('span', '', t('notes_public_count', { n: n.public_experience_count })));
     if (n.study_note_count) meta.append(el('span', '', t('notes_study_count', { n: n.study_note_count })));
     if (n.asked) meta.append(el('span', 'has-answer', t('asked_times', { n: n.asked })));
+    if (experience) meta.append(el('span', 'public-provenance', t('notes_public_source') + '：' + n.collection_title));
     const item = listRow(n.id, n.title, meta);
     if (groups) item.dataset.member = key;
     list.append(item);
@@ -488,14 +526,17 @@ function installNotesUI() {
   for (const [id, key] of [['notes-tag', 'tag'], ['notes-kind', 'kind'], ['notes-verification', 'verification'],
     ['notes-question-type', 'question_type'], ['notes-connection', 'connection'],
     ['notes-learning', 'learning'], ['notes-search-scope', 'scope'], ['notes-experience-company', 'company'],
-    ['notes-experience-year', 'year'], ['notes-experience-sort', 'sort']]) {
+    ['notes-experience-year', 'year'], ['notes-experience-sort', 'sort'], ['notes-experience-domain', 'experience_domain']]) {
     $(id).addEventListener('change', () => pickNotes({ [key]: $(id).value }));
   }
   $('notes-reset').addEventListener('click', () => {
     $('search').value = '';
-    pickNotes({ chapter: '', area: '', topic: '', tag: '', kind: 'study', company: '', year: '', question_type: '', connection: '', verification: '', learning: 'all',
-      marked: false, asked: false, sort: 'order', scope: state.notes.collection ? 'source' : 'all' });
+    pickNotes({ chapter: '', area: '', topic: '', tag: '', kind: 'study', company: '', year: '', experience_domain: '', question_type: '', connection: '', verification: '', learning: 'all',
+      marked: false, asked: false, sort: state.notes.section === 'experiences' ? 'recent' : 'order', scope: state.notes.collection ? 'source' : 'all' });
   });
+  for (const control of document.querySelectorAll('[data-public-group]')) {
+    control.addEventListener('click', () => pickNotes({ experience_group: control.dataset.publicGroup, sort: 'recent' }));
+  }
   let timer;
   $('source-search').addEventListener('input', () => {
     clearTimeout(timer);
@@ -509,4 +550,24 @@ function installNotesUI() {
       loadNotes(true).then(() => $('search').focus());
     }, 350);
   });
+}
+
+function renderPublicDirectory(data) {
+  const f = state.notes;
+  $('public-total').textContent = t('notes_public_total', { n: data.total }) +
+    (f.sort === 'recent' ? ' · ' + t('notes_public_latest') : '');
+  for (const control of document.querySelectorAll('[data-public-group]')) {
+    control.setAttribute('aria-pressed', String(control.dataset.publicGroup === f.experience_group));
+  }
+  const active = $('public-active-filters');
+  active.replaceChildren();
+  for (const [key, value] of [['experience_domain', f.experience_domain ? t('notes_domain_' + f.experience_domain) : ''],
+    ['year', f.year === 'unknown' ? t('notes_experience_year_unknown') : f.year],
+    ['company', f.company === 'unknown' ? t('notes_experience_company_unknown') : f.company]]) {
+    if (!value) continue;
+    const clear = button(value + ' ×', 'chip-button', () => pickNotes({ [key]: '' }));
+    clear.setAttribute('aria-label', t('notes_public_clear', { value }));
+    active.append(clear);
+  }
+  active.hidden = !active.childElementCount;
 }

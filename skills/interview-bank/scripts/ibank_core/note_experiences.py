@@ -9,6 +9,51 @@ LABELS = {'interview': '面试记录', 'company_questions': '公司题单', 'car
 FACT_FIELDS = ('company', 'role', 'round', 'interview_time', 'published_time')
 FIELDS = {'title', 'kind', 'note_ids', 'summary', 'facts', *FACT_FIELDS}
 
+# Browsing topics, not claims about the author's job. Never infer from the repository name.
+DOMAINS = {
+    'agent': 'Agent 与 AI 应用', 'llm': '大模型与机器学习', 'multimodal': '多模态与视觉',
+    'backend': '后端与数据库', 'frontend': '前端与客户端', 'fullstack': '全栈开发',
+    'infra': '基础设施与系统', 'coding': '算法与编程', 'career': '求职与面试经验',
+    'other': '综合 / 待分类',
+}
+DOMAIN_PATTERNS = {
+    'multimodal': (r'多模态', r'\bvlm\b', r'视觉', r'\bclip\b', r'图像'),
+    'fullstack': (r'全栈', r'full[ -]?stack'),
+    'agent': (r'(?<![a-z])agent(?![a-z])|智能体', r'(?<![a-z])rag(?![a-z])', r'\bmcp\b', r'langgraph', r'langchain',
+              r'\bfde\b', r'AI\s*应用', r'工具调用', r'function\s*call'),
+    'infra': (r'\binfra\b', r'分布式', r'操作系统', r'计算机网络', r'\bkubernetes\b', r'云原生'),
+    'backend': (r'后端', r'\bjava\b|\bjvm\b', r'\bspring\b', r'\bredis\b', r'\bmysql\b', r'数据库', r'缓存'),
+    'frontend': (r'前端', r'\breact\b', r'\bvue\b', r'\bjavascript\b', r'\btypescript\b', r'\bcss\b', r'客户端'),
+    'llm': (r'大模型', r'(?<![a-z])llm(?![a-z])', r'机器学习', r'深度学习', r'\btransformer\b', r'\blora\b',
+            r'\bsft\b', r'\brl\b|\bdpo\b|\bgrpo\b', r'模型训练', r'微调'),
+    'coding': (r'笔试', r'算法题', r'编程题', r'\bleetcode\b', r'动态规划', r'二叉树'),
+}
+
+
+def domain(title, role, body, kind='interview'):
+    """Prefer explicit heading/role topics; fall back to several distinct body signals."""
+    if kind == 'career':
+        return 'career', 'kind'
+    heading = title + '\n' + role
+    for key, patterns in DOMAIN_PATTERNS.items():
+        if any(re.search(p, heading, re.I) for p in patterns):
+            return key, 'title_role'
+    scores = {key: sum(bool(re.search(p, body, re.I)) for p in patterns)
+              for key, patterns in DOMAIN_PATTERNS.items()}
+    best = max(scores, key=scores.get)
+    # A lone mention does not justify classifying an otherwise unspecified account.
+    return (best, 'body') if scores[best] >= 2 else ('other', 'unspecified')
+
+
+def date_key(note):
+    """Known interview dates first; partial dates keep their original precision."""
+    value = note['experience']
+    if not value['year']:
+        return ('', 0, 0)
+    text = re.sub(r'^\s*(?:20\d{2}|\d{2}\s*年)\s*(?:年|[-/.])?\s*', '', value['interview_time'])
+    parts = re.findall(r'\d+', text)
+    return (value['year'], *(int(p) for p in (parts + ['0', '0'])[:2]))
+
 
 def identifier(collection, key):
     return 'note_experience_' + hashlib.sha256(f'{collection}\n{key}'.encode('utf-8')).hexdigest()[:20]
@@ -86,6 +131,8 @@ def project(collection):
                        incomplete=len(members) != len(value['note_ids']))
         body = first['body'] if len(members) == 1 and first['title'] == value['title'] else '\n\n'.join(
             '### ' + n['title'] + '\n\n' + n['body'] for n in members)
+        topic, basis = domain(value['title'], details['role'], body, kind)
+        details.update(domain=topic, domain_title=DOMAINS[topic], domain_basis=basis)
         verification = 'needs_review' if details['incomplete'] or any(
             n['organization']['verification'] in ('needs_review', 'outdated') for n in members) else 'reference'
         result.append({**first, 'id': identifier(collection['name'], key), 'title': value['title'],

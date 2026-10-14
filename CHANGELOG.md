@@ -2,6 +2,16 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.20.0] - 2026-10-14
+
+### Added
+- A global public-interview catalogue grouped by content topic or interview year, with combined topic/company/year filters, recent-first ordering and per-article source labels. Knowledge shelves remain source-separated.
+- Content-derived browsing topics with conservative unknown handling, exposed through public API facets and filters. Source facts, article IDs, learning IDs and stored data are unchanged.
+
+### Fixed
+- Full-width vertical desktop navigation and single-line mobile entries prevent squeezed three-tab labels. Keyboard navigation follows each layout's orientation.
+- Reset old source-scoped public navigation once and retain global browsing on study-link/deep-link jumps. Preserve the original reader CSS and collapse/focus layout.
+
 ## [1.19.1] - 2026-10-14
 
 ### Fixed

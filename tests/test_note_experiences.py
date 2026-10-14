@@ -132,10 +132,61 @@ class PublicExperienceTests(unittest.TestCase):
         self.apply()
         app = WebApp(self.bank.path)
         for params in ({'section': 'private'}, {'year': '2026'}, {'company': '示例公司'},
-                       {'section': 'experiences', 'year': '26'}, {'sort': 'recent'}):
+                       {'section': 'experiences', 'year': '26'}, {'sort': 'recent'},
+                       {'experience_domain': 'backend'}, {'section': 'experiences', 'experience_domain': 'missing'},
+                       {'sort': 'domain'}):
             with self.subTest(params=params), self.assertRaises(Exception):
                 app.notes(params)
         self.assertEqual(app.notes({'section': 'experiences', 'sort': 'recent'})['total'], 1)
+
+    def test_global_domain_and_year_catalogue_preserves_source_and_article_ids(self):
+        self.apply()
+        self.bank.result('notes', 'import', '--source', str(self.source), '--name', 'second')
+        catalog = self.bank.result('notes', 'catalog', '--name', 'second')
+        ids = [n['id'] for n in catalog['notes']]
+        article = {**self.article, 'note_ids': ids[:2], 'facts': [
+            {**fact, 'note_id': ids[0]} for fact in self.article['facts']]}
+        self.bank.result('notes', 'organize', '--name', 'second', payload={
+            'schema_version': 1, 'collection': 'second', 'source_digest': catalog['source_digest'],
+            'organization_digest': catalog['organization_digest'], 'experiences': {'first': article}})
+        app = WebApp(self.bank.path, read_only=True)
+        data = app.notes({'section': 'experiences', 'experience_domain': 'backend', 'year': '2026', 'sort': 'domain'})
+        self.assertEqual(data['total'], 2)
+        self.assertEqual(data['facets']['experience_domains'], {'backend': 2})
+        self.assertEqual(data['facets']['experience_years'], {'2026': 2})
+        self.assertEqual({n['collection'] for n in data['notes']}, {'public', 'second'})
+        self.assertEqual(len(set(data['ids'])), 2)
+        self.assertTrue(all(n['experience']['domain_basis'] == 'title_role' for n in data['notes']))
+        self.assertEqual(app.notes({'section': 'experiences', 'collection': 'public'})['total'], 1)
+        self.assertEqual(app.note(data['ids'][0])['source']['collection'], data['notes'][0]['collection_title'])
+
+
+class ExperienceNavigationTests(unittest.TestCase):
+    def test_topics_prefer_headings_and_do_not_guess_from_one_keyword(self):
+        from ibank_core.note_experiences import domain
+        cases = [
+            ('Agent开发一面', '', 'Redis MySQL JVM', 'agent', 'title_role'),
+            ('Java后端一面', '后端', 'LangGraph RAG MCP', 'backend', 'title_role'),
+            ('多模态大模型算法', '', '', 'multimodal', 'title_role'),
+            ('AI 全栈实习', '', '', 'fullstack', 'title_role'),
+            ('某公司一面', '', 'Redis 缓存 MySQL', 'backend', 'body'),
+            ('某公司一面', '', '聊了一次 Redis。', 'other', 'unspecified'),
+            ('某公司一面', '', '候选人谈了自己的经历。', 'other', 'unspecified'),
+        ]
+        for title, role, body, expected, basis in cases:
+            with self.subTest(title=title):
+                self.assertEqual(domain(title, role, body), (expected, basis))
+        self.assertEqual(domain('Java备考经验', '', '', 'career'), ('career', 'kind'))
+
+    def test_partial_dates_and_unknown_year_keep_original_precision(self):
+        from ibank_core.note_experiences import date_key
+        def key(value, year):
+            return date_key({'experience': {'interview_time': value, 'year': year}})
+        self.assertEqual(key('26年2月初', '2026'), ('2026', 2, 0))
+        self.assertEqual(key('2026 年 8 月 22 日', '2026'), ('2026', 8, 22))
+        self.assertEqual(key('2026-09-01', '2026'), ('2026', 9, 1))
+        self.assertEqual(key('7.6', ''), ('', 0, 0))
+        self.assertGreater(key('2026-09-01', '2026'), key('2026 年 8 月 22 日', '2026'))
 
 
 if __name__ == '__main__':

@@ -35,7 +35,7 @@ ANSWERED = ('source_backed', 'reviewed')
 VIEWS = {'all', 'due', 'weak', 'unseen'}
 NOTE_FILTERS = {'collection', 'chapter', 'query', 'marked', 'asked', 'sort', 'offset', 'limit',
                 'area', 'topic', 'tag', 'kind', 'verification', 'view', 'section', 'company', 'year',
-                'question_type', 'connection'}
+                'question_type', 'connection', 'experience_domain'}
 
 
 def progress(data, rows):
@@ -219,6 +219,10 @@ class WebApp:
             require(section == 'experiences' and (params['year'] == 'unknown' or
                     len(params['year']) == 4 and params['year'].isdigit()), 'Invalid interview year')
             found = [n for n in found if (n['experience']['year'] or 'unknown') == params['year']]
+        if params.get('experience_domain'):
+            require(section == 'experiences' and params['experience_domain'] in note_experiences.DOMAINS,
+                    'Unknown public experience domain')
+            found = [n for n in found if n['experience']['domain'] == params['experience_domain']]
         require(params.get('view', 'original') in ('original', 'knowledge'), 'Unknown notes view')
         if params.get('query', '').strip():
             needle = params['query'].strip().casefold()
@@ -238,19 +242,15 @@ class WebApp:
                         'none': not personal and not public}[connection]
             found = [n for n in found if matches(n)]
         require(params.get('sort', 'order') in ('order', 'asked') or
-                section == 'experiences' and params.get('sort') == 'recent', 'Unknown sort order')
+                section == 'experiences' and params.get('sort') in ('recent', 'domain'), 'Unknown sort order')
         if params.get('sort') == 'asked':
             found = sorted(found, key=lambda n: -sum(q['frequency'] for q, _ in article_links(n)))
-        elif params.get('sort') == 'recent':
+        elif params.get('sort') in ('recent', 'domain'):
             # Unknown interview years stay last. Publication/import dates are not interview dates.
-            import re
-            def date_key(n):
-                value = n['experience']
-                parts = re.findall(r'\d+', value['interview_time'])
-                if parts and (len(parts[0]) == 4 or '年' in value['interview_time']):
-                    parts = parts[1:]
-                return (value['year'], *(int(p) for p in (parts + ['0', '0'])[:2]))
-            found = sorted(found, key=date_key, reverse=True)
+            found = sorted(found, key=note_experiences.date_key, reverse=True)
+            if params['sort'] == 'domain':
+                order = list(note_experiences.DOMAINS)
+                found = sorted(found, key=lambda n: order.index(n['experience']['domain']))
         elif params.get('view') == 'knowledge' and not params.get('query', '').strip():
             area_order = {(c['name'], a['id']): i for c in bundle['collections']
                           for i, a in enumerate(c.get('organization', {}).get('areas', []))}
@@ -274,6 +274,9 @@ class WebApp:
                        'verification': dict(Counter(n['organization']['verification'] for n in scoped)),
                        'companies': sorted({n['experience']['company'] for n in scoped if n.get('experience', {}).get('company')}),
                        'years': sorted({n['experience']['year'] for n in scoped if n.get('experience', {}).get('year')}, reverse=True),
+                       'experience_domains': {key: count for key in note_experiences.DOMAINS
+                                              if (count := sum(n.get('experience', {}).get('domain') == key for n in scoped))},
+                       'experience_years': dict(Counter(n['experience']['year'] or 'unknown' for n in scoped if 'experience' in n)),
                        'unknown_company': any('experience' in n and not n['experience']['company'] for n in scoped),
                        'unknown_year': any('experience' in n and not n['experience']['year'] for n in scoped)},
             'total': len(found), 'offset': offset, 'limit': limit, 'ids': [n['id'] for n in found],

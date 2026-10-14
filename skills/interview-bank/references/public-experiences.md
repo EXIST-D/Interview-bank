@@ -3,8 +3,9 @@
 Read this when organising public sources that mix technical knowledge, interview accounts and career advice.
 Keep the source collections separate. These articles never become private question occurrences or inflate
 frequency. The Web reader has three primary entries: **个人面经**, **八股**, **公开面经**. Public accounts
-have their own source overview and filters; the existing reader handles both knowledge and articles. They
-share the source-backed notes storage without mixing the two views. `#section=experiences` opens the public
+have a global catalogue grouped by content topic or interview year, with company/date/topic filters and
+provenance on every article. Knowledge shelves remain separated by source; public articles keep source-local
+storage and IDs but are not partitioned by repository in the browsing UI. `#section=experiences` opens the public
 entry directly; `#section=knowledge` opens knowledge sources, and `#section=bank` opens the personal bank.
 
 ## Decide the content type
@@ -82,7 +83,21 @@ its original frequency. Reading progress belongs to the article ID in the curren
 the knowledge subset; the default `all` preserves legacy raw-note search. `notes show <article-id>` displays
 the complete account with provenance and its existing private-question links. `notes catalog` includes the
 source's `experiences` mapping. The Web API uses `/api/notes?section=experiences` with optional `collection`,
-`kind`, `company`, `year`, `query` and `sort=recent`; `year=unknown` filters unspecified interview years.
+`kind`, `company`, `year`, `query`, `experience_domain` and `sort=recent|domain`;
+`year=unknown` filters unspecified interview years. Domain sorting groups globally, then orders known dates
+first within each group. Original source filters remain available to API clients.
+
+## Content topics for browsing
+
+Article projections derive `experience.domain`, `domain_title` and `domain_basis` without writing to the bank.
+The supported topics are `agent`, `llm`, `multimodal`, `backend`, `frontend`, `fullstack`, `infra`, `coding`,
+`career` and `other`. Prefer explicit topics in the article title and evidenced role description; otherwise
+require at least two distinct topic signals in the body. Career advice remains in `career`; an ambiguous
+account remains `other`. Never infer its topic from a repository name. This is a navigation heuristic, not
+a verified job role, an independent answer check or new source evidence. Preserve the original fact fields.
+The Web facets expose article counts in `experience_domains` and `experience_years`, including `unknown`.
+The UI combines filters across repositories and labels each article's collection in both list and reader.
+Older remembered source-scoped public navigation is reset once; article reading/learning IDs remain stable.
 
 After re-importing a changed source, inspect and reconcile member IDs using a fresh catalog. Missing sections
 make an account incomplete and needing review, not silently complete. Before retiring notes, remove affected
