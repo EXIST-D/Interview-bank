@@ -431,6 +431,7 @@ class Handler(BaseHTTPRequestHandler):
         assets = {'/': ('index.html', 'text/html; charset=utf-8'), '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
                   '/app.css': ('app.css', 'text/css; charset=utf-8'), '/login.js': ('login.js', 'text/javascript; charset=utf-8'),
                   '/notes-ui.js': ('notes-ui.js', 'text/javascript; charset=utf-8'),
+                  '/source-shelf.js': ('source-shelf.js', 'text/javascript; charset=utf-8'),
                   '/left-panels.js': ('left-panels.js', 'text/javascript; charset=utf-8'),
                   '/left-panels.css': ('left-panels.css', 'text/css; charset=utf-8')}
         if path in assets and not post:

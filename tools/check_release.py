@@ -191,7 +191,7 @@ def main():
             launch = json.loads(line)["result"]["url"]
             origin, token = launch.split('/#token=')
             for route, expected in (("/", b"Interview Bank"), ("/app.js", b"saveRating"),
-                                    ("/notes-ui.js", b"renderSourceCards"), ("/app.css", b"--canvas")):
+                                    ("/notes-ui.js", b"renderSourceCards"), ("/source-shelf.js", b"sourceShelf"), ("/app.css", b"--canvas")):
                 with urllib.request.urlopen(origin+route, timeout=5) as response:
                     assert expected in response.read()
             request = urllib.request.Request(origin+'/api/library', headers={'X-Interview-Token':token})

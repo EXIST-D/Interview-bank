@@ -51,12 +51,22 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
   The person sees both questions and the agent's reason, chooses 是同一题 / 相关但不同 / 不同的题 with a required note, and the choice is saved next to the stage
   (`runs/<run>/human-decisions.json`, actor local_web).
   Nothing canonical changes until the agent runs `dedupe --resolve <run>`, which re-stages the run with those decisions, and commits it.
-- 八股 notes: once a collection is imported, a 面经 / 八股 switch appears. Source cards lead to a source-local knowledge
+- 八股 notes: once a collection is imported, personal interviews, knowledge and public interviews have primary entries.
+  Source cards lead to a source-local knowledge
   directory or its original chapters. Search explicitly scopes to the current topic, current source or all sources;
   tag, content kind, verification and browser-local learning filters supplement key-only and most-asked views.
   Notes show the collection's original answer with its source, and link both ways to interview questions.
   Source information separates notices from learning content. Directory maintenance stays with the Agent CLI.
   See [notes](notes.md).
+- Knowledge shelf: cards start collapsed, showing source title, language, content count and local reading progress.
+  Click the header to expand its description, topic tags and actions; use the separate entry action to read the source.
+  Drag the six-dot handle to reorder, with a card preview and insertion marker. Clicking the same handle opens
+  first/previous/next/last move actions, also usable with the keyboard and on phones. Escape, cancellation,
+  window changes and focus loss cancel an active drag. Expand/collapse all and reset order controls are available.
+  Order and expansion preferences are browser-local and separated by the declared account/bank, not synchronized
+  to the server or other devices. Newly added sources append; retired or invalid saved IDs are discarded.
+  Reading IDs, source files, canonical bank data, topic directories and occurrence counts stay unchanged.
+  This uses shipped JavaScript with no framework, package installation or external assets.
 - Left panels: result count and list collapse stay within the list column. Directory, material filters and
   question filters start folded and open on demand. Current/other notes sources form collapsible sidebar groups.
   The original reader toolbar, text styling, spacing and full-screen phone reading remain unchanged.

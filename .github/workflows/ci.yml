@@ -41,6 +41,15 @@ jobs:
       - run: pip install ruff==0.16.10
       - name: Unused imports, undefined names, unused variables
         run: ruff check --select F --target-version py310 skills tests tools evals
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Shelf preferences and JavaScript syntax
+        run: |
+          node --check skills/interview-bank/assets/web/source-shelf.js
+          node --check skills/interview-bank/assets/web/notes-ui.js
+          node --check skills/interview-bank/assets/web/app.js
+          node tests/source-shelf-model.cjs
 
   legacy-runs:
     name: test (full-snapshot run format)

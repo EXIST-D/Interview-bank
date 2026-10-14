@@ -4,17 +4,21 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.20.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.21.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.20 public-interview catalogue and navigation
+## This update: 1.21 collapsible knowledge shelves and drag ordering
 
-- Desktop navigation uses full-width vertical rows; mobile keeps compact single-line entries without wrapped labels.
-- Public interviews open a global article list, grouped by interview year or content topic, with combined company/year/topic filters. Known recent interviews appear first; unknown years stay separate.
-- Every article retains source provenance, original text and study links. Knowledge shelves keep their source groups; the existing reader and focus layout remain.
+- Knowledge source cards start collapsed, showing title, count, language and reading progress. Expand to see the introduction, topics, reading entry and source information.
+- Drag the six-dot handle to reorder with a preview and insertion marker, or click it for first/earlier/later/last move actions. Phones and keyboard users can use the same actions.
+- Expand/collapse all or reset the default order. Preferences persist per account in the current browser; new sources append automatically.
 
-Topics are navigation heuristics based on headings, role descriptions and content. Ambiguous accounts stay unclassified. No migration or changes to questions, answers, occurrence counts or source data are needed. See the [public-interview protocol](skills/interview-bank/references/public-experiences.md).
+Shelf preferences do not sync across devices yet. Source data, questions, answers and the reader layout stay unchanged; no migration is needed. See the [Web protocol](skills/interview-bank/references/web.md).
 
 ## Interface preview
+
+Knowledge source overview with collapsible cards and reorder handles:
+
+![Knowledge sources: compact cards, counts, reading progress and reorder handles](assets/readme/source-shelf-preview.png)
 
 On a computer: navigation, question list and reader in three columns; a question lists its related notes.
 
@@ -195,7 +199,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 ## Status and plans
 
-**v1.20.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
+**v1.21.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
 
 **Not implemented yet:**
 

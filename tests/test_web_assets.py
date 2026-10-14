@@ -43,7 +43,7 @@ def text_tables(script):
 class WebAssets(unittest.TestCase):
     def setUp(self):
         self.html = (WEB / "index.html").read_text(encoding="utf-8")
-        self.script = (WEB / "app.js").read_text(encoding="utf-8") + '\n' + (WEB / "notes-ui.js").read_text(encoding="utf-8")
+        self.script = '\n'.join((WEB / name).read_text(encoding='utf-8') for name in ('app.js', 'notes-ui.js', 'source-shelf.js'))
         self.markup = Markup()
         self.markup.feed(self.html)
 
@@ -80,6 +80,7 @@ class WebAssets(unittest.TestCase):
         ):
             self.assertTrue({prefix + value for value in values} <= zh)
         self.assertLess(self.html.index('src="notes-ui.js"'), self.html.index('src="app.js"'))
+        self.assertLess(self.html.index('src="source-shelf.js"'), self.html.index('src="app.js"'))
 
     def test_stylesheet_is_readable_and_has_dark_mode(self):
         css = (WEB / "app.css").read_text(encoding="utf-8")

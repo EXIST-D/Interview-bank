@@ -200,9 +200,9 @@ function languageLabel(value) {
 
 function renderSourceCards(data) {
   const root = $('source-cards');
-  root.replaceChildren();
   const experiences = state.notes.section === 'experiences';
-  const sources = data.collections.filter(c => !experiences || c.content_total > 0);
+  const sources = sourceShelf.prepare(data.collections.filter(c => !experiences || c.content_total > 0));
+  root.replaceChildren();
   const total = sources.reduce((n, c) => n + c.content_total, 0);
   const information = data.collections.reduce((n, c) => n + c.information_total, 0);
   $('notes-home-title').textContent = t(experiences ? 'notes_section_experiences' : 'notes_home_title');
@@ -212,12 +212,6 @@ function renderSourceCards(data) {
   for (const source of sources) {
     const card = el('article', 'source-card');
     const meta = source.metadata;
-    const overline = el('div', 'source-card-overline');
-    const letter = el('span', 'source-monogram', source.title.includes('Java') ? 'J' : source.title.includes('RAG') ? 'R' :
-      source.title.includes('LLM') ? 'L' : source.title.includes('前端') ? 'F' : 'A');
-    overline.append(letter);
-    if (meta.language) overline.append(el('span', 'source-language', languageLabel(meta.language)));
-    const title = button(source.title, 'source-card-title', () => enterNotesSource(source));
     const description = el('p', 'source-card-description', meta.description || source.origin || t('notes_no_description'));
     const facts = el('p', 'source-card-facts');
     facts.append(el('strong', '', t('notes_source_split', { k: source.knowledge_total, e: source.experience_total })),
@@ -227,20 +221,13 @@ function renderSourceCards(data) {
     for (const area of source.areas.filter(a => a.count).slice(0, 4)) topics.append(el('span', 'tag', area.title));
     if (!source.areas.length) topics.append(el('span', 'tag', t('notes_original')));
     const done = source.content_ids.filter(id => noteLearningState(id) !== 'unread').length;
-    const progress = el('div', 'source-learning-progress');
-    progress.append(el('small', '', t('notes_progress', { r: done, n: source.content_total })));
-    const track = el('div', 'source-progress-track');
-    const fill = el('span');
-    fill.style.transform = 'scaleX(' + (source.content_total ? done / source.content_total : 0) + ')';
-    track.append(fill);
-    progress.append(track);
     const footer = el('div', 'source-card-footer');
     const last = stored('ibank-last-note', null);
     const canContinue = last && source.content_ids.includes(last.id);
     footer.append(button(t(canContinue ? 'notes_continue' : 'notes_start') + ' →', 'link source-enter',
       () => enterNotesSource(source, canContinue)),
       button(t('notes_source_info'), 'link', () => showSourceInfo(source)));
-    card.append(overline, title, description, facts, topics, progress, footer);
+    sourceShelf.decorate(card, source, [description, facts, topics, footer], done);
     root.append(card);
   }
 }
@@ -502,6 +489,9 @@ function showSourceInfo(source) {
 }
 
 function installNotesUI() {
+  if (installNotesUI.installed) return;
+  installNotesUI.installed = true;
+  sourceShelf.install();
   $('notes-home').addEventListener('click', () => selectNotesSection(state.notes.section === 'experiences' ? 'experiences' : 'knowledge'));
   for (const section of ['knowledge', 'experiences']) {
     $('notes-section-' + section).addEventListener('click', () => selectNotesSection(section));

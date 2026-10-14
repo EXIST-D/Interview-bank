@@ -2,6 +2,17 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.21.0] - 2026-10-15
+
+### Added
+- Compact collapsible knowledge-source cards with persistent per-account browser preferences, reading progress, expand/collapse-all and default-order restoration.
+- Pointer-based handle reordering with a constrained preview, insertion markers, edge scrolling and cancellation. Move-action menus support keyboard and phone interactions without dragging.
+- Source-order preference validation and reconciliation for added/retired sources; local memory fallback when browser storage is unavailable. No source, note, learning or personal-question IDs change.
+
+### Fixed
+- Make notes UI listener installation idempotent across language/metadata initialization, preventing duplicate navigation handlers.
+- Serve and verify the packaged shelf asset. Add independent reorder/state-model and JavaScript syntax checks to CI; preserve reader CSS and all stored bank data.
+
 ## [1.20.0] - 2026-10-14
 
 ### Added

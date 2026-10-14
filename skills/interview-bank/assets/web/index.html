@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="app.css">
   <link rel="stylesheet" href="left-panels.css">
   <script src="notes-ui.js" defer></script>
+  <script src="source-shelf.js" defer></script>
   <script src="app.js" defer></script>
   <script src="left-panels.js" defer></script>
 </head>
@@ -92,6 +93,15 @@
       <div class="notes-home-heading"><span class="notes-eyebrow" data-i18n="notes_home_eyebrow">个人学习资料</span><h1 id="notes-home-title" data-i18n="notes_home_title">八股资料库</h1><p data-i18n="notes_home_hint">按来源收藏，按知识学习。原文与出处始终保留。</p></div>
       <label class="source-search"><span aria-hidden="true">⌕</span><input id="source-search" type="search" data-i18n-placeholder="notes_search_all" data-i18n-aria="notes_search_all" placeholder="搜索全部来源…" aria-label="搜索全部来源"></label>
       <div id="notes-home-summary" class="notes-home-summary" aria-live="polite"></div>
+      <div class="source-shelf-tools">
+        <span id="source-shelf-hint" data-i18n="shelf_hint">拖动把手排序，点击卡片展开</span>
+        <div class="source-shelf-actions">
+          <button id="shelf-expand-all" type="button" class="chip-button" data-i18n="unfold_all">全部展开</button>
+          <button id="shelf-collapse-all" type="button" class="chip-button" data-i18n="fold_all">全部折叠</button>
+          <button id="shelf-reset-order" type="button" class="link" data-i18n="shelf_reset">恢复顺序</button>
+        </div>
+      </div>
+      <span id="source-shelf-status" class="source-shelf-status" role="status" aria-live="polite" aria-atomic="true"></span>
       <button id="notes-browse-experiences" class="link" type="button" hidden data-i18n="notes_browse_experiences">浏览全部公开面经 →</button>
       <div id="source-cards" class="source-cards"></div>
       <p class="notes-local-hint" data-i18n="notes_local_hint">学习状态保存在当前浏览器；资料核验状态单独记录。</p>
