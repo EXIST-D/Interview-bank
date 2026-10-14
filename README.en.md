@@ -4,16 +4,15 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.19.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.19.1**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.19 question types and interview study links
+## This update: 1.19.1 a primary public-interview entry
 
-- **Question-level organization:** source-local areas/topics, technology tags and study types are independent. Filter concepts, comparisons, implementation, design, code, troubleshooting and references. Generic headings require their body and case context.
-- **Public interviews link to study material:** each same-source association retains the actual interview question, an explanation excerpt and a reason. Navigate between the article and its knowledge entries.
-- **Separate personal/public counts:** a left-panel filter selects the connection scope; source cards distinguish both kinds. “Asked / most asked” still means personal occurrences.
-- **Maintainable evidence:** changed or missing excerpts flag stale associations and exclude them from active counts. Digest-checked previews and CLI updates preserve original questions, answers and IDs.
+- **Personal / Notes / Public** are three primary entries on desktop and mobile. Public interviews have their own source groups instead of a secondary switch inside notes.
+- Changing entries clears the previous source and filters. Study-link navigation updates the selected entry while retaining the existing reader layout.
+- Add `#section=experiences` to the reader URL to open public interviews directly; `#section=knowledge` opens knowledge sources and `#section=bank` opens the personal bank.
 
-No personal-bank migration is required; the existing reader layout remains. Installing a new Skill does not organize user sources automatically. See the [knowledge taxonomy and study-link protocol](skills/interview-bank/references/knowledge-taxonomy.md). Excerpt validation does not fact-check every answer.
+This changes navigation only: no migration or changes to questions, answers, occurrence counts or source data. See the [public-interview protocol](skills/interview-bank/references/public-experiences.md).
 
 ## Interface preview
 
@@ -196,7 +195,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 ## Status and plans
 
-**v1.19.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
+**v1.19.1** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
 
 **Not implemented yet:**
 

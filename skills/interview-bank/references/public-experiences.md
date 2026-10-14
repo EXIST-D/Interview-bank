@@ -1,8 +1,11 @@
-# Public interview accounts inside 八股
+# Public interview accounts
 
 Read this when organising public sources that mix technical knowledge, interview accounts and career advice.
 Keep the source collections separate. These articles never become private question occurrences or inflate
-frequency. The Web notes section has **知识资料** and **公开面经**; the existing reader handles both.
+frequency. The Web reader has three primary entries: **个人面经**, **八股**, **公开面经**. Public accounts
+have their own source overview and filters; the existing reader handles both knowledge and articles. They
+share the source-backed notes storage without mixing the two views. `#section=experiences` opens the public
+entry directly; `#section=knowledge` opens knowledge sources, and `#section=bank` opens the personal bank.
 
 ## Decide the content type
 

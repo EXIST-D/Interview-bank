@@ -2,6 +2,12 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.19.1] - 2026-10-14
+
+### Fixed
+- Promote public interviews to a primary entry beside personal interviews and knowledge sources on desktop and mobile. Hide the redundant secondary switch; preserve source groups and the reader layout.
+- Match the selected primary tab to the knowledge/public section even though they share the notes engine; reset stale filters when changing entries. Add direct section links and keyboard navigation.
+
 ## [1.19.0] - 2026-10-14
 
 ### Added

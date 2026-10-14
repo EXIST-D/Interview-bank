@@ -9,6 +9,8 @@
 .sidebar .side-item > small { flex-shrink: 0; }
 .sidebar .side-hide { border: 1px solid var(--line); border-radius: 9px; }
 .sidebar .lb-icon { color: var(--muted); }
+.sidebar .modes, .library .modes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sidebar .modes button, .library .modes button { min-width: 0; }
 .sidebar .side-item.active .lb-icon { color: var(--blue); }
 .sidebar .lb-tree { margin: 2px 0 9px; padding: 0; border: 0; background: transparent; }
 .sidebar .lb-tree > summary { padding: 8px 10px; min-height: 38px; font-size: 12px; font-weight: 600; color: var(--muted); }

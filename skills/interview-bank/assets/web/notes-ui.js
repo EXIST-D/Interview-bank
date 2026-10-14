@@ -158,6 +158,7 @@ function pickNotes(changes) {
   const navigation = ['collection', 'chapter', 'area', 'topic', 'view', 'section'];
   if (navigation.some(k => k in changes)) $('search').value = '';
   Object.assign(state.notes, { home: false }, changes);
+  syncPrimaryNavigation();
   store('ibank-notes', state.notes);
   if (changes.home) {
     ++state.detail;
@@ -177,10 +178,14 @@ function enterNotesSource(source, continueReading = false) {
     });
 }
 
-function selectNotesSection(section, home = true) {
-  return pickNotes({ section, home, collection: '', chapter: '', area: '', topic: '', tag: '', kind: 'study',
+function notesSectionSelection(section, home = true) {
+  return { section, home, collection: '', chapter: '', area: '', topic: '', tag: '', kind: 'study',
     company: '', year: '', question_type: '', connection: '', verification: '', learning: 'all', marked: false, asked: false, view: 'knowledge',
-    scope: home ? 'source' : 'all', sort: 'order' });
+    scope: home ? 'source' : 'all', sort: 'order' };
+}
+
+function selectNotesSection(section, home = true) {
+  return pickNotes(notesSectionSelection(section, home));
 }
 
 function languageLabel(value) {
@@ -253,6 +258,7 @@ function renderNoteFilters(data) {
   const searchingAll = $('search').value.trim() && f.scope === 'all';
   const current = data.collections.find(c => c.name === f.collection);
   const experiences = f.section === 'experiences';
+  syncPrimaryNavigation();
   $('notes-knowledge-count').textContent = data.section_counts.knowledge;
   $('notes-experience-count').textContent = data.section_counts.experiences;
   $('notes-section-knowledge').setAttribute('aria-pressed', String(!experiences));

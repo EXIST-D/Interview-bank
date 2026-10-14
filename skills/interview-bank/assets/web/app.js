@@ -60,7 +60,8 @@ const TEXT = {
     merge_note: '判断依据（必填）', merge_need_note: '请写一句判断依据。',
     merge_saved: '已保存。全部裁决后请让 Agent 运行 dedupe --resolve {run}。', merge_decided: '已裁决：{a}',
     unreachable: '连不上题库服务，请稍后重试。', failed: '操作未完成，请重试。', connection: '连接失败，请稍后重试。',
-    modes: '板块', mode_bank: '面经', mode_notes: '八股', search_notes: '搜索八股…', marked_only: '重点', asked_only: '面经考过',
+    modes: '板块', mode_bank: '个人面经', mode_notes: '八股', mode_public: '公开面经',
+    search_notes: '搜索八股…', search_public: '搜索公开面经…', marked_only: '重点', asked_only: '面经考过',
     asked_sort: '按考频', notes_count: '{n} 条', notes_all: '全部八股', all_chapters: '全部章节', stat_notes: '八股',
     stat_marked: '重点', stat_asked: '面经考过', empty_notes: '没有符合条件的条目。', marked: '重点', asked_times: '面经考过 {n} 次',
     note_answer: '原文答案', no_note_answer: '原文没有给出答案。', note_source: '出处', source_line: '{file} 第 {line} 行',
@@ -237,7 +238,8 @@ const TEXT = {
     merge_note: 'Why (required)', merge_need_note: 'Write one line explaining your decision.',
     merge_saved: 'Saved. When all are decided, ask the agent to run dedupe --resolve {run}.', merge_decided: 'Decided: {a}',
     unreachable: 'Cannot reach the bank server; try again shortly.', failed: 'That did not work; please retry.', connection: 'Connection failed; try again shortly.',
-    modes: 'Sections', mode_bank: 'Interviews', mode_notes: 'Notes', search_notes: 'Search notes…', marked_only: 'Key', asked_only: 'Asked',
+    modes: 'Sections', mode_bank: 'Personal', mode_notes: 'Notes', mode_public: 'Public',
+    search_notes: 'Search notes…', search_public: 'Search public interviews…', marked_only: 'Key', asked_only: 'Asked',
     asked_sort: 'Most asked', notes_count: '{n} notes', notes_all: 'All notes', all_chapters: 'All chapters', stat_notes: 'Notes',
     stat_marked: 'Key', stat_asked: 'Asked', empty_notes: 'No notes match.', marked: 'Key', asked_times: 'Asked {n}×',
     note_answer: 'Answer in the collection', no_note_answer: 'The collection gives no answer.', note_source: 'Source', source_line: '{file}, line {line}',
@@ -398,6 +400,7 @@ const state = {
 const launch = new URLSearchParams(location.hash.slice(1));
 let token = launch.get('token');
 const openOnLoad = launch.get('question') || launch.get('note');  // #question=q_… or #note=note_… opens one item directly
+const openSection = ['bank', 'knowledge', 'experiences'].includes(launch.get('section')) ? launch.get('section') : null;
 try { if (token) sessionStorage.setItem('ibank-token', token); else token = sessionStorage.getItem('ibank-token'); } catch (_) {}
 if (location.hash) history.replaceState(null, '', location.pathname);
 
@@ -1098,14 +1101,32 @@ function reload(reset = false) {
   return state.mode === 'notes' ? loadNotes(reset) : loadLibrary(reset);
 }
 
-function setMode(mode, keepReader = false) {
+function syncPrimaryNavigation() {
+  const section = state.notes.section === 'experiences' ? 'experiences' : 'knowledge';
+  for (const tab of document.querySelectorAll('[data-mode]')) {
+    const selected = tab.dataset.mode === state.mode && (state.mode === 'bank' || tab.dataset.section === section);
+    tab.setAttribute('aria-selected', String(selected));
+  }
+  $('search').placeholder = t(state.mode === 'bank' ? 'search' : section === 'experiences' ? 'search_public' : 'search_notes');
+}
+
+function selectPrimarySection(mode, section = 'knowledge') {
+  if (mode === 'notes' && state.mode === 'notes') return selectNotesSection(section);
+  if (mode !== state.mode) return setMode(mode, false, mode === 'notes' ? section : undefined);
+  return Promise.resolve();
+}
+
+function setMode(mode, keepReader = false, section) {
+  if (mode === 'notes' && section) {
+    Object.assign(state.notes, notesSectionSelection(section));
+    store('ibank-notes', state.notes);
+  }
   state.mode = mode;
   store('ibank-mode', mode);
   document.body.classList.toggle('notes-mode', mode === 'notes');
   document.body.classList.toggle('notes-home', mode === 'notes' && state.notes.home);
-  for (const tab of document.querySelectorAll('[data-mode]')) tab.setAttribute('aria-selected', String(tab.dataset.mode === mode));
+  syncPrimaryNavigation();
   $('search').value = '';
-  $('search').placeholder = t(mode === 'notes' ? 'search_notes' : 'search');
   $('chapter-intro').hidden = true;
   if (!keepReader) closeReader();
   return reload(true);
@@ -1558,9 +1579,26 @@ $('continue').addEventListener('click', () => { const last = stored(lastKey(), n
 for (const tabs of [$('modes'), $('side-modes')]) {
   tabs.addEventListener('click', event => {
     const tab = event.target.closest('[data-mode]');
-    if (tab && tab.dataset.mode !== state.mode) setMode(tab.dataset.mode);
+    if (tab) selectPrimarySection(tab.dataset.mode, tab.dataset.section);
+  });
+  tabs.addEventListener('keydown', event => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    const items = [...tabs.querySelectorAll('[role="tab"]')];
+    const index = items.indexOf(event.target.closest('[role="tab"]'));
+    if (index < 0) return;
+    event.preventDefault();
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 :
+      (index + (event.key === 'ArrowRight' ? 1 : -1) + items.length) % items.length;
+    items[next].focus();
+    items[next].click();
   });
 }
+window.addEventListener('hashchange', () => {
+  const section = new URLSearchParams(location.hash.slice(1)).get('section');
+  if (!['bank', 'knowledge', 'experiences'].includes(section)) return;
+  history.replaceState(null, '', location.pathname);
+  selectPrimarySection(section === 'bank' ? 'bank' : 'notes', section);
+});
 $('marked-only').addEventListener('click', () => pickNotes({ marked: !state.notes.marked }));
 $('asked-only').addEventListener('click', () => pickNotes({ asked: !state.notes.asked }));
 $('asked-sort').addEventListener('click', () => pickNotes({ sort: state.notes.sort === 'asked' ? 'order' : 'asked' }));
@@ -1713,15 +1751,20 @@ $('side-think-first').checked = $('think-first').checked;
 placeFilters();
 $('answered-only').setAttribute('aria-pressed', String(stored('ibank-answered-only', false)));
 state.notes = { ...state.notes, ...stored('ibank-notes', {}) };
-state.mode = openOnLoad ? (isNote(openOnLoad) ? 'notes' : 'bank') : stored('ibank-mode', 'bank') === 'notes' ? 'notes' : 'bank';
+if (openSection && openSection !== 'bank' && !openOnLoad) {
+  Object.assign(state.notes, notesSectionSelection(openSection));
+  store('ibank-notes', state.notes);
+}
+state.mode = openOnLoad ? (isNote(openOnLoad) ? 'notes' : 'bank') : openSection ?
+  (openSection === 'bank' ? 'bank' : 'notes') : stored('ibank-mode', 'bank') === 'notes' ? 'notes' : 'bank';
+if (openSection && !openOnLoad) store('ibank-mode', state.mode);
 document.body.classList.toggle('notes-mode', state.mode === 'notes');
-for (const tab of document.querySelectorAll('[data-mode]')) tab.setAttribute('aria-selected', String(tab.dataset.mode === state.mode));
+syncPrimaryNavigation();
 closeReader();
 offerResume();
 loadLibrary(true)
   .then(() => {
     if (state.mode !== 'notes') return;
-    $('search').placeholder = t('search_notes');
     return loadNotes(true);
   })
   .then(() => { if (openOnLoad) return jump(isNote(openOnLoad) ? 'notes' : 'bank', openOnLoad); })
