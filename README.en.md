@@ -4,15 +4,16 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.21.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.22.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.21 collapsible knowledge shelves and drag ordering
+## This update: 1.22 typed knowledge content and cleanup
 
-- Knowledge source cards start collapsed, showing title, count, language and reading progress. Expand to see the introduction, topics, reading entry and source information.
-- Drag the six-dot handle to reorder with a preview and insertion marker, or click it for first/earlier/later/last move actions. Phones and keyboard users can use the same actions.
-- Expand/collapse all or reset the default order. Preferences persist per account in the current browser; new sources append automatically.
+- Explicit content kinds separate focused interview Q&A from roadmaps, coding exercises, tutorials, resource indexes, career material, industry news and question collections.
+- The left list identifies content kinds and filters show entry counts. Notice-only, promotional, maintenance and empty fragments can be omitted from normal study browsing while preserving their original records.
+- A mixed-source cleanup protocol requires body/context review, per-entry audit reasons, source isolation and unchanged personal-bank records. Classification does not fact-verify answers.
 
-Shelf preferences do not sync across devices yet. Source data, questions, answers and the reader layout stay unchanged; no migration is needed. See the [Web protocol](skills/interview-bank/references/web.md).
+Collapsible sources, drag ordering and the reading layout remain available. New kinds require a 1.22+ reader; no V1/V2 migration is needed.
+See the [content cleanup protocol](skills/interview-bank/references/knowledge-cleanup.md).
 
 ## Interface preview
 
@@ -199,7 +200,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 ## Status and plans
 
-**v1.21.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
+**v1.22.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
 
 **Not implemented yet:**
 

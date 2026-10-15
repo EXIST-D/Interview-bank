@@ -107,6 +107,22 @@ class NotesOrganizationTests(unittest.TestCase):
                 self.assertNotEqual(failed.returncode, 0)
                 self.assertEqual(path.read_bytes(), original)
 
+    def test_learning_content_kinds_are_explicit_and_do_not_change_source(self):
+        original = (self.bank.path / 'collections/first.json').read_bytes()
+        note = self.bank.result('notes', 'catalog', '--name', 'first')['notes'][0]['id']
+        for kind in ('roadmap', 'tutorial', 'exercise', 'resource', 'career', 'news', 'collection'):
+            with self.subTest(kind=kind):
+                self.apply(self.payload(notes={note: {'kind': kind, 'question_type': 'reference'}}))
+                app = WebApp(self.bank.path, read_only=True)
+                value = app.notes({'collection': 'first', 'section': 'knowledge', 'kind': kind})
+                self.assertEqual(value['total'], 1)
+                self.assertEqual(value['notes'][0]['id'], note)
+                self.assertEqual(value['notes'][0]['kind'], kind)
+                self.assertEqual(app.notes({'collection': 'first', 'kind': 'qa'})['total'], 1)
+                self.assertEqual(app.notes({'collection': 'first', 'kind': 'study'})['total'], 2)
+                self.assertEqual(value['facets']['kinds'][kind], 1)
+                self.assertEqual((self.bank.path / 'collections/first.json').read_bytes(), original)
+
     def test_protected_choice_requires_explicit_user_words(self):
         note = self.bank.result('notes', 'catalog', '--name', 'first')['notes'][0]['id']
         self.apply(self.payload(notes={note: {'tags': ['我选的标签'], 'locked': True, 'user_quote': '请保留这个分类。'}}))

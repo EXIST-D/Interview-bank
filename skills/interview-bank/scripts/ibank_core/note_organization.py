@@ -7,7 +7,8 @@ from .ids import utc_now
 from .schema import require
 from .storage import atomic_write, bank_file, dumps, fingerprint, open_bank, read_json
 
-KINDS = ('material', 'qa', 'knowledge', 'case', 'reading', 'info')
+KINDS = ('material', 'qa', 'knowledge', 'case', 'reading', 'roadmap', 'tutorial', 'exercise',
+         'resource', 'career', 'news', 'collection', 'info')
 VERIFICATIONS = ('reference', 'verified', 'needs_review', 'outdated')
 QUESTION_TYPES = ('concept', 'comparison', 'implementation', 'design', 'coding', 'troubleshooting', 'reference')
 META_FIELDS = {'description', 'author', 'homepage', 'license', 'license_url', 'version', 'updated_at', 'language'}

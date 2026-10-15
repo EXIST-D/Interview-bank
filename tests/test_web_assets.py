@@ -70,7 +70,8 @@ class WebAssets(unittest.TestCase):
     def test_notes_labels_cover_all_states_and_script_order(self):
         zh, _ = text_tables(self.script)
         for prefix, values in (
-            ('notes_kind_', ('material', 'qa', 'knowledge', 'case', 'reading', 'info')),
+            ('notes_kind_', ('material', 'qa', 'knowledge', 'case', 'reading', 'roadmap', 'tutorial',
+                             'exercise', 'resource', 'career', 'news', 'collection', 'info')),
             ('notes_verification_', ('reference', 'verified', 'needs_review', 'outdated')),
             ('notes_learning_', ('unread', 'read', 'review', 'mastered')),
             ('notes_question_type_', ('concept', 'comparison', 'implementation', 'design', 'coding', 'troubleshooting', 'reference')),

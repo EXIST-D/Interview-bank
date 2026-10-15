@@ -309,7 +309,8 @@ function renderNoteFilters(data) {
     notesOptions($('notes-connection'), [{ id: '', title: t('notes_connection_all') },
       ...['any', 'personal', 'public', 'none'].map(id => ({ id, title: t('notes_connection_' + id) }))], f.connection);
     notesOptions($('notes-kind'), [{ id: 'study', title: t('notes_kind_study') },
-      ...Object.keys(data.facets.kinds).filter(k => k !== 'info').map(k => ({ id: k, title: t('notes_kind_' + k) })),
+      ...Object.entries(data.facets.kinds).filter(([k]) => k !== 'info').map(([id, count]) =>
+        ({ id, title: t('notes_kind_' + id) + ' · ' + count })),
       ...(f.kind === 'info' ? [{ id: 'info', title: t('notes_kind_info') }] : [])], f.kind);
     notesOptions($('notes-verification'), [{ id: '', title: t('notes_verification_all') },
       ...Object.keys(data.facets.verification).map(k => ({ id: k, title: t('notes_verification_' + k) }))], f.verification);
@@ -433,6 +434,7 @@ function renderNoteList() {
     if (n.experience) meta.append(el('span', '', [n.experience.company || t('notes_experience_company_unknown'),
       n.experience.interview_time || (n.kind === 'interview' ? t('notes_experience_time_unknown') : '')].filter(Boolean).join(' · ')));
     if (n.marked) meta.append(el('span', 'mark', t('marked')));
+    if (!experience) meta.append(el('span', '', t('notes_kind_' + n.kind)));
     if (n.question_type) meta.append(el('span', '', t('notes_question_type_' + n.question_type)));
     if (n.public_experience_count) meta.append(el('span', '', t('notes_public_count', { n: n.public_experience_count })));
     if (n.study_note_count) meta.append(el('span', '', t('notes_study_count', { n: n.study_note_count })));
@@ -466,7 +468,8 @@ function showSourceInfo(source) {
     const link = value ? safeLink(value, t(label) + ' ↗') : null;
     if (link) links.append(link);
   }
-  for (const id of source.information_ids) {
+  if (source.information_ids.length) {
+    const id = source.information_ids[0];
     links.append(button(t('notes_license_full'), 'link', async () => {
       $('source-info-dialog').close();
       await pickNotes({ home: false, collection: source.name, area: '', topic: '', chapter: '',

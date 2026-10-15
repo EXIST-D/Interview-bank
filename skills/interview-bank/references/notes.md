@@ -65,10 +65,19 @@ HTTP(S) and contain no credentials. Collection metadata and area lists are displ
 that every answer has been verified.
 
 Rules support `area`, `topic`, `tags`, `kind`, `question_type`, `verification`, `language`, `evidence`, `locked`, `user_quote`.
-Kinds: `material` (default), `qa`, `knowledge`, `case`, `reading`, `info` (source/license notices). Verification:
+Kinds: `material` (default), `qa` (one interview Q&A), `knowledge` (explanations), `case` (system/project design),
+`reading`, `roadmap` (learning order/plans), `tutorial` (hands-on instructions), `exercise` (coding problems/solutions),
+`resource` (curated links/indexes), `career` (career/role/recruitment information), `news` (releases/industry commentary),
+`collection` (several questions in one entry), `info` (source/license/maintenance notices and excluded fragments). Verification:
 `reference` (default), `verified`, `needs_review`, `outdated`. Only mark `verified` after actually checking the content
 against appropriate sources, supply their URLs in `evidence`, and explain the scope to the user. The CLI validates
 the evidence fields, not the truth of a URL's content. Never auto-promote imported public answers to verified.
+
+For a mixed-source cleanup, follow [content cleanup](knowledge-cleanup.md). Classify from actual text and original
+article context; the presence of “路线” or “课程” alone does not make an entry a learning roadmap. Exclude pure
+promotion, empty answers and maintenance-only fragments from the normal study list with `kind: info`, retaining
+their IDs and source text. Meaningful guides and resources stay available through their own content-type filters.
+Report entry counts separately from unique questions or full articles. Content classification does not verify answers.
 
 Metadata keys merge with the existing source; `areas` replaces the directory list. Chapter/note rules are partial
 patches, with note rules overriding chapter rules. A `null` rule removes an unprotected override. If specifying a

@@ -2,6 +2,17 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.22.0] - 2026-10-15
+
+### Added
+- Explicit organization kinds for learning roadmaps, hands-on tutorials, coding exercises/solutions, resource indexes, career material, industry news and multi-question collections. Existing kinds and V1/V2 banks remain readable.
+- A reusable mixed-source cleanup protocol covering original-article context, honest entry counts, provenance-preserving exclusions, association review and evidence limits.
+
+### Changed
+- Show content kinds in the left knowledge list and entry counts in type filters; keep the reader CSS/layout unchanged.
+- Use one source-information entry per source for all notices instead of duplicating the same button for every excluded fragment.
+- Content overlays remain source-local, digest-checked and atomic. Public-source datasets and per-user cleanup audits are not part of the Skill package.
+
 ## [1.21.0] - 2026-10-15
 
 ### Added
