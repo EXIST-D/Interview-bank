@@ -50,6 +50,7 @@ jobs:
           node --check skills/interview-bank/assets/web/notes-ui.js
           node --check skills/interview-bank/assets/web/app.js
           node tests/source-shelf-model.cjs
+          node tests/reading-progress.cjs
 
   legacy-runs:
     name: test (full-snapshot run format)

@@ -4,16 +4,16 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.23.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.24.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.23 separate learning materials
+## This update: 1.24 coherent reading units
 
-- A primary Learning entry separates roadmaps, tutorials, resource indexes, career material and industry news from interview notes.
-- Five category cards show entry/source counts and open the relevant list. Combine category, source, text and browser-local learning-state filters; each entry retains its original text and provenance.
-- Interview notes retain source shelves for Q&A, concepts, coding solutions and cases. Reading layout, existing entry links and browser-local learning records are preserved.
+- The Chinese knowledge entry is now named 八股资料, alongside Personal, Public interviews and Learning.
+- Reassemble an original article's introduction, steps, explanations and code into a reviewed reading unit. Keep standalone Q&A separate and label multi-question practice sets explicitly; add contextual display titles without rewriting source headings.
+- Preserve original segments, citations and evidence links. Existing bookmarks resolve to the reading unit; `notes show --original` retrieves the unchanged segment. Changed source content invalidates the group and makes every original segment visible again.
+- Aggregate existing learning states without fabricating member visits or losing review flags. Cleanup does not verify technical answers, release claims, prices or job openings.
 
-This is a query/display partition without copying or deleting source records or migrating V1/V2 banks.
-Use #section=learning after the website path for a direct link. See the [Web protocol](skills/interview-bank/references/web.md).
+No V1/V2 migration. Update shared readers to 1.24+ before using reading groups. See the [cleanup protocol](skills/interview-bank/references/knowledge-cleanup.md).
 
 ## Interface preview
 
@@ -200,7 +200,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 ## Status and plans
 
-**v1.23.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
+**v1.24.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
 
 **Not implemented yet:**
 

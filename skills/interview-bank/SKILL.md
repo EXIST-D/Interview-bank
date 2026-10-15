@@ -4,7 +4,7 @@ description: Build and maintain a personal interview question bank (面试题库
 license: MIT
 metadata:
   author: EXIST-D
-  version: "1.23.0"
+  version: "1.24.0"
   repository: https://github.com/EXIST-D/Interview-bank
 ---
 
@@ -54,7 +54,8 @@ Prepare the JSON yourself; never ask the user to write it.
 | keep a bank over time, protect edits, recover, free space | [maintenance](references/maintenance.md) | `migrate`, `backup`, `policy`, `workflow`, `undo`, `gc` |
 | prepare for a role or a JD | [study sets](references/studysets.md) | `studyset` |
 | review weak questions or run a mock interview | [practice](references/practice.md) | `study`, `interview turn`, `interview review` |
-| organise 八股 sources, topics or public interview accounts | [notes](references/notes.md) | `notes` |
+| organise 八股资料 sources, learning articles or public interview accounts | [notes](references/notes.md) | `notes` |
+| clean mixed sources or restore fragmented reading order | [content cleanup](references/knowledge-cleanup.md) | `notes catalog`, `notes show --original`, `notes organize` |
 | browse, practise or review in a browser | [local Web](references/web.md) | `web` |
 | set up a new host or check its tools | [portability](references/portability.md) | `capabilities`, `media-plan` |
 

@@ -37,6 +37,13 @@ subject classification. A content kind describes the entry's purpose; an area/to
    New kinds need version 1.22+; update every reader before applying them on a shared bank. No V1/V2 migration is needed.
    From 1.23, the five learning kinds project into their own section; inventory `all` remains available for a
    complete cleanup audit. Do not misreport a presentation split as removed questions or deleted source text.
+8. Check reading continuity separately from subject classification. Recover original article order from saved
+   citation line numbers, not the concatenated import order. Use the 1.24+ reading-group protocol in [notes](notes.md)
+   for successive introductions, steps, explanations and code; retain source URL/content digests and editorial reasons.
+   Keep standalone Q&A separate. Attach topic context to orphan display titles; do not rewrite source headings.
+   Preserve paired problem/solution context in practice sheets and label multi-question units as `collection`.
+   Similar template steps across different cases are not duplicates. Review questionable question/answer pairs
+   against their bodies, quarantine clear mismatches as `info` and retain the original records for repair.
 
 Report: current active entry counts per kind/source, newly excluded fragments and reasons, examples with provenance,
 remaining ambiguities and what was actually checked. Separate source/license records from newly excluded items.

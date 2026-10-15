@@ -158,18 +158,24 @@ def select(bundle, section='all'):
     if section in ('knowledge', 'learning'):
         from .note_organization import LEARNING_KINDS
         excluded = {n for c in bundle['collections'] for n in members(c)}
-        return [n for n in bundle['notes'] if n['id'] not in excluded and (
+        return [n for c in bundle['collections'] for n in c.get('readings', c['notes']) if n['id'] not in excluded and (
             (n['organization']['kind'] in LEARNING_KINDS) == (section == 'learning'))]
     return bundle['notes']
 
 
-def find(bundle, note_id):
+def find(bundle, note_id, original=False):
+    if not original:
+        for collection in bundle['collections']:
+            anchor = collection.get('reading_aliases', {}).get(note_id)
+            if anchor:
+                return next(n for n in collection['readings'] if n['id'] == anchor)
     return next((n for n in [*bundle['notes'], *select(bundle, 'experiences')] if n['id'] == note_id), None)
 
 
 def linked(note, links):
     """Count a personal question once even if it links to several sections of the same article."""
-    ids = note['experience']['note_ids'] if 'experience' in note else [note['id']]
+    from .note_readings import members
+    ids = members(note)
     result = {}
     for member in ids:
         for question, link in links.get(member, []):

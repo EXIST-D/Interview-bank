@@ -206,6 +206,7 @@ def note_card(note, collection, linked=()):
             "chapter": note["chapter"], "chapter_title": chapter_title(collection, note), "group": note["group"],
             "marked": bool(note["marks"]), "linked": len(linked), "asked": sum(q["frequency"] for q in linked),
             **note.get("organization", {}), **({'experience': note['experience']} if 'experience' in note else {}),
+            **({'reading': note['reading']} if 'reading' in note else {}),
             'study_note_count': len(note.get('study_notes', [])),
             'public_experience_count': len({e['id'] for e in note.get('public_experiences', [])}),
             'study_links_incomplete': note.get('study_links_incomplete', 0)}
@@ -258,13 +259,13 @@ def search_notes(bank, query, limit=20, section='all'):
     return {"total": len(hits), "notes": [note_card(n, by_name[n["collection"]]) | {"excerpt": _excerpt(n)} for n in hits[:limit]]}
 
 
-def show_note(bank, note_id):
+def show_note(bank, note_id, original=False):
     from .studysets import select
     with open_bank(bank, shared=True) as (_, config, data):
         bundle = resolve_links(load_notes(bank), data)
         rows = select(data, config, bank)
     from . import note_experiences
-    note = note_experiences.find(bundle, note_id)
+    note = note_experiences.find(bundle, note_id, original)
     require(note is not None, f"Unknown note: {note_id}")
     collection = next(c for c in bundle["collections"] if c["name"] == note["collection"])
     linked = note_experiences.linked(note, linked_questions(bundle, rows))
@@ -458,6 +459,7 @@ def add_parsers(sub, common):
     find.add_argument("--section", choices=('all', 'knowledge', 'learning', 'experiences'), default='all')
     show = action.add_parser("show", parents=[common], help="One note with its answer, source and linked questions")
     show.add_argument("note_id")
+    show.add_argument("--original", action="store_true", help="Read the unchanged original segment, bypassing a reading group")
     remove = action.add_parser("remove", parents=[common], help="Delete a collection and its links")
     remove.add_argument("--name", required=True)
     candidates = action.add_parser("link-candidates", parents=[common], help="Task: closest notes for each question")
@@ -482,7 +484,7 @@ def dispatch(bank, args):
     if name == "search":
         return search_notes(bank, args.query, args.limit, args.section)
     if name == "show":
-        return show_note(bank, args.note_id)
+        return show_note(bank, args.note_id, args.original)
     if name == "remove":
         return remove_collection(bank, args.name)
     if name == "link-candidates":

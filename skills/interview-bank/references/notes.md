@@ -1,9 +1,9 @@
-# 八股 notes beside the bank
+# 八股资料 beside the bank
 
 A collection of published study notes (八股文) lives beside the user's own interview questions. Its questions
 and answers are kept exactly as published, with where they came from. Notes never become occurrences: they do
 not change frequency, dedupe, sourced answers or reports. Links join a bank question to the notes that answer it,
-so the reader shows "相关八股" under a question and "面经里这样问" under a note.
+so the reader shows "相关八股资料" under a question and "面经里这样问" under a note.
 
 ## Import
 
@@ -158,3 +158,41 @@ From 1.23, use `notes search --section learning` for those five kinds and `--sec
 knowledge. The default `all` query preserves the original inventory, including notices and article members.
 Public-article members take precedence over their original kind: a career article never leaks into learning.
 Section-aware Web deep links keep original note IDs and learning marks; no bank migration is required.
+
+## Coherent reading units (1.24+)
+
+Use reading groups when import fragments are successive parts of **one original article**, such as a learning
+route, tutorial, system-design case or algorithm explanation. Keep independently answered interview questions
+separate. A multi-question practice sheet is a `collection`, not a count of unique questions.
+
+`notes organize` also accepts a `reading_groups` object keyed by a source-local lowercase key (1–80 characters,
+letters/digits/underscore/hyphen). Each value has exactly:
+
+- `title`: a contextual article title, 1–300 characters;
+- `note_ids`: 2–500 original IDs in reviewed source order; the first ID anchors the display unit;
+- `source_url`: the same public HTTP(S) URL in every member's generated `原文：[查看来源](...)` footer,
+  without its line fragment; URLs with credentials are rejected;
+- `content_digest`: `ibank_core.note_readings.digest(members)` using those original notes, in that order;
+- `reason`: a concise editorial explanation, 1–500 characters.
+
+Members must share effective `kind`, area and topic; patch classifications in the same payload when appropriate.
+Info records, protected classifications and public-experience members cannot join a reading group. A member can
+belong to only one group. Delete a group by setting its key to `null`. Standalone entries may use the organization
+item field `display_title` (1–300 characters) to add topic context without changing the original heading/body/ID.
+
+Read members with `notes show ID --original` before grouping. Generate a fresh `notes catalog`, calculate the
+content digest from original records, preview and apply with current source/organization digests. Raw source
+hashes and original evidence links must stay unchanged. This is reviewed editorial metadata, not automatic
+semantic merging or answer verification.
+
+The `knowledge` and `learning` projections return reading units; legacy `all` inventories remain raw. Existing
+member links resolve to their complete unit. `notes show ID --original` bypasses the projection for audits.
+Source changes invalidate the affected group: every member becomes visible again and API/source information
+reports `reading_groups_incomplete`. Reconcile or remove the stale group with fresh evidence.
+
+Personal/public associations aggregate for display, without rewriting their source IDs/quotes or increasing
+personal interview frequency. Reading units retain the weakest member verification state. Progress uses the
+anchor ID plus the content digest; old member marks are retained, any old review flag remains visible and only
+fully read old groups count as read. A new article visit does not write synthetic visits for other members.
+Browser progress remains local to that browser; no cross-device migration is implied. Update every shared
+reader to 1.24+ before applying groups. Backups include this metadata; no V1/V2 migration is required.

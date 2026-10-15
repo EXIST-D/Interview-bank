@@ -11,6 +11,7 @@ const TEXT = {
     tools: '工具', import: '导入题目', research: '补充答案', export: '导出报告', via_agent: 'Agent', think_first_short: '先想再看',
     info_soon: '网页内直接操作会在后续版本提供。',
     entry_missing: '这条内容已移除或更新，请从当前列表重新选择。',
+    notes_reading_changed: '原文或分类已变化，阅读分组需重新核对；相关原始分段已恢复显示。',
     info_import_title: '导入题目', info_import_text: '题目由电脑上的 Agent 从截图、文字或音视频中抽取、去重后写入题库，再同步到这里。在电脑上对 Agent 说：',
     info_import_example: '用 interview-bank 把 <截图目录> 里的面试题整理进我的题库，然后同步到服务器',
     info_research_title: '补充答案', info_research_text: '参考答案由 Agent 阅读官方文档等原始资料后撰写，每个要点都附出处，再同步到这里。在电脑上对 Agent 说：',
@@ -60,7 +61,7 @@ const TEXT = {
     merge_note: '判断依据（必填）', merge_need_note: '请写一句判断依据。',
     merge_saved: '已保存。全部裁决后请让 Agent 运行 dedupe --resolve {run}。', merge_decided: '已裁决：{a}',
     unreachable: '连不上题库服务，请稍后重试。', failed: '操作未完成，请重试。', connection: '连接失败，请稍后重试。',
-    modes: '板块', mode_bank: '个人面经', mode_notes: '八股', mode_public: '公开面经', mode_learning: '学习资料',
+    modes: '板块', mode_bank: '个人面经', mode_notes: '八股资料', mode_public: '公开面经', mode_learning: '学习资料',
     search_learning: '搜索学习资料…',
     learning_home: '分类总览', learning_all: '全部学习资料', learning_categories: '资料分类', learning_sources: '资料来源',
     learning_browse_all: '浏览全部资料 →', learning_summary: '5 类资料 · {n} 条内容 · 每条保留原文与来源',
@@ -82,11 +83,11 @@ const TEXT = {
     notes_domain_agent: 'Agent 与 AI 应用', notes_domain_llm: '大模型与机器学习', notes_domain_multimodal: '多模态与视觉',
     notes_domain_backend: '后端与数据库', notes_domain_frontend: '前端与客户端', notes_domain_fullstack: '全栈开发',
     notes_domain_infra: '基础设施与系统', notes_domain_coding: '算法与编程', notes_domain_career: '求职与面试经验', notes_domain_other: '综合 / 待分类',
-    search_notes: '搜索八股…', search_public: '搜索公开面经…', marked_only: '重点', asked_only: '面经考过',
-    asked_sort: '按考频', notes_count: '{n} 条', notes_all: '全部八股', all_chapters: '全部章节', stat_notes: '八股',
+    search_notes: '搜索八股资料…', search_public: '搜索公开面经…', marked_only: '重点', asked_only: '面经考过',
+    asked_sort: '按考频', notes_count: '{n} 条', notes_all: '全部八股资料', all_chapters: '全部章节', stat_notes: '八股资料',
     stat_marked: '重点', stat_asked: '面经考过', empty_notes: '没有符合条件的条目。', marked: '重点', asked_times: '面经考过 {n} 次',
     note_answer: '原文答案', no_note_answer: '原文没有给出答案。', note_source: '出处', source_line: '{file} 第 {line} 行',
-    imported: '导入于 {d}', asked_in: '面经里这样问 · {n}', related_notes: '相关八股 · {n}',
+    imported: '导入于 {d}', asked_in: '面经里这样问 · {n}', related_notes: '相关八股资料 · {n}',
     notes_home_eyebrow: '个人学习资料',
     notes_home_title: '八股资料库',
     notes_home_hint: '按来源收藏，按知识学习。原文与出处始终保留。',
@@ -139,7 +140,7 @@ const TEXT = {
     notes_kind_news: '行业资讯',
     notes_kind_collection: '综合题单',
     notes_kind_info: '来源与整理说明',
-    notes_sections: '八股内容分区', notes_section_knowledge: '知识资料', notes_section_experiences: '公开面经',
+    notes_sections: '资料内容分区', notes_section_knowledge: '八股资料', notes_section_experiences: '公开面经',
     notes_experiences_summary: '{s} 个来源 · {n} 篇公开面经与经验',
     notes_experiences_hint: '按领域、公司与面试年份查阅，逐篇保留原文出处。',
     notes_browse_experiences: '浏览全部公开面经 →',
@@ -211,6 +212,7 @@ const TEXT = {
     peek: '速览答案', read_all: '阅读全文 ›', read_mark: '已读', group_count: '{n} 条 · 已读 {r}',
   },
   en: {
+    notes_reading_changed: 'A reading group needs review after a source or classification change. Original segments are visible again.',
     library: 'Questions', reader: 'Reader', more: 'More', filters: 'Filters', topics: 'Topics', navigation: 'Question navigation',
     sidebar: 'Navigation', stat_total: 'Questions', stat_answered: 'Answered', stat_topics: 'Topics', study: 'Study', view_all_long: 'All questions',
     tools: 'Tools', import: 'Import questions', research: 'Add answers', export: 'Export reports', via_agent: 'Agent', think_first_short: 'Think first',
@@ -759,7 +761,7 @@ async function openQuestion(id, fromList = false) {
         await loadNotes(true);
         if (generation !== state.detail) return;
       }
-      if (q.kind !== 'info') recordNoteVisit(q.id);
+      if (q.kind !== 'info') recordNoteVisit(q.id, q.reading);
       renderNote(q);
     } else renderReading(q);
     document.body.classList.add('reading-open');
@@ -1000,6 +1002,7 @@ function markdown(text, nested = false) {
   // Markdown as written in the collections: headings, lists, quotes, tables and code, built as DOM nodes.
   const root = el('div', nested ? '' : 'rich md');
   const lines = String(text || '').replace(/\r\n/g, '\n').split('\n');
+  const anchorWrapper = /^\s*<\/?a(?:\s+[^>]*)?>\s*$/i;
   let i = 0;
   while (i < lines.length) {
     const line = lines[i];
@@ -1013,6 +1016,7 @@ function markdown(text, nested = false) {
       continue;
     }
     if (!line.trim()) { i++; continue; }
+    if (anchorWrapper.test(line)) { i++; continue; }
     const heading = line.match(/^(#{1,6})\s+(.*?)\s*#*\s*$/);
     if (heading) {
       const node = el(heading[1].length <= 3 ? 'h3' : 'h4');
@@ -1045,6 +1049,7 @@ function markdown(text, nested = false) {
     const paragraph = el('p');
     let first = true;
     while (i < lines.length && lines[i].trim() && !/^\s*(```|~~~|>|\||#{1,6}\s)/.test(lines[i]) && !LIST_ITEM.test(lines[i])) {
+      if (anchorWrapper.test(lines[i])) { i++; continue; }
       if (!first) paragraph.append(el('br'));
       inline(paragraph, lines[i++].trim());
       first = false;
@@ -1232,11 +1237,11 @@ function highlight(target, text) {
 
 function listRow(id, title, meta) {
   const item = el('li', 'row');
-  const main = button('', 'question' + (state.current === id ? ' current' : '') + (read.has(id) ? ' read' : ''), () => openQuestion(id, true));
+  const main = button('', 'question' + (state.current === id ? ' current' : '') + (hasRead(id) ? ' read' : ''), () => openQuestion(id, true));
   main.dataset.id = id;
   const heading = el('span', 'question-title');
   highlight(heading, title);
-  if (read.has(id)) meta.append(el('span', 'read-mark', t('read_mark')));
+  if (hasRead(id)) meta.append(el('span', 'read-mark', t('read_mark')));
   main.append(heading, meta);
   const peek = button('⌄', 'peek', () => togglePeek(item, id, peek));
   peek.setAttribute('aria-label', t('peek'));
@@ -1295,7 +1300,7 @@ function syncGroup(key) {
   const ids = members.map(item => item.querySelector('.question').dataset.id);
   const control = head.querySelector('.group-head');
   control.replaceChildren(el('span', 'chevron', '›'), el('span', 'group-title', head.dataset.label),
-                          el('small', '', t('group_count', { n: ids.length, r: ids.filter(id => read.has(id)).length })));
+                          el('small', '', t('group_count', { n: ids.length, r: ids.filter(hasRead).length })));
   control.setAttribute('aria-expanded', String(!on));
 }
 

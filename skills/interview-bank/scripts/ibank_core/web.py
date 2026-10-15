@@ -170,6 +170,12 @@ class WebApp:
                                          f"{notebook.chapter_title(collections[notes[link['note_id']]['collection']], notes[link['note_id']])}"}
                                for link in sorted(bundle['links'], key=lambda l: (l['relation'] != 'answers', notes[l['note_id']]['order']))
                                if link['question_id'] == q['id']]
+            visible_notes = {}
+            for edge in result['notes']:
+                note = note_experiences.find(bundle, edge['id'])
+                if note['id'] not in visible_notes:
+                    visible_notes[note['id']] = {**edge, 'id': note['id'], 'title': note['title']}
+            result['notes'] = list(visible_notes.values())
             result['occurrences'] = [{
                 'text': o['original_text'], 'year': o['event_date'][:4] if o['event_date'] else None,
                 'type': sources[o['source_id']]['type'], 'platform': sources[o['source_id']].get('platform'),
@@ -269,6 +275,7 @@ class WebApp:
             'section_counts': {'knowledge': sum(n['organization']['kind'] != 'info' for n in note_experiences.select(bundle, 'knowledge')),
                                'learning': len(learning),
                                'experiences': len(note_experiences.select(bundle, 'experiences'))},
+            'reading_groups_incomplete': sum(c.get('reading_groups_incomplete', 0) for c in bundle['collections']),
             'learning_categories': [{'kind': kind,
                                      'count': sum(n['organization']['kind'] == kind for n in learning),
                                      'sources': len({n['collection'] for n in learning if n['organization']['kind'] == kind})}

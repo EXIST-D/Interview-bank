@@ -13,7 +13,8 @@ LEARNING_KINDS = ('roadmap', 'tutorial', 'resource', 'career', 'news')
 VERIFICATIONS = ('reference', 'verified', 'needs_review', 'outdated')
 QUESTION_TYPES = ('concept', 'comparison', 'implementation', 'design', 'coding', 'troubleshooting', 'reference')
 META_FIELDS = {'description', 'author', 'homepage', 'license', 'license_url', 'version', 'updated_at', 'language'}
-ITEM_FIELDS = {'area', 'topic', 'tags', 'kind', 'question_type', 'verification', 'language', 'evidence', 'locked', 'user_quote'}
+ITEM_FIELDS = {'area', 'topic', 'tags', 'kind', 'question_type', 'verification', 'language', 'evidence', 'locked', 'user_quote',
+               'display_title'}
 PATH = 'collections/_organization.json'
 
 
@@ -73,6 +74,8 @@ def _areas(value):
 
 def _item(value, area_ids, topic_areas):
     require(isinstance(value, dict) and set(value) <= ITEM_FIELDS, 'Unknown organization item field')
+    if 'display_title' in value:
+        _string(value['display_title'], 'display title', 300, False)
     for key in ('area', 'topic', 'language', 'user_quote'):
         if key in value:
             _string(value[key], key, 2000 if key == 'user_quote' else 80)
@@ -126,7 +129,7 @@ def organize(bank, name, payload, preview=False):
     """Patch one collection atomically with optimistic concurrency and no original-content writes."""
     require(isinstance(payload, dict) and set(payload) <= {
         'schema_version', 'collection', 'source_digest', 'organization_digest', 'metadata', 'areas', 'chapters', 'notes',
-        'experiences', 'study_links'
+        'experiences', 'study_links', 'reading_groups'
     }, 'Invalid organization payload')
     require(payload.get('schema_version') == 1 and payload.get('collection') == name, 'Wrong organization collection/version')
     from .notes import load_notes
@@ -187,6 +190,16 @@ def organize(bank, name, payload, preview=False):
                              chapter_change.get('user_quote', '').strip()),
                         'Classification is protected; explicit user words are required')
             _item(inherited, area_ids, topic_areas)
+        from . import note_readings
+        if 'reading_groups' in payload:
+            require(isinstance(payload['reading_groups'], dict), 'Invalid reading group patch')
+            candidate['reading_groups'] = copy.deepcopy(candidate.get('reading_groups', {}))
+            for key, value in payload['reading_groups'].items():
+                if value is None:
+                    candidate['reading_groups'].pop(key, None)
+                else:
+                    candidate['reading_groups'][key] = copy.deepcopy(value)
+        note_readings.validate(candidate.get('reading_groups', {}), collection, candidate)
         changed = {key: sum(old.get(k) != value for k, value in new.items()) + len(set(old) - set(new))
                    for key, old, new in (
                        ('metadata', previous.get('metadata', {}), candidate['metadata']),
@@ -195,6 +208,7 @@ def organize(bank, name, payload, preview=False):
         changed['areas'] = int(previous.get('areas', []) != candidate['areas'])
         changed['experiences'] = int(previous.get('experiences', {}) != candidate.get('experiences', {}))
         changed['study_links'] = int(previous.get('study_links', {}) != candidate.get('study_links', {}))
+        changed['reading_groups'] = int(previous.get('reading_groups', {}) != candidate.get('reading_groups', {}))
         changed['source'] = int(bool(previous.get('source_digest') and
                                      previous['source_digest'] != source_digest(collection)))
         changes = any(changed.values())
@@ -210,6 +224,7 @@ def organize(bank, name, payload, preview=False):
                 'areas': len(candidate['areas']), 'topics': sum(len(a['topics']) for a in candidate['areas']),
                 'experiences': len(candidate.get('experiences', {})),
                 'study_links': len(candidate.get('study_links', {})),
+                'reading_groups': len(candidate.get('reading_groups', {})),
                 'source_unchanged': True, 'links_unchanged': True,
                 'organization_digest': profile_digest(candidate if changes and not preview else previous)}
 
@@ -232,20 +247,24 @@ def enrich(bundle, profiles):
                 'verification': value.get('verification', 'reference'),
                 'language': value.get('language', profile.get('metadata', {}).get('language', '')),
                 'evidence': value.get('evidence', []), 'locked': bool(value.get('locked')),
+                **({'display_title': value['display_title']} if value.get('display_title') else {}),
             }})
         from . import note_experiences
         enriched = {**source, 'notes': notes, 'organization': profile}
         from . import note_relations
-        collections.append(note_relations.project({**enriched, 'experiences': note_experiences.project(enriched)}))
+        from . import note_readings
+        collections.append(note_readings.project(note_relations.project(
+            {**enriched, 'experiences': note_experiences.project(enriched)})))
     return {**bundle, 'collections': collections, 'notes': [n for c in collections for n in c['notes']]}
 
 
 def collection_card(collection, linked=(), section='all'):
-    from . import note_experiences
+    from . import note_experiences, note_readings
     notes = collection['notes']
     raw_active = [n for n in notes if n['organization']['kind'] != 'info']
     excluded = note_experiences.members(collection)
-    study = [n for n in raw_active if n['id'] not in excluded]
+    study = [n for n in collection.get('readings', raw_active)
+             if n['organization']['kind'] != 'info' and n['id'] not in excluded]
     learning = [n for n in study if n['organization']['kind'] in LEARNING_KINDS]
     knowledge = [n for n in study if n['organization']['kind'] not in LEARNING_KINDS]
     articles = collection.get('experiences', [])
@@ -267,8 +286,10 @@ def collection_card(collection, linked=(), section='all'):
             'experience_total': len(articles),
             'experience_member_total': sum(n['id'] in excluded for n in raw_active),
             'information_ids': [n['id'] for n in notes if n['organization']['kind'] == 'info'],
+            'reading_members': {n['id']: n['reading'] for n in active if 'reading' in n},
+            'reading_groups_incomplete': collection.get('reading_groups_incomplete', 0),
             'marked': sum(bool(n['marks']) for n in active), 'linked': sum(
-                any(i in linked for i in n.get('experience', {}).get('note_ids', [n['id']])) for n in active),
+                any(i in linked for i in note_readings.members(n)) for n in active),
             'public_linked': sum(bool(n.get('study_notes') or n.get('public_experiences')) for n in active),
             'study_links': len(collection.get('valid_study_links', [])),
             'study_links_incomplete': collection.get('study_links_incomplete', 0),
@@ -295,6 +316,6 @@ def catalog(bank, name):
                 'metadata': profile.get('metadata', {}), 'areas': profile.get('areas', []),
                 'chapters': collection['chapters'], 'chapter_rules': profile.get('chapters', {}),
                 'note_rules': profile.get('notes', {}), 'experiences': profile.get('experiences', {}),
-                'study_links': profile.get('study_links', {}), 'notes': [
+                'study_links': profile.get('study_links', {}), 'reading_groups': profile.get('reading_groups', {}), 'notes': [
                     {'id': n['id'], 'title': n['title'], 'file': n['file'], 'group': n['group'],
                      'classification': n['organization']} for n in collection['notes']]}

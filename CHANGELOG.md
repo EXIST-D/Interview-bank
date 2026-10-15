@@ -2,6 +2,17 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.24.0] - 2026-10-15
+
+### Added
+- Source-local reading groups with original-article URL, ordered member IDs, content digests and editorial reasons. Preview, concurrency checks, idempotence, history and backup use the existing organization protocol.
+- Contextual display titles and CLI `notes show --original` access. Legacy catalogs preserve every original record; changed, missing, protected or conflicting group members fail open instead of hiding content.
+- Aggregate personal/public interview associations and browser-local progress at reading-unit level while keeping original evidence edges, question frequencies and member learning records.
+
+### Changed
+- Rename the Chinese knowledge navigation to 八股资料. Cleanup guidance distinguishes standalone Q&A, coherent articles, practice sets, career material, notices and mismatched fragments.
+- Preserve weakest member verification, original Markdown/code and reader CSS. No V1/V2 migration; shared readers need 1.24+ for grouped presentation.
+
 ## [1.23.0] - 2026-10-15
 
 ### Added

@@ -53,14 +53,33 @@ function notesLearning() {
   return stored(notesLearningKey(), {});
 }
 
-function noteLearningState(id) {
-  const value = notesLearning()[id]?.state;
-  return ['read', 'review', 'mastered'].includes(value) ? value : read.has(id) ? 'read' : 'unread';
+function noteLearningState(id, group = readingGroup(id)) {
+  const values = notesLearning();
+  const valid = ['unread', 'read', 'review', 'mastered'];
+  const raw = member => valid.includes(values[member]?.state) ? values[member].state : read.has(member) ? 'read' : 'unread';
+  if (!group) return raw(id);
+  if (values[id]?.reading_digest === group.content_digest && valid.includes(values[id].state)) return values[id].state;
+  const states = group.note_ids.map(raw);
+  if (states.includes('review')) return 'review';
+  if (states.every(s => s === 'mastered')) return 'mastered';
+  return states.every(s => s === 'read' || s === 'mastered') ? 'read' : 'unread';
 }
 
-function recordNoteVisit(id) {
+function hasRead(id) {
+  return isNote(id) ? noteLearningState(id) !== 'unread' : read.has(id);
+}
+
+function readingGroup(id) {
+  return state.notesData?.collections.map(c => c.reading_members?.[id]).find(Boolean);
+}
+
+function recordNoteVisit(id, group = readingGroup(id)) {
   const values = notesLearning();
-  if (!values[id]) values[id] = { state: 'read', at: new Date().toISOString() };
+  if (group) {
+    const current = noteLearningState(id, group);
+    values[id] = { state: ['review', 'mastered'].includes(current) ? current : 'read',
+      at: new Date().toISOString(), reading_digest: group.content_digest };
+  } else if (!values[id] || values[id].state === 'unread') values[id] = { state: 'read', at: new Date().toISOString() };
   store(notesLearningKey(), values);
 }
 
@@ -70,8 +89,8 @@ function noteLearningControls(note) {
   const choices = el('div', 'note-learning-actions');
   const change = value => {
     const values = notesLearning();
-    if (value) values[note.id] = { state: value, at: new Date().toISOString() };
-    else delete values[note.id];
+    values[note.id] = { state: value || 'unread', at: new Date().toISOString(),
+      ...(note.reading ? { reading_digest: note.reading.content_digest } : {}) };
     store(notesLearningKey(), values);
     status.textContent = t('notes_learning_' + noteLearningState(note.id));
     for (const control of choices.querySelectorAll('[data-learning]')) {
@@ -79,6 +98,7 @@ function noteLearningControls(note) {
     }
     toast(t('notes_learning_saved'));
     if (state.notes.learning !== 'all') loadNotes(true);
+    else renderNoteList();
   };
   for (const value of ['review', 'mastered']) {
     const control = button(t('notes_set_' + value), 'chip-button', () => change(value));
@@ -183,7 +203,7 @@ async function loadNotes(reset = false) {
         cards = cards.concat(page.notes);
         offset += page.notes.length;
       }
-      cards = cards.filter(n => noteLearningState(n.id) === f.learning);
+      cards = cards.filter(n => noteLearningState(n.id, n.reading) === f.learning);
       data.total = cards.length;
       data.ids = cards.map(n => n.id);
     }
@@ -223,7 +243,9 @@ function enterNotesSource(source, continueReading = false) {
   return pickNotes({ home: false, collection: source.name, chapter: '', area: '', topic: '', tag: '',
     kind: 'study', company: '', year: '', question_type: '', connection: '', verification: '', learning: 'all', marked: false, asked: false, scope: 'source', sort: 'order' })
     .then(() => {
-      if (continueReading && last && source.content_ids.includes(last.id)) return openQuestion(last.id, true);
+      const target = last && (source.content_ids.includes(last.id) ? last.id :
+        Object.entries(source.reading_members || {}).find(([, group]) => group.note_ids.includes(last.id))?.[0]);
+      if (continueReading && target) return openQuestion(target, true);
     });
 }
 
@@ -269,7 +291,8 @@ function renderSourceCards(data) {
     const done = source.content_ids.filter(id => noteLearningState(id) !== 'unread').length;
     const footer = el('div', 'source-card-footer');
     const last = stored('ibank-last-note', null);
-    const canContinue = last && source.content_ids.includes(last.id);
+    const canContinue = last && (source.content_ids.includes(last.id) ||
+      Object.values(source.reading_members || {}).some(group => group.note_ids.includes(last.id)));
     footer.append(button(t(canContinue ? 'notes_continue' : 'notes_start') + ' →', 'link source-enter',
       () => enterNotesSource(source, canContinue)),
       button(t('notes_source_info'), 'link', () => showSourceInfo(source)));
@@ -560,6 +583,7 @@ function showSourceInfo(source) {
   }
   body.append(links);
   if (source.organization_stale) body.append(el('p', 'notice', t('notes_source_changed')));
+  if (source.reading_groups_incomplete) body.append(el('p', 'notice', t('notes_reading_changed')));
   body.append(el('h3', '', t('notes_source_history')));
   if (!source.history.length) body.append(el('p', 'hint', t('notes_no_history')));
   for (const item of [...source.history].reverse().slice(0, 8)) {
