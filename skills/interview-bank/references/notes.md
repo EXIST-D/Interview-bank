@@ -170,7 +170,7 @@ letters/digits/underscore/hyphen). Each value has exactly:
 
 - `title`: a contextual article title, 1–300 characters;
 - `note_ids`: 2–500 original IDs in reviewed source order; the first ID anchors the display unit;
-- `source_url`: the same public HTTP(S) URL in every member's generated `原文：[查看来源](...)` footer,
+- `source_url`: the same public HTTP(S) URL in every member's generated 原文 / 查看来源 citation footer,
   without its line fragment; URLs with credentials are rejected;
 - `content_digest`: `ibank_core.note_readings.digest(members)` using those original notes, in that order;
 - `reason`: a concise editorial explanation, 1–500 characters.

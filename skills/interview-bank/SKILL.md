@@ -10,11 +10,8 @@ metadata:
 
 # Interview Bank
 
-A local interview question bank that keeps every question's provenance.
-You read screenshots, recordings and web pages, judge meaning and research answers.
-The Python CLI validates responses, stores them transactionally and renders reports.
-No command reads images, infers meaning or browses (only the optional `media-transcribe` runs a model).
-Prepare the JSON yourself; never ask the user to write it.
+Read sources, judge meaning and research answers; Python validates, stores and exports.
+Only optional `media-transcribe` runs a model. Prepare task JSON yourself.
 
 ## Core rules
 
@@ -54,8 +51,8 @@ Prepare the JSON yourself; never ask the user to write it.
 | keep a bank over time, protect edits, recover, free space | [maintenance](references/maintenance.md) | `migrate`, `backup`, `policy`, `workflow`, `undo`, `gc` |
 | prepare for a role or a JD | [study sets](references/studysets.md) | `studyset` |
 | review weak questions or run a mock interview | [practice](references/practice.md) | `study`, `interview turn`, `interview review` |
-| organise 八股资料 sources, learning articles or public interview accounts | [notes](references/notes.md) | `notes` |
-| clean mixed sources or restore fragmented reading order | [content cleanup](references/knowledge-cleanup.md) | `notes catalog`, `notes show --original`, `notes organize` |
+| organise 八股资料, learning or public interviews | [notes](references/notes.md) | `notes` |
+| clean mixed sources or fragmented articles | [cleanup](references/knowledge-cleanup.md) | `notes` |
 | browse, practise or review in a browser | [local Web](references/web.md) | `web` |
 | set up a new host or check its tools | [portability](references/portability.md) | `capabilities`, `media-plan` |
 
