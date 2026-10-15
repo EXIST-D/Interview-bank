@@ -28,6 +28,7 @@
       <button type="button" role="tab" data-mode="bank" aria-selected="true"><span data-i18n="mode_bank">个人面经</span></button>
       <button type="button" role="tab" data-mode="notes" data-section="knowledge" aria-selected="false"><span data-i18n="mode_notes">八股</span></button>
       <button type="button" role="tab" data-mode="notes" data-section="experiences" aria-selected="false"><span data-i18n="mode_public">公开面经</span></button>
+      <button type="button" role="tab" data-mode="notes" data-section="learning" aria-selected="false"><span data-i18n="mode_learning">学习资料</span></button>
     </div>
     <p class="side-title bank-only" data-fold="views" data-i18n="study">学习</p>
     <nav id="views" class="side-list bank-only">
@@ -84,6 +85,7 @@
       <button type="button" role="tab" data-mode="bank" aria-selected="true"><span data-i18n="mode_bank">个人面经</span></button>
       <button type="button" role="tab" data-mode="notes" data-section="knowledge" aria-selected="false"><span data-i18n="mode_notes">八股</span></button>
       <button type="button" role="tab" data-mode="notes" data-section="experiences" aria-selected="false"><span data-i18n="mode_public">公开面经</span></button>
+      <button type="button" role="tab" data-mode="notes" data-section="learning" aria-selected="false"><span data-i18n="mode_learning">学习资料</span></button>
     </div>
     <div id="notes-sections" class="notes-only notes-sections" role="group" aria-label="八股内容分区" data-i18n-aria="notes_sections" hidden>
       <button id="notes-section-knowledge" type="button" aria-pressed="true"><span data-i18n="notes_section_knowledge">知识资料</span><small id="notes-knowledge-count"></small></button>
@@ -103,6 +105,7 @@
       </div>
       <span id="source-shelf-status" class="source-shelf-status" role="status" aria-live="polite" aria-atomic="true"></span>
       <button id="notes-browse-experiences" class="link" type="button" hidden data-i18n="notes_browse_experiences">浏览全部公开面经 →</button>
+      <button id="notes-browse-learning" class="link learning-browse-all" type="button" hidden data-i18n="learning_browse_all">浏览全部资料 →</button>
       <div id="source-cards" class="source-cards"></div>
       <p class="notes-local-hint" data-i18n="notes_local_hint">学习状态保存在当前浏览器；资料核验状态单独记录。</p>
     </section>
@@ -131,6 +134,7 @@
     <div id="notes-filters" class="notes-only notes-filters" hidden>
       <label class="notes-search-scope"><span data-i18n="notes_search_scope">搜索范围</span><select id="notes-search-scope"><option value="source" data-i18n="notes_scope_source">当前来源</option><option value="topic" data-i18n="notes_scope_topic">当前专题</option><option value="all" data-i18n="notes_scope_all">全部来源</option></select></label>
       <div class="notes-filter-grid">
+        <label id="notes-learning-source-field" hidden><span data-i18n="learning_sources">资料来源</span><select id="notes-learning-source"></select></label>
         <label><span data-i18n="notes_tags">标签</span><select id="notes-tag"></select></label>
         <label><span data-i18n="notes_kind">内容类型</span><select id="notes-kind"></select></label>
         <label id="notes-question-type-field"><span data-i18n="notes_question_type">题型</span><select id="notes-question-type"></select></label>

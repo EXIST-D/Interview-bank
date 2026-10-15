@@ -7,6 +7,24 @@
 .library .source-shelf-actions button:disabled { opacity: .4; cursor: default; }
 .library .source-shelf-status { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .library .source-cards { gap: 14px; align-items: start; }
+.library .learning-cards { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
+.library .learning-card {
+  display: grid; gap: 12px; width: 100%; min-height: 230px; padding: 22px;
+  border: 1px solid var(--line); border-radius: 18px; background: var(--surface);
+  color: var(--ink); text-align: left; transition: border-color .16s ease, box-shadow .16s ease;
+}
+.library .learning-card:hover:not(:disabled) { border-color: var(--blue); box-shadow: 0 6px 22px #00000008; }
+.library .learning-card:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.library .learning-card:disabled { opacity: .5; cursor: default; }
+.library .learning-card-top { display: flex; align-items: center; justify-content: space-between; }
+.library .learning-card-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--blue-soft); color: var(--blue); }
+.library .learning-card-icon svg { width: 25px; height: 25px; }
+.library .learning-card-arrow { font-size: 21px; color: var(--muted); }
+.library .learning-card-title { font-size: 19px; line-height: 1.5; font-weight: 600; }
+.library .learning-card-description { min-height: 44px; color: var(--muted); font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+.library .learning-card-meta { border-top: 1px solid var(--line); padding-top: 14px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.library .learning-browse-all { margin-bottom: 20px; }
+body.learning-materials .library .notes-directory-controls { display: none; }
 .library .source-card { position: relative; padding: 0; gap: 0; border-radius: 15px; }
 .library .source-card:hover { border-color: color-mix(in srgb, var(--muted) 35%, var(--line)); box-shadow: 0 3px 14px #00000006; }
 .library .source-card.is-open { border-color: color-mix(in srgb, var(--blue) 38%, var(--line)); }
@@ -52,6 +70,12 @@
 .sidebar .side-item { min-height: 38px; padding: 8px 10px; gap: 8px; }
 .sidebar .side-item > span:first-child { display: flex; align-items: center; gap: 9px; min-width: 0; }
 .sidebar .side-item > small { flex-shrink: 0; }
+body.learning-materials .sidebar #side-notes,
+body.learning-materials .sidebar .lb-tree-body { min-width: 0; }
+body.learning-materials .sidebar #side-notes .side-item { width: 100%; max-width: 100%; min-width: 0; }
+body.learning-materials .sidebar #side-notes .side-item > span:first-child {
+  display: block; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .sidebar .side-hide { border: 1px solid var(--line); border-radius: 9px; }
 .sidebar .lb-icon { color: var(--muted); }
 .sidebar .modes { grid-template-columns: 1fr; margin: 4px 0 12px; padding: 0; gap: 4px; background: transparent; }
@@ -60,7 +84,7 @@
 .sidebar .modes button[aria-selected="true"] { color: var(--blue); background: var(--surface); box-shadow: 0 1px 4px #00000008; }
 .sidebar .modes button:hover { background: var(--surface); }
 .sidebar .modes button:focus-visible, .library .modes button:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
-.library .modes { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.library .modes { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .library .modes button { padding: 7px 2px; font-size: 13px; }
 .library .modes .lb-icon { display: none; }
 .library .public-directory { margin: 12px 16px 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
@@ -141,6 +165,7 @@ body.notes-home .library .lb-scope { display: none; }
   .library .lb-panels { margin-top: 8px; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .library .learning-card { transition: none; }
   .library .source-card-chevron { transition: none; }
   .library .lb-panel > summary::after { transition: none; }
 }

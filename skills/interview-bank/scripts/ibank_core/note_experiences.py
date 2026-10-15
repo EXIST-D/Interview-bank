@@ -152,12 +152,14 @@ def members(collection):
 
 
 def select(bundle, section='all'):
-    require(section in ('all', 'knowledge', 'experiences'), 'Unknown notes section')
+    require(section in ('all', 'knowledge', 'learning', 'experiences'), 'Unknown notes section')
     if section == 'experiences':
         return [n for c in bundle['collections'] for n in c.get('experiences', [])]
-    if section == 'knowledge':
+    if section in ('knowledge', 'learning'):
+        from .note_organization import LEARNING_KINDS
         excluded = {n for c in bundle['collections'] for n in members(c)}
-        return [n for n in bundle['notes'] if n['id'] not in excluded]
+        return [n for n in bundle['notes'] if n['id'] not in excluded and (
+            (n['organization']['kind'] in LEARNING_KINDS) == (section == 'learning'))]
     return bundle['notes']
 
 

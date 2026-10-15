@@ -455,7 +455,7 @@ def add_parsers(sub, common):
     find = action.add_parser("search", parents=[common], help="Find notes by words in the title or answer")
     find.add_argument("--query", required=True)
     find.add_argument("--limit", type=int, default=20)
-    find.add_argument("--section", choices=('all', 'knowledge', 'experiences'), default='all')
+    find.add_argument("--section", choices=('all', 'knowledge', 'learning', 'experiences'), default='all')
     show = action.add_parser("show", parents=[common], help="One note with its answer, source and linked questions")
     show.add_argument("note_id")
     remove = action.add_parser("remove", parents=[common], help="Delete a collection and its links")

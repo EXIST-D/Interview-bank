@@ -80,7 +80,7 @@
   function decorateViews() {
     for (const control of document.querySelectorAll('.modes [data-mode]')) {
       if (!control.querySelector('.lb-icon')) control.prepend(svg(control.dataset.mode === 'bank' ? 'all' :
-        control.dataset.section === 'experiences' ? 'due' : 'book'));
+        control.dataset.section === 'experiences' ? 'due' : control.dataset.section === 'learning' ? 'list' : 'book'));
     }
     for (const control of side.querySelectorAll('[data-view]')) {
       const first = control.querySelector('span');
@@ -123,7 +123,7 @@
     const isHome = document.body.classList.contains('notes-home');
     directory.details.hidden = !isNotes || isHome || navigation.hidden;
     notesFilter.details.hidden = !isNotes || isHome || noteFilters.hidden;
-    scope.hidden = !isNotes || isHome || state.notes.section === 'experiences';
+    scope.hidden = !isNotes || isHome || ['experiences', 'learning'].includes(state.notes.section);
     bankFilter.details.hidden = isNotes || !roomy.matches;
     const activeBank = filters.filter(name => byId(name).value).length
       + (byId('view').value !== 'all') + (byId('sort').value !== 'frequency');

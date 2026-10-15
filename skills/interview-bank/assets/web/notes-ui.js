@@ -1,5 +1,49 @@
 'use strict';
 // Source shelves and navigation use separate metadata; published content and links stay intact.
+const LEARNING_KINDS = ['roadmap', 'tutorial', 'resource', 'career', 'news'];
+
+function noteSection(note) {
+  return note.section || (note.experience ? 'experiences' : LEARNING_KINDS.includes(note.kind) ? 'learning' : 'knowledge');
+}
+
+function selectLearningKind(kind, collection = '') {
+  return pickNotes({ ...notesSectionSelection('learning', false), kind, collection,
+    scope: collection ? 'source' : 'all' });
+}
+
+function learningIcon(kind) {
+  const paths = {
+    roadmap: '<circle cx="5" cy="5" r="2"/><circle cx="19" cy="19" r="2"/><path d="M7 5h9a4 4 0 0 1 0 8H8a3 3 0 0 0 0 6h9"/>',
+    tutorial: '<rect x="3" y="4" width="18" height="16" rx="3"/><path d="m7 9 3 3-3 3m6 0h4"/>',
+    resource: '<rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><path d="M14 17.5h7m-3.5-3.5v7"/>',
+    career: '<rect x="3" y="7" width="18" height="14" rx="3"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12a20 20 0 0 0 18 0M10 13v3h4v-3"/>',
+    news: '<rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 7h10M7 11h10M7 15h4M7 18h4"/><rect x="14" y="15" width="3" height="3" rx=".5"/>',
+  };
+  const icon = el('span', 'learning-card-icon');
+  icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + paths[kind] + '</svg>';
+  return icon;
+}
+
+function renderLearningCards(data) {
+  const root = $('source-cards');
+  root.replaceChildren();
+  root.classList.add('learning-cards');
+  $('notes-home-title').textContent = t('mode_learning');
+  $('notes-home-title').nextElementSibling.textContent = t('learning_home_hint');
+  $('notes-home-summary').textContent = t('learning_summary', { n: data.section_counts.learning });
+  $('notes-browse-experiences').hidden = true;
+  for (const category of data.learning_categories) {
+    const card = button('', 'learning-card', () => selectLearningKind(category.kind));
+    card.dataset.learningKind = category.kind;
+    card.disabled = !category.count;
+    const top = el('span', 'learning-card-top');
+    top.append(learningIcon(category.kind), el('span', 'learning-card-arrow', '↗'));
+    card.append(top, el('span', 'learning-card-title', t('notes_kind_' + category.kind)),
+      el('span', 'learning-card-description', t('learning_hint_' + category.kind)),
+      el('span', 'learning-card-meta', t('learning_card_meta', { n: category.count, s: category.sources })));
+    root.append(card);
+  }
+}
 
 function notesLearningKey() {
   return 'ibank-notes-learning:' + (state.data?.account || state.data?.name || 'local');
@@ -77,7 +121,7 @@ function notesParams(offset = 0) {
   const f = state.notes;
   const words = $('search').value.trim();
   const query = new URLSearchParams({ offset, limit: f.home ? 1 : NOTES_PAGE, sort: f.sort, view: f.view, section: f.section || 'knowledge' });
-  const globalSearch = words && f.scope === 'all';
+  const globalSearch = words && f.scope === 'all' && f.section !== 'learning';
   if (f.collection && !globalSearch) query.set('collection', f.collection);
   if (!words || f.scope === 'topic') {
     if (f.view === 'original' && f.chapter !== '') query.set('chapter', f.chapter);
@@ -120,7 +164,8 @@ async function loadNotes(reset = false) {
     }
     if (f.tag && !data.facets.tags.includes(f.tag)) recovered.tag = '';
     if (f.question_type && !(f.question_type in data.facets.question_types)) recovered.question_type = '';
-    if (f.kind && !['study', 'info'].includes(f.kind) && !(f.kind in data.facets.kinds)) recovered.kind = 'study';
+    if (f.kind && !['study', 'info'].includes(f.kind) && !(f.kind in data.facets.kinds) &&
+      !(f.section === 'learning' && LEARNING_KINDS.includes(f.kind))) recovered.kind = 'study';
     if (f.section === 'experiences') {
       if (f.experience_domain && !(f.experience_domain in data.facets.experience_domains)) recovered.experience_domain = '';
       if (f.company && !(f.company === 'unknown' ? data.facets.unknown_company : data.facets.companies.includes(f.company))) recovered.company = '';
@@ -168,7 +213,7 @@ function pickNotes(changes) {
     ++state.detail;
     closeReader();
     $('source-search').value = '';
-    history.replaceState(null, '', location.pathname);
+    history.replaceState(null, '', location.pathname + '#section=' + state.notes.section);
   }
   return loadNotes(true);
 }
@@ -200,6 +245,7 @@ function languageLabel(value) {
 
 function renderSourceCards(data) {
   const root = $('source-cards');
+  root.classList.remove('learning-cards');
   const experiences = state.notes.section === 'experiences';
   const sources = sourceShelf.prepare(data.collections.filter(c => !experiences || c.content_total > 0));
   root.replaceChildren();
@@ -247,42 +293,54 @@ function notesOptions(select, options, value) {
 function renderNoteFilters(data) {
   const f = state.notes;
   const home = Boolean(f.home);
-  const searchingAll = $('search').value.trim() && f.scope === 'all';
+  const learning = f.section === 'learning';
+  const searchingAll = $('search').value.trim() && f.scope === 'all' && !learning;
   const current = data.collections.find(c => c.name === f.collection);
   const experiences = f.section === 'experiences';
   document.body.classList.toggle('public-experiences', experiences);
+  document.body.classList.toggle('learning-materials', learning);
   $('public-directory').hidden = !experiences;
   if (experiences) renderPublicDirectory(data);
   syncPrimaryNavigation();
   $('notes-knowledge-count').textContent = data.section_counts.knowledge;
   $('notes-experience-count').textContent = data.section_counts.experiences;
-  $('notes-section-knowledge').setAttribute('aria-pressed', String(!experiences));
+  $('notes-section-knowledge').setAttribute('aria-pressed', String(f.section === 'knowledge'));
   $('notes-section-experiences').setAttribute('aria-pressed', String(experiences));
   document.body.classList.toggle('notes-home', home);
   $('notes-overview').hidden = !home;
   $('notes-navigation').hidden = home;
   $('notes-filters').hidden = home;
+  $('notes-learning-source-field').hidden = !learning;
+  $('notes-browse-learning').hidden = !learning;
+  document.querySelector('.source-shelf-tools').hidden = learning;
+  $('source-shelf-status').hidden = learning;
   $('collections').replaceChildren();
   $('groups').replaceChildren();
   $('groups').hidden = true;
   $('chapter-intro').hidden = true;
   if (home) {
-    renderSourceCards(data);
+    if (learning) renderLearningCards(data);
+    else renderSourceCards(data);
     $('empty-reader').hidden = true;
   } else {
-    const title = experiences ? t('notes_section_experiences') : searchingAll || !current ? t('notes_source_all') : current.title;
-    $('notes-home').textContent = t(experiences ? 'notes_public_all' : 'notes_sources');
+    const title = experiences ? t('notes_section_experiences') : learning ?
+      t(LEARNING_KINDS.includes(f.kind) ? 'notes_kind_' + f.kind : 'learning_all') :
+      searchingAll || !current ? t('notes_source_all') : current.title;
+    $('notes-home').textContent = t(experiences ? 'notes_public_all' : learning ? 'learning_home' : 'notes_sources');
     $('notes-source-name').textContent = title;
     $('notes-source-title').textContent = title;
-    $('notes-source-description').textContent = experiences ? t('notes_public_topic_hint') : searchingAll ? t('notes_search_all_hint') : current?.metadata.description || '';
+    $('notes-source-description').textContent = experiences ? t('notes_public_topic_hint') : learning ?
+      current?.title || t('learning_home_hint') : searchingAll ? t('notes_search_all_hint') : current?.metadata.description || '';
     $('notes-source-info').hidden = experiences || !current || Boolean(searchingAll);
     $('notes-view-knowledge').setAttribute('aria-pressed', String(f.view === 'knowledge'));
     $('notes-view-original').setAttribute('aria-pressed', String(f.view === 'original'));
-    $('notes-view-original').parentElement.hidden = experiences;
-    $('notes-area-label').parentElement.hidden = experiences;
+    $('notes-view-original').parentElement.hidden = experiences || learning;
+    $('notes-area-label').parentElement.hidden = experiences || learning;
     $('notes-area-label').hidden = f.view === 'original' || !current || Boolean(searchingAll);
     $('notes-topic-label').textContent = t(f.view === 'original' ? 'notes_original_chapter' : 'notes_topic');
-    $('notes-topic').closest('label').hidden = experiences || !current || Boolean(searchingAll);
+    $('notes-topic').closest('label').hidden = experiences || learning || !current || Boolean(searchingAll);
+    notesOptions($('notes-learning-source'), [{ id: '', title: t('notes_source_all') },
+      ...data.collections.filter(c => c.content_total).map(c => ({ id: c.name, title: c.title + ' · ' + c.content_total }))], f.collection);
     notesOptions($('notes-area'), [{ id: '', title: t('notes_area_all') }, ...(current?.areas || []).filter(a => a.count).map(a =>
       ({ id: a.id, title: a.title + ' · ' + a.count }))], f.area);
     if (f.view === 'original') {
@@ -303,13 +361,14 @@ function renderNoteFilters(data) {
     const disableDirectory = Boolean($('search').value.trim() && f.scope !== 'topic');
     $('notes-area').disabled = $('notes-topic').disabled = disableDirectory;
     notesOptions($('notes-tag'), [{ id: '', title: t('notes_tags_all') }, ...data.facets.tags.map(tag => ({ id: tag, title: tag }))], f.tag);
-    $('notes-question-type-field').hidden = experiences;
+    $('notes-question-type-field').hidden = experiences || learning;
     notesOptions($('notes-question-type'), [{ id: '', title: t('notes_question_type_all') },
       ...Object.entries(data.facets.question_types).map(([id, count]) => ({ id, title: t('notes_question_type_' + id) + ' · ' + count }))], f.question_type);
     notesOptions($('notes-connection'), [{ id: '', title: t('notes_connection_all') },
       ...['any', 'personal', 'public', 'none'].map(id => ({ id, title: t('notes_connection_' + id) }))], f.connection);
-    notesOptions($('notes-kind'), [{ id: 'study', title: t('notes_kind_study') },
-      ...Object.entries(data.facets.kinds).filter(([k]) => k !== 'info').map(([id, count]) =>
+    notesOptions($('notes-kind'), [{ id: 'study', title: t(learning ? 'learning_all' : 'notes_kind_study') },
+      ...(learning ? LEARNING_KINDS.map(k => [k, data.facets.kinds[k] || 0]) :
+        Object.entries(data.facets.kinds).filter(([k]) => k !== 'info')).map(([id, count]) =>
         ({ id, title: t('notes_kind_' + id) + ' · ' + count })),
       ...(f.kind === 'info' ? [{ id: 'info', title: t('notes_kind_info') }] : [])], f.kind);
     notesOptions($('notes-verification'), [{ id: '', title: t('notes_verification_all') },
@@ -346,6 +405,7 @@ function renderNoteFilters(data) {
   const entry = (parent, label, count, active, action, cls = '') => {
     const node = button('', 'side-item' + cls + (active ? ' active' : ''), action);
     node.append(el('span', '', label), el('small', '', count === undefined ? '' : String(count)));
+    node.title = label;
     node.setAttribute('aria-current', active ? 'page' : 'false');
     parent.append(node);
   };
@@ -362,6 +422,27 @@ function renderNoteFilters(data) {
     for (const [id, count] of years.filter(([id]) => id !== 'unknown').concat(years.filter(([id]) => id === 'unknown'))) {
       entry(side, id === 'unknown' ? t('notes_experience_year_unknown') : id, count, f.year === id,
         () => pickNotes({ year: f.year === id ? '' : id, collection: '', scope: 'all' }));
+    }
+    return;
+  }
+  if (learning) {
+    entry(side, '← ' + t('learning_home'), data.section_counts.learning, home, () => selectNotesSection('learning'));
+    entry(side, t('learning_all'), data.collections.reduce((n, c) => n + c.content_total, 0),
+      !home && f.kind === 'study' && !f.collection, () => selectNotesSection('learning', false));
+    side.append(el('p', 'side-title', t('learning_categories')));
+    for (const kind of LEARNING_KINDS) {
+      const count = f.collection ? data.facets.kinds[kind] || 0 : data.learning_categories.find(c => c.kind === kind).count;
+      entry(side, t('notes_kind_' + kind), count, !home && f.kind === kind,
+        () => selectLearningKind(kind, f.collection));
+    }
+    side.append(el('p', 'side-title', t('learning_sources')));
+    const sourceCount = data.collections.reduce((n, c) => n + (f.kind === 'study' ? c.content_total : c.kinds[f.kind] || 0), 0);
+    entry(side, t('notes_source_all'), sourceCount, !f.collection,
+      () => pickNotes({ home: false, collection: '', area: '', topic: '', chapter: '', scope: 'all' }));
+    for (const source of data.collections.filter(c => c.content_total)) {
+      entry(side, source.title, source.kinds[f.kind] || (f.kind === 'study' ? source.content_total : 0),
+        !home && f.collection === source.name, () => pickNotes({
+          home: false, collection: source.name, area: '', topic: '', chapter: '', scope: 'source' }));
     }
     return;
   }
@@ -473,7 +554,7 @@ function showSourceInfo(source) {
     links.append(button(t('notes_license_full'), 'link', async () => {
       $('source-info-dialog').close();
       await pickNotes({ home: false, collection: source.name, area: '', topic: '', chapter: '',
-        kind: 'info', tag: '', verification: '', learning: 'all', marked: false, asked: false });
+        section: 'knowledge', kind: 'info', tag: '', verification: '', learning: 'all', marked: false, asked: false });
       await openQuestion(id, true);
     }));
   }
@@ -495,7 +576,11 @@ function installNotesUI() {
   if (installNotesUI.installed) return;
   installNotesUI.installed = true;
   sourceShelf.install();
-  $('notes-home').addEventListener('click', () => selectNotesSection(state.notes.section === 'experiences' ? 'experiences' : 'knowledge'));
+  $('notes-home').addEventListener('click', () => selectNotesSection(state.notes.section));
+  $('notes-browse-learning').addEventListener('click', () => selectNotesSection('learning', false));
+  $('notes-learning-source').addEventListener('change', () => pickNotes({
+    collection: $('notes-learning-source').value, area: '', topic: '', chapter: '',
+    scope: $('notes-learning-source').value ? 'source' : 'all' }));
   for (const section of ['knowledge', 'experiences']) {
     $('notes-section-' + section).addEventListener('click', () => selectNotesSection(section));
   }

@@ -2,6 +2,17 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.23.0] - 2026-10-15
+
+### Added
+- A disjoint learning-material section for roadmaps, tutorials, resources, career material and industry news, available through the Web API and CLI notes search.
+- Five category cards with entry/source counts, category/source navigation, search and local learning-state filters.
+- Primary navigation and direct links for the new section on desktop/phone, with original-note routing and recovery of older saved filters.
+
+### Changed
+- Interview-knowledge shelves exclude learning-material kinds while the legacy all-notes query and raw records remain available.
+- Preserve public-article membership, citations, note IDs, study associations and browser-local learning marks. No bank migration or reader CSS change.
+
 ## [1.22.0] - 2026-10-15
 
 ### Added

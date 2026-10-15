@@ -35,6 +35,8 @@ subject classification. A content kind describes the entry's purpose; an area/to
 7. Preview then apply through `notes organize`, source by source. Preserve protected user rules and evidence states.
    Refresh digests and confirm idempotence, original source hashes, links, public-article membership and count totals.
    New kinds need version 1.22+; update every reader before applying them on a shared bank. No V1/V2 migration is needed.
+   From 1.23, the five learning kinds project into their own section; inventory `all` remains available for a
+   complete cleanup audit. Do not misreport a presentation split as removed questions or deleted source text.
 
 Report: current active entry counts per kind/source, newly excluded fragments and reasons, examples with provenance,
 remaining ambiguities and what was actually checked. Separate source/license records from newly excluded items.

@@ -260,13 +260,19 @@ class WebApp:
                            area_order.get((n['collection'], n['organization']['area']), 999),
                            topic_order.get((n['collection'], n['organization']['topic']), 999), n['order']))
         card = lambda n: notebook.note_card(n, collections[n['collection']], [q for q, _ in article_links(n)])
+        learning = note_experiences.select(bundle, 'learning')
         return {
             'section': section,
             'collections': [note_organization.collection_card(c, linked, section) for c in bundle['collections']],
             'summary': {'notes': len(bundle['notes']), 'marked': sum(bool(n['marks']) for n in bundle['notes']),
                         'asked': sum(n['id'] in linked for n in bundle['notes'])},
             'section_counts': {'knowledge': sum(n['organization']['kind'] != 'info' for n in note_experiences.select(bundle, 'knowledge')),
+                               'learning': len(learning),
                                'experiences': len(note_experiences.select(bundle, 'experiences'))},
+            'learning_categories': [{'kind': kind,
+                                     'count': sum(n['organization']['kind'] == kind for n in learning),
+                                     'sources': len({n['collection'] for n in learning if n['organization']['kind'] == kind})}
+                                    for kind in note_organization.LEARNING_KINDS],
             'facets': {'tags': sorted({t for n in scoped for t in n['organization']['tags']}),
                        'kinds': dict(Counter(n['organization']['kind'] for n in scoped)),
                        'question_types': dict(Counter(n['organization'].get('question_type') for n in scoped
@@ -293,7 +299,10 @@ class WebApp:
         linked = note_experiences.linked(note, notebook.linked_questions(bundle, rows))
         linked.sort(key=lambda pair: (pair[1]['relation'] != 'answers', -pair[0]['frequency']))
         from .note_relations import detail
+        section = 'experiences' if 'experience' in note else (
+            'learning' if note['organization']['kind'] in note_organization.LEARNING_KINDS else 'knowledge')
         return {**notebook.note_card(note, collection, [q for q, _ in linked]), **detail(note), 'body': note['body'],
+                'section': section,
                 'source': notebook.source_of(note, collection),
                 'questions': [{'id': q['id'], 'canonical': q['canonical'], 'frequency': q['frequency'], 'relation': link['relation'],
                                'answered': q['answer_status'] in ANSWERED} for q, link in linked]}

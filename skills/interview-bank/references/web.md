@@ -51,13 +51,19 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
   The person sees both questions and the agent's reason, chooses 是同一题 / 相关但不同 / 不同的题 with a required note, and the choice is saved next to the stage
   (`runs/<run>/human-decisions.json`, actor local_web).
   Nothing canonical changes until the agent runs `dedupe --resolve <run>`, which re-stages the run with those decisions, and commits it.
-- 八股 notes: once a collection is imported, personal interviews, knowledge and public interviews have primary entries.
+- Notes: once a collection is imported, personal interviews, knowledge, public interviews and learning materials have primary entries.
   Source cards lead to a source-local knowledge
   directory or its original chapters. Search explicitly scopes to the current topic, current source or all sources;
   tag, content kind, verification and browser-local learning filters supplement key-only and most-asked views.
   Notes show the collection's original answer with its source, and link both ways to interview questions.
   Source information separates notices from learning content. Directory maintenance stays with the Agent CLI.
   See [notes](notes.md).
+- Learning materials: use `#section=learning` to open the category home. Five cards separate roadmaps, tutorials,
+  resource indexes, career/role information and industry news, with entry/source counts and an all-materials entry.
+  Browse by category, choose a source, search text and filter local learning state. Source text and citations remain
+  in the existing reader. These five kinds do not appear in interview-knowledge lists, source counts or searches.
+  Public-interview article membership still takes precedence. Old note links infer their current section; saved
+  knowledge filters for these kinds recover to learning. Counts are entries/sections, not unique full documents.
 - Knowledge shelf: cards start collapsed, showing source title, language, content count and local reading progress.
   Click the header to expand its description, topic tags and actions; use the separate entry action to read the source.
   Drag the six-dot handle to reorder, with a card preview and insertion marker. Clicking the same handle opens

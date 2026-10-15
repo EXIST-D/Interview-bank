@@ -64,7 +64,7 @@ class WebAssets(unittest.TestCase):
         used = set(re.findall(r"\bt\('([a-z_0-9]+)'", self.script)) | self.markup.keys
         dynamic = {"status_", "rating_", "titles_", "all_", "relation_", "stat_", "size_", "theme_",
                    "notes_learning_", "notes_kind_", "notes_verification_", "notes_set_", "notes_warning_",
-                   "notes_question_type_", "notes_connection_", "notes_domain_"}
+                   "notes_question_type_", "notes_connection_", "notes_domain_", "learning_hint_"}
         self.assertEqual(sorted(k for k in used - zh if not k.startswith(tuple(dynamic))), [])
 
     def test_notes_labels_cover_all_states_and_script_order(self):
@@ -76,6 +76,7 @@ class WebAssets(unittest.TestCase):
             ('notes_learning_', ('unread', 'read', 'review', 'mastered')),
             ('notes_question_type_', ('concept', 'comparison', 'implementation', 'design', 'coding', 'troubleshooting', 'reference')),
             ('notes_connection_', ('all', 'any', 'personal', 'public', 'none')),
+            ('learning_hint_', ('roadmap', 'tutorial', 'resource', 'career', 'news')),
             ('notes_domain_', ('agent', 'llm', 'multimodal', 'backend', 'frontend', 'fullstack', 'infra', 'coding', 'career', 'other')),
             ('notes_warning_', ('reference', 'verified', 'needs_review', 'outdated')),
         ):

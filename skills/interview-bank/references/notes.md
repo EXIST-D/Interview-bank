@@ -130,7 +130,10 @@ under 八股 → 公开面经, separate from knowledge and private interview occ
 cleanup must preserve code, citations and an exclusion audit; original single-language English sources stay
 labelled as such unless the user asks to remove them too.
 
-- The Web reader shows a 面经 / 八股 switch once a collection exists. In the notes view:
+- The Web reader offers personal interviews, interview knowledge, public interviews and learning materials:
+  - learning materials have five category cards: roadmaps, tutorials, resources, career material and industry news;
+    these are omitted from the interview-knowledge section, without moving or duplicating original records;
+  - category/source filters, search and local learning progress work within the learning section;
   - knowledge materials and public interview articles, with independent source shelves and counts;
   - public articles distinguish interview accounts, company question lists and career advice, with company and
     explicit interview-year filters; unknown dates never inherit publication/import dates;
@@ -150,3 +153,8 @@ labelled as such unless the user asks to remove them too.
 - A hosted reader gets notes through `tools/deploy/sync.sh`, which sends `collections/` with `data/`.
 - Backups include `collections/`.
 - Collections are the user's private material: never copy them into the Skill, a repository or a public page.
+
+From 1.23, use `notes search --section learning` for those five kinds and `--section knowledge` for interview
+knowledge. The default `all` query preserves the original inventory, including notices and article members.
+Public-article members take precedence over their original kind: a career article never leaks into learning.
+Section-aware Web deep links keep original note IDs and learning marks; no bank migration is required.

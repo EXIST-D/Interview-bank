@@ -60,7 +60,17 @@ const TEXT = {
     merge_note: '判断依据（必填）', merge_need_note: '请写一句判断依据。',
     merge_saved: '已保存。全部裁决后请让 Agent 运行 dedupe --resolve {run}。', merge_decided: '已裁决：{a}',
     unreachable: '连不上题库服务，请稍后重试。', failed: '操作未完成，请重试。', connection: '连接失败，请稍后重试。',
-    modes: '板块', mode_bank: '个人面经', mode_notes: '八股', mode_public: '公开面经',
+    modes: '板块', mode_bank: '个人面经', mode_notes: '八股', mode_public: '公开面经', mode_learning: '学习资料',
+    search_learning: '搜索学习资料…',
+    learning_home: '分类总览', learning_all: '全部学习资料', learning_categories: '资料分类', learning_sources: '资料来源',
+    learning_browse_all: '浏览全部资料 →', learning_summary: '5 类资料 · {n} 条内容 · 每条保留原文与来源',
+    learning_home_hint: '从学习路线到行业动态，按你需要的方式查阅。',
+    learning_card_meta: '{n} 条资料 · {s} 个来源',
+    learning_hint_roadmap: '按阶段梳理学习方向，找到适合自己的准备顺序。',
+    learning_hint_tutorial: '环境安装、配置与实践步骤，边阅读边动手。',
+    learning_hint_resource: '集中查找专题索引、精选链接和知识检查清单。',
+    learning_hint_career: '了解岗位技术栈、招聘信息、薪资与求职经验。',
+    learning_hint_news: '按来源阅读模型发布、产品变化和行业评论。',
     shelf_hint: '拖动把手排序，点击卡片展开', shelf_count: '{n} 条知识', shelf_reset: '恢复顺序', shelf_reset_done: '已恢复默认来源顺序',
     shelf_move: '调整 {title} 的顺序', shelf_handle_hint: '拖动排序，或点击选择移动位置', shelf_first: '移到最前', shelf_previous: '前移一位',
     shelf_next: '后移一位', shelf_last: '移到最后', shelf_moved: '{title} 已移至第 {n} 位，共 {total} 个来源',
@@ -82,8 +92,8 @@ const TEXT = {
     notes_home_hint: '按来源收藏，按知识学习。原文与出处始终保留。',
     notes_search_all: '搜索全部来源…',
     notes_search_all_hint: '搜索全部来源，结果保留各自出处。',
-    notes_home_summary: '{s} 个来源 · {n} 条学习资料 · {i} 条来源说明',
-    notes_source_count: '{n} 条学习资料',
+    notes_home_summary: '{s} 个来源 · {n} 条知识条目 · {i} 条来源说明',
+    notes_source_count: '{n} 条知识条目',
     notes_source_linked: '{n} 条关联个人面经',
     notes_source_public_linked: '{n} 条资料关联公开面经',
     notes_source_experiences_linked: '{n} 篇已关联学习考点',
@@ -116,7 +126,7 @@ const TEXT = {
     notes_tags: '标签',
     notes_tags_all: '全部标签',
     notes_kind: '内容类型',
-    notes_kind_study: '全部学习资料',
+    notes_kind_study: '全部知识条目',
     notes_kind_material: '资料',
     notes_kind_qa: '传统八股问答',
     notes_kind_knowledge: '知识讲解',
@@ -255,7 +265,17 @@ const TEXT = {
     merge_note: 'Why (required)', merge_need_note: 'Write one line explaining your decision.',
     merge_saved: 'Saved. When all are decided, ask the agent to run dedupe --resolve {run}.', merge_decided: 'Decided: {a}',
     unreachable: 'Cannot reach the bank server; try again shortly.', failed: 'That did not work; please retry.', connection: 'Connection failed; try again shortly.',
-    modes: 'Sections', mode_bank: 'Personal', mode_notes: 'Notes', mode_public: 'Public',
+    modes: 'Sections', mode_bank: 'Personal', mode_notes: 'Notes', mode_public: 'Public', mode_learning: 'Learning',
+    search_learning: 'Search learning materials…',
+    learning_home: 'Categories', learning_all: 'All learning materials', learning_categories: 'Categories', learning_sources: 'Sources',
+    learning_browse_all: 'Browse all materials →', learning_summary: '5 categories · {n} entries · Original text and sources retained',
+    learning_home_hint: 'Explore learning paths, practical guides and industry updates in one place.',
+    learning_card_meta: '{n} entries · {s} sources',
+    learning_hint_roadmap: 'Explore staged plans and choose a preparation sequence.',
+    learning_hint_tutorial: 'Follow installation, configuration and practical walkthroughs.',
+    learning_hint_resource: 'Find topic indexes, curated links and knowledge checklists.',
+    learning_hint_career: 'Explore role requirements, recruitment, salaries and career advice.',
+    learning_hint_news: 'Read sourced model releases, product changes and industry commentary.',
     shelf_hint: 'Drag handles to reorder. Click a card to expand.', shelf_count: '{n} knowledge entries', shelf_reset: 'Reset order', shelf_reset_done: 'Default source order restored',
     shelf_move: 'Reorder {title}', shelf_handle_hint: 'Drag to reorder or click for move options', shelf_first: 'Move to first', shelf_previous: 'Move one earlier',
     shelf_next: 'Move one later', shelf_last: 'Move to last', shelf_moved: '{title} moved to position {n} of {total}',
@@ -277,8 +297,8 @@ const TEXT = {
     notes_home_hint: 'Collect by source. Learn by topic. Keep the original and its provenance.',
     notes_search_all: 'Search all sources…',
     notes_search_all_hint: 'Searching all sources; every result retains its provenance.',
-    notes_home_summary: '{s} sources · {n} learning entries · {i} source notices',
-    notes_source_count: '{n} learning entries',
+    notes_home_summary: '{s} sources · {n} knowledge entries · {i} source notices',
+    notes_source_count: '{n} knowledge entries',
     notes_source_linked: '{n} linked to personal interviews',
     notes_source_public_linked: '{n} entries linked to public interviews',
     notes_source_experiences_linked: '{n} articles linked to study topics',
@@ -311,7 +331,7 @@ const TEXT = {
     notes_tags: 'Tags',
     notes_tags_all: 'All tags',
     notes_kind: 'Content type',
-    notes_kind_study: 'All learning entries',
+    notes_kind_study: 'All knowledge entries',
     notes_kind_material: 'Material',
     notes_kind_qa: 'Q&A',
     notes_kind_knowledge: 'Knowledge',
@@ -434,7 +454,7 @@ const state = {
 const launch = new URLSearchParams(location.hash.slice(1));
 let token = launch.get('token');
 const openOnLoad = launch.get('question') || launch.get('note');  // #question=q_… or #note=note_… opens one item directly
-const openSection = ['bank', 'knowledge', 'experiences'].includes(launch.get('section')) ? launch.get('section') : null;
+const openSection = ['bank', 'knowledge', 'learning', 'experiences'].includes(launch.get('section')) ? launch.get('section') : null;
 try { if (token) sessionStorage.setItem('ibank-token', token); else token = sessionStorage.getItem('ibank-token'); } catch (_) {}
 if (location.hash) history.replaceState(null, '', location.pathname);
 
@@ -730,9 +750,10 @@ async function openQuestion(id, fromList = false) {
     state.current = q.id;
     state.revealed = !stored('ibank-think-first', false);
     if (isNote(q.id)) {
-      if (state.notes.home && state.mode === 'notes') {
-        Object.assign(state.notes, { home: false, section: q.experience ? 'experiences' : 'knowledge', company: '', year: '', experience_domain: '',
-          collection: q.experience ? '' : q.collection, area: '', topic: '', chapter: '', kind: q.kind === 'info' ? 'info' : 'study',
+      if (state.mode === 'notes' && (state.notes.home || noteSection(q) !== state.notes.section)) {
+        Object.assign(state.notes, { home: false, section: noteSection(q), company: '', year: '', experience_domain: '',
+          collection: q.experience ? '' : q.collection, area: '', topic: '', chapter: '',
+          kind: q.kind === 'info' ? 'info' : noteSection(q) === 'learning' ? q.kind : 'study',
           question_type: '', connection: '', tag: '', verification: '', learning: 'all',
           marked: false, asked: false, sort: q.experience ? 'recent' : 'order', scope: q.experience ? 'all' : 'source' });
         await loadNotes(true);
@@ -1139,12 +1160,18 @@ function reload(reset = false) {
 }
 
 function syncPrimaryNavigation() {
-  const section = state.notes.section === 'experiences' ? 'experiences' : 'knowledge';
+  const section = ['experiences', 'learning'].includes(state.notes.section) ? state.notes.section : 'knowledge';
+  const label = section === 'learning' ? 'mode_learning' : section === 'experiences' ? 'mode_public' : 'mode_notes';
+  for (const id of ['side-notes', 'collections']) {
+    $(id).dataset.i18nAria = label;
+    $(id).setAttribute('aria-label', t(label));
+  }
   for (const tab of document.querySelectorAll('[data-mode]')) {
     const selected = tab.dataset.mode === state.mode && (state.mode === 'bank' || tab.dataset.section === section);
     tab.setAttribute('aria-selected', String(selected));
   }
-  $('search').placeholder = t(state.mode === 'bank' ? 'search' : section === 'experiences' ? 'search_public' : 'search_notes');
+  $('search').placeholder = t(state.mode === 'bank' ? 'search' : section === 'experiences' ? 'search_public' :
+    section === 'learning' ? 'search_learning' : 'search_notes');
 }
 
 function selectPrimarySection(mode, section = 'knowledge') {
@@ -1166,6 +1193,7 @@ function setMode(mode, keepReader = false, section) {
   $('search').value = '';
   $('chapter-intro').hidden = true;
   if (!keepReader) closeReader();
+  if (!keepReader && section) history.replaceState(null, '', location.pathname + '#section=' + section);
   return reload(true);
 }
 
@@ -1174,9 +1202,9 @@ async function jump(mode, id, section) {
   if (mode === 'notes') {
     const note = await question(id);
     $('search').value = '';
-    Object.assign(state.notes, { home: false, section: section || (note.experience ? 'experiences' : 'all'), company: '', year: '', experience_domain: '',
+    Object.assign(state.notes, { home: false, section: noteSection(note), company: '', year: '', experience_domain: '',
       collection: note.experience ? '' : note.collection, area: '', topic: '', chapter: '',
-      kind: note.kind === 'info' ? 'info' : 'study', tag: '', question_type: '', connection: '',
+      kind: note.kind === 'info' ? 'info' : noteSection(note) === 'learning' ? note.kind : 'study', tag: '', question_type: '', connection: '',
       verification: '', learning: 'all', scope: note.experience ? 'all' : 'source', marked: false, asked: false, sort: note.experience ? 'recent' : 'order' });
   }
   if (state.mode !== mode) await setMode(mode, true);
@@ -1633,7 +1661,7 @@ for (const tabs of [$('modes'), $('side-modes')]) {
 }
 window.addEventListener('hashchange', () => {
   const section = new URLSearchParams(location.hash.slice(1)).get('section');
-  if (!['bank', 'knowledge', 'experiences'].includes(section)) return;
+  if (!['bank', 'knowledge', 'learning', 'experiences'].includes(section)) return;
   history.replaceState(null, '', location.pathname);
   selectPrimarySection(section === 'bank' ? 'bank' : 'notes', section);
 });
@@ -1790,6 +1818,11 @@ $('side-think-first').checked = $('think-first').checked;
 placeFilters();
 $('answered-only').setAttribute('aria-pressed', String(stored('ibank-answered-only', false)));
 state.notes = { ...state.notes, ...stored('ibank-notes', {}) };
+if (state.notes.section !== 'experiences' && LEARNING_KINDS.includes(state.notes.kind)) {
+  const { kind, collection } = state.notes;
+  Object.assign(state.notes, notesSectionSelection('learning', false), { kind, collection });
+  store('ibank-notes', state.notes);
+}
 if (state.notes.section === 'experiences' && state.notes.public_navigation !== 2) {
   Object.assign(state.notes, notesSectionSelection('experiences'));
   store('ibank-notes', state.notes);

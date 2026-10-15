@@ -114,7 +114,8 @@ class NotesOrganizationTests(unittest.TestCase):
             with self.subTest(kind=kind):
                 self.apply(self.payload(notes={note: {'kind': kind, 'question_type': 'reference'}}))
                 app = WebApp(self.bank.path, read_only=True)
-                value = app.notes({'collection': 'first', 'section': 'knowledge', 'kind': kind})
+                section = 'learning' if kind in ('roadmap', 'tutorial', 'resource', 'career', 'news') else 'knowledge'
+                value = app.notes({'collection': 'first', 'section': section, 'kind': kind})
                 self.assertEqual(value['total'], 1)
                 self.assertEqual(value['notes'][0]['id'], note)
                 self.assertEqual(value['notes'][0]['kind'], kind)

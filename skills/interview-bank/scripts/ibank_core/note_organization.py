@@ -9,6 +9,7 @@ from .storage import atomic_write, bank_file, dumps, fingerprint, open_bank, rea
 
 KINDS = ('material', 'qa', 'knowledge', 'case', 'reading', 'roadmap', 'tutorial', 'exercise',
          'resource', 'career', 'news', 'collection', 'info')
+LEARNING_KINDS = ('roadmap', 'tutorial', 'resource', 'career', 'news')
 VERIFICATIONS = ('reference', 'verified', 'needs_review', 'outdated')
 QUESTION_TYPES = ('concept', 'comparison', 'implementation', 'design', 'coding', 'troubleshooting', 'reference')
 META_FIELDS = {'description', 'author', 'homepage', 'license', 'license_url', 'version', 'updated_at', 'language'}
@@ -244,9 +245,12 @@ def collection_card(collection, linked=(), section='all'):
     notes = collection['notes']
     raw_active = [n for n in notes if n['organization']['kind'] != 'info']
     excluded = note_experiences.members(collection)
-    knowledge = [n for n in raw_active if n['id'] not in excluded]
+    study = [n for n in raw_active if n['id'] not in excluded]
+    learning = [n for n in study if n['organization']['kind'] in LEARNING_KINDS]
+    knowledge = [n for n in study if n['organization']['kind'] not in LEARNING_KINDS]
     articles = collection.get('experiences', [])
-    active = articles if section == 'experiences' else knowledge if section == 'knowledge' else raw_active
+    active = articles if section == 'experiences' else learning if section == 'learning' else (
+        knowledge if section == 'knowledge' else raw_active)
     profile = collection.get('organization', {})
     areas = []
     directory = profile.get('areas', []) if section != 'experiences' else [
@@ -259,7 +263,8 @@ def collection_card(collection, linked=(), section='all'):
     return {'name': collection['name'], 'title': collection['title'], 'origin': collection.get('origin', ''),
             'imported_at': collection['imported_at'], 'total': len(notes), 'content_total': len(active),
             'information_total': len(notes) - len(raw_active), 'content_ids': [n['id'] for n in active],
-            'raw_content_total': len(raw_active), 'knowledge_total': len(knowledge), 'experience_total': len(articles),
+            'raw_content_total': len(raw_active), 'knowledge_total': len(knowledge), 'learning_total': len(learning),
+            'experience_total': len(articles),
             'experience_member_total': sum(n['id'] in excluded for n in raw_active),
             'information_ids': [n['id'] for n in notes if n['organization']['kind'] == 'info'],
             'marked': sum(bool(n['marks']) for n in active), 'linked': sum(

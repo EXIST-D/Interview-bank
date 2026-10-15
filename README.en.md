@@ -4,16 +4,16 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.22.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.23.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.22 typed knowledge content and cleanup
+## This update: 1.23 separate learning materials
 
-- Explicit content kinds separate focused interview Q&A from roadmaps, coding exercises, tutorials, resource indexes, career material, industry news and question collections.
-- The left list identifies content kinds and filters show entry counts. Notice-only, promotional, maintenance and empty fragments can be omitted from normal study browsing while preserving their original records.
-- A mixed-source cleanup protocol requires body/context review, per-entry audit reasons, source isolation and unchanged personal-bank records. Classification does not fact-verify answers.
+- A primary Learning entry separates roadmaps, tutorials, resource indexes, career material and industry news from interview notes.
+- Five category cards show entry/source counts and open the relevant list. Combine category, source, text and browser-local learning-state filters; each entry retains its original text and provenance.
+- Interview notes retain source shelves for Q&A, concepts, coding solutions and cases. Reading layout, existing entry links and browser-local learning records are preserved.
 
-Collapsible sources, drag ordering and the reading layout remain available. New kinds require a 1.22+ reader; no V1/V2 migration is needed.
-See the [content cleanup protocol](skills/interview-bank/references/knowledge-cleanup.md).
+This is a query/display partition without copying or deleting source records or migrating V1/V2 banks.
+Use #section=learning after the website path for a direct link. See the [Web protocol](skills/interview-bank/references/web.md).
 
 ## Interface preview
 
@@ -73,8 +73,8 @@ Interview-bank/
 | Reports | Two Markdown editions plus a JSON sidecar; JSON/JSONL/CSV/Anki exports; English or Chinese |
 | Maintenance | V2 personal state, field protection, never-merge rules, research workflows, undo, change-set runs, `gc`, standalone backup and restore |
 | Preparation | JD topics with coverage gaps, daily plan calendars, review queues (simple or FSRS), one-question-at-a-time mock interviews |
-| Notes (八股) | Separate knowledge and public-interview shelves within each source; areas/topics, chapters and material filters; public company/year filters with source facts; original answers and interview links |
-| Web reader | Interview and notes sections, peek, read marks, random pick, folding chapters, focus reading; self-rated practice, human review, merge decisions; can run on your own server for a phone |
+| Public material | Interview notes by source/topic/chapter; public interviews by topic/company/year; five learning-category cards with source/text filters; provenance, verification status and personal/public interview links |
+| Web reader | Personal, Notes, Public and Learning sections; peek, read marks, random pick, folding chapters, focus reading; self-rated practice, human review, merge decisions; can run on your own server for a phone |
 
 ## Agent capabilities and requirements
 
@@ -144,7 +144,7 @@ Open the local Web reader; I want to review answers myself and settle the uncert
 
 The agent organises the bank; the Web page is for reading it. The page runs no AI and searches nothing online; it only reads your bank.
 
-- **Three sections:** *Personal* holds your collected questions, most frequent first, with sourced reference answers. *Notes* keeps knowledge shelves independent by source and browsable by topic or original chapter. *Public* groups interviews across sources by topic or year, with company/year/type filters and provenance on each article. Existing private-question links remain available.
+- **Four sections:** *Personal* holds your collected questions. *Notes* keeps Q&A, explanations, coding solutions and cases independent by source. *Public* groups interviews across sources by topic or year, with company/time filters. *Learning* offers five category cards for roadmaps, tutorials, resource indexes, career material and industry news, with source, text and learning-state filters. Every entry retains its text and provenance; existing interview-study links remain available.
 - **Made for spare minutes:** on a phone, a list and a full-screen reader with previous/next at the bottom or a swipe; a peek at any answer from the list; read marks and chapter progress; a random pick that prefers unread questions; Think first hides answers by default.
 - **Three columns on a computer:** navigation, list and reader. The navigation and the list fold away, and Focus lets the reader fill the window at a comfortable line length.
 - **Easy on the eyes:** three text sizes, a reading progress bar, light / dark / system themes, highlighted search words; tables, code, quotes and nested lists in long answers render properly. Read marks, folds, text size and theme stay in the browser.
@@ -200,7 +200,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 ## Status and plans
 
-**v1.22.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
+**v1.23.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
 
 **Not implemented yet:**
 
