@@ -41,16 +41,28 @@ jobs:
       - run: pip install ruff==0.16.10
       - name: Unused imports, undefined names, unused variables
         run: ruff check --select F --target-version py310 skills tests tools evals
+
+  web:
+    name: web reader (typecheck, rebuild, committed bundle matches)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.30.3
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
-      - name: Shelf preferences and JavaScript syntax
-        run: |
-          node --check skills/interview-bank/assets/web/source-shelf.js
-          node --check skills/interview-bank/assets/web/notes-ui.js
-          node --check skills/interview-bank/assets/web/app.js
-          node tests/source-shelf-model.cjs
-          node tests/reading-progress.cjs
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm build
+      - name: The skill ships exactly what web/ builds
+        run: git diff --exit-code --stat -- ../skills/interview-bank/assets/web && test -z "$(git status --porcelain -- ../skills/interview-bank/assets/web)"
 
   legacy-runs:
     name: test (full-snapshot run format)

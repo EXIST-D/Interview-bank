@@ -52,6 +52,11 @@ class NoteRelationTests(unittest.TestCase):
         self.assertEqual(note['public_experiences'][0]['question_quote'], self.edge['question_quote'])
         self.assertEqual(app.notes({'section': 'knowledge', 'kind': 'study'})['ids'], self.ids[1:2])
         self.assertEqual(app.notes({})['summary'], {'notes': 3, 'marked': 0, 'asked': 0})
+        listed = app.notes({'section': 'knowledge', 'kind': 'study', 'meta': '0'})
+        self.assertNotIn('collections', listed)
+        self.assertEqual(listed['ids'], self.ids[1:2])
+        with self.assertRaises(Exception):
+            app.notes({'meta': 'no'})
         self.assertEqual(organization.catalog(self.bank.path, 'first')['source_digest'], digest)
         self.assertEqual(raw, (self.bank.path / 'collections/first.json').read_bytes())
         self.assertFalse(self.apply()['changed'])

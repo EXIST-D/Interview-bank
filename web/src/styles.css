@@ -1,0 +1,212 @@
+@import "tailwindcss";
+
+/* The resolved theme is always written to <html data-theme>, so "follow the system" is handled in JS. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme {
+  /* From here the list and the reader sit side by side, as in the previous reader. */
+  --breakpoint-wide: 56.25rem;
+  /* Room for a third column: a source's contents beside the list and the reader. */
+  --breakpoint-roomy: 68.75rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-popover: var(--popover);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-tertiary-foreground: var(--tertiary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-fill: var(--fill);
+  --color-blue: var(--blue);
+  --color-purple: var(--purple);
+  --color-orange: var(--orange);
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto,
+    "Helvetica Neue", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --text-large-title: 2.125rem;
+  --text-large-title--line-height: 2.5625rem;
+  --text-large-title--letter-spacing: -0.02em;
+  --text-title-1: 1.75rem;
+  --text-title-1--line-height: 2.125rem;
+  --text-title-1--letter-spacing: -0.015em;
+  --text-title-2: 1.375rem;
+  --text-title-2--line-height: 1.75rem;
+  --text-title-2--letter-spacing: -0.01em;
+  --text-title-3: 1.25rem;
+  --text-title-3--line-height: 1.5625rem;
+  --text-headline: 1.0625rem;
+  --text-headline--line-height: 1.375rem;
+  --text-body: 1.0625rem;
+  --text-body--line-height: 1.5rem;
+  --text-callout: 0.9375rem;
+  --text-callout--line-height: 1.25rem;
+  --text-subhead: 0.875rem;
+  --text-subhead--line-height: 1.25rem;
+  --text-footnote: 0.8125rem;
+  --text-footnote--line-height: 1.125rem;
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.5rem;
+
+  --shadow-soft-sm: var(--elev-1);
+  --shadow-soft: var(--elev-2);
+  --shadow-soft-lg: var(--elev-3);
+
+  --ease-apple: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+:root {
+  --background: #f5f5f7;
+  --foreground: #1d1d1f;
+  --card: #ffffff;
+  --popover: #ffffff;
+  --primary: #0b7f7a;
+  --primary-foreground: #ffffff;
+  --secondary: #e8e8ed;
+  --muted: #ededf0;
+  --muted-foreground: #6e6e73;
+  --tertiary-foreground: #aeaeb2;
+  --accent: #e6f4f3;
+  --accent-foreground: #0b7f7a;
+  --destructive: #ff3b30;
+  --success: #248a3d;
+  --warning: #c77700;
+  --border: rgb(0 0 0 / 0.08);
+  --ring: #0b7f7a;
+  --fill: rgb(0 0 0 / 0.05);
+  --blue: #0a84ff;
+  --purple: #7d5fff;
+  --orange: #ff9f0a;
+
+  --elev-1: 0 1px 2px rgb(0 0 0 / 0.04);
+  --elev-2: 0 1px 2px rgb(0 0 0 / 0.04), 0 4px 16px rgb(0 0 0 / 0.06);
+  --elev-3: 0 2px 6px rgb(0 0 0 / 0.04), 0 12px 40px rgb(0 0 0 / 0.1);
+
+  --glass: rgb(255 255 255 / 0.72);
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --background: #000000;
+  --foreground: #f5f5f7;
+  --card: #1c1c1e;
+  --popover: #2c2c2e;
+  --primary: #3cc8be;
+  --primary-foreground: #00201e;
+  --secondary: #2c2c2e;
+  --muted: #2c2c2e;
+  --muted-foreground: #98989d;
+  --tertiary-foreground: #636366;
+  --accent: rgb(60 200 190 / 0.16);
+  --accent-foreground: #3cc8be;
+  --destructive: #ff453a;
+  --success: #30d158;
+  --warning: #ffb340;
+  --border: rgb(255 255 255 / 0.1);
+  --ring: #3cc8be;
+  --fill: rgb(255 255 255 / 0.08);
+  --blue: #409cff;
+  --purple: #a08bff;
+  --orange: #ffb340;
+
+  --elev-1: 0 0 0 1px rgb(255 255 255 / 0.06);
+  --elev-2: 0 0 0 1px rgb(255 255 255 / 0.08);
+  --elev-3: 0 0 0 1px rgb(255 255 255 / 0.1);
+
+  --glass: rgb(28 28 30 / 0.72);
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background: var(--background);
+    color: var(--foreground);
+  }
+  button {
+    cursor: pointer;
+  }
+}
+
+@utility glass {
+  background-color: var(--glass);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}
+
+@utility surface {
+  background-color: var(--card);
+  box-shadow: var(--elev-2);
+  border-radius: 1.25rem;
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Focus mode: the reader takes the whole window. */
+body[data-focus] .ib-topbar {
+  display: none;
+}
+
+@keyframes shake {
+  25% {
+    transform: translateX(-6px);
+  }
+  75% {
+    transform: translateX(6px);
+  }
+}
+
+@keyframes ring-fill {
+  from {
+    stroke-dashoffset: var(--ring-from);
+  }
+}
+
+.ring-fill {
+  animation: ring-fill 900ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ring-fill {
+    animation: none;
+  }
+}

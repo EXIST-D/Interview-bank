@@ -1,6 +1,7 @@
 import copy
 import http.client
 import json
+import re
 import threading
 from unittest.mock import patch
 
@@ -95,10 +96,19 @@ class WebTests(BankFixture):
 
     def test_static_assets_and_no_arbitrary_file_server(self):
         self.start()
-        for path,mime in (('/','text/html'),('/app.js','text/javascript'),('/app.css','text/css'),('/notes-ui.js','text/javascript'),('/source-shelf.js','text/javascript'),('/left-panels.js','text/javascript'),('/left-panels.css','text/css')):
+        page=self.request('/')[2].decode()
+        built=re.findall(r'(?:src|href)="\./(assets/[^"]+)"',page)
+        self.assertTrue(any(p.endswith('.js') for p in built) and any(p.endswith('.css') for p in built),built)
+        for path,mime in (('/','text/html'),*(('/'+p,'text/javascript' if p.endswith('.js') else 'text/css') for p in built)):
             status,headers,body=self.request(path);self.assertEqual(status,200);self.assertIn(mime,headers['Content-Type']);self.assertIn("frame-ancestors 'none'",headers['Content-Security-Policy']);self.assertNotIn(self.server.token.encode(),body)
-        for path in ('/../manifest.json','/data/questions.jsonl','/assets/../../SKILL.md','/api/migrate'):
-            self.assertEqual(self.request(path)[0],404)
+        self.assertIn('immutable',self.request('/'+built[0])[1]['Cache-Control']);self.assertEqual(self.request('/')[1]['Cache-Control'],'no-store')
+        _,first,body=self.request('/');_,second,_=self.request('/')
+        nonce=re.search(r"style-src 'self' 'nonce-([A-Za-z0-9_-]{24})'",first['Content-Security-Policy']).group(1)
+        self.assertIn(f'content="{nonce}"'.encode(),body);self.assertNotIn(nonce,second['Content-Security-Policy'])
+        self.assertIn("script-src 'self';",first['Content-Security-Policy']);self.assertNotIn('unsafe',first['Content-Security-Policy'])
+        self.assertNotIn('nonce',self.request('/'+built[0])[1]['Content-Security-Policy'])
+        for path in ('/../manifest.json','/data/questions.jsonl','/assets/../../SKILL.md','/api/migrate','/assets/missing-1.js','/assets/.hidden.js','/index.html','/login.html','/assets/x.html'):
+            self.assertEqual(self.request(path)[0],404,path)
 
     def test_v1_and_read_only_refuse_writes(self):
         self.start();self.assertEqual(self.request('/api/practice',self.payload())[0],400)
@@ -195,7 +205,8 @@ class HostedLoginTests(BankFixture):
     def test_login_page_until_signed_in_then_reader(self):
         status, _, body = self.request('/')
         self.assertEqual(status, 200)
-        self.assertIn(b'login-form', body)
+        self.assertIn(b'assets/login-', body)
+        self.assertNotIn(b'assets/index-', body)
         status, _, body = self.request('/api/library')
         self.assertEqual((status, json.loads(body)['login']), (401, True))
         self.assertNotIn(b'q_demo', body)
@@ -205,7 +216,7 @@ class HostedLoginTests(BankFixture):
             self.assertIn(flag, cookie)
         session = cookie.split(';')[0]
         status, _, body = self.request('/', cookie=session)
-        self.assertIn(b'question-list', body)
+        self.assertIn(b'assets/index-', body)
         status, _, body = self.request('/api/library', cookie=session)
         self.assertEqual(status, 200)
         self.assertTrue(json.loads(body)['can_logout'])

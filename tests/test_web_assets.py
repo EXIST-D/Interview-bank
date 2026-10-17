@@ -1,94 +1,69 @@
-"""Static checks of the Web reader: markup, element IDs and both UI languages stay consistent."""
+"""Static checks of the built Web reader shipped in the skill: self-contained, CSP-compatible and in step with its source."""
 import re
 import unittest
 from html.parser import HTMLParser
 
-from support import SKILL
+from support import REPO, SKILL
 
 WEB = SKILL / "assets" / "web"
-VOID = {"meta", "link", "input", "br", "img", "hr", "source", "area", "base", "col", "embed", "param", "track", "wbr"}
+SOURCE = REPO / "web" / "src"
 
 
-class Markup(HTMLParser):
+class Page(HTMLParser):
     def __init__(self):
         super().__init__()
-        self.stack, self.ids, self.keys, self.errors = [], [], set(), []
+        self.scripts, self.styles, self.inline = [], [], []
 
     def handle_starttag(self, tag, attrs):
         attrs = dict(attrs)
-        if "id" in attrs:
-            self.ids.append(attrs["id"])
-        for name in ("data-i18n", "data-i18n-html", "data-i18n-placeholder", "data-i18n-title", "data-i18n-aria"):
-            if name in attrs:
-                self.keys.add(attrs[name])
-        if tag not in VOID:
-            self.stack.append(tag)
-
-    def handle_endtag(self, tag):
-        if not self.stack or self.stack[-1] != tag:
-            self.errors.append(f"unexpected </{tag}> (open: {self.stack[-3:]})")
-        else:
-            self.stack.pop()
+        if tag == "script":
+            (self.scripts if attrs.get("src") else self.inline).append(attrs.get("src") or "inline script")
+        if tag == "link" and attrs.get("rel") in ("stylesheet", "modulepreload"):
+            self.styles.append(attrs["href"])
+        if tag == "style" or "style" in attrs:
+            self.inline.append(f"<{tag} style>")
 
 
-def text_tables(script):
-    """Keys of the zh-CN and en tables in app.js."""
-    body = script[script.index("const TEXT = {"):script.index("const RATINGS")]
-    zh = body[body.index("'zh-CN': {"):body.index("\n  en: {")]
-    en = body[body.index("\n  en: {"):]
-    keys = re.compile(r"(?:^|[\s{,])([a-z_0-9]+):\s*['`]", re.M)
-    return set(keys.findall(zh)), set(keys.findall(en))
+def page(name):
+    parser = Page()
+    parser.feed((WEB / name).read_text(encoding="utf-8"))
+    return parser
 
 
 class WebAssets(unittest.TestCase):
-    def setUp(self):
-        self.html = (WEB / "index.html").read_text(encoding="utf-8")
-        self.script = '\n'.join((WEB / name).read_text(encoding='utf-8') for name in ('app.js', 'notes-ui.js', 'source-shelf.js'))
-        self.markup = Markup()
-        self.markup.feed(self.html)
+    def test_only_built_pages_and_assets_ship(self):
+        self.assertEqual(sorted(p.name for p in WEB.iterdir()), ["assets", "index.html", "login.html"])
+        for asset in (WEB / "assets").iterdir():
+            self.assertRegex(asset.name, r"^[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*\.(js|css)$")
 
-    def test_tags_balance_and_ids_are_unique(self):
-        self.assertEqual(self.markup.errors, [])
-        self.assertEqual(self.markup.stack, [])
-        self.assertEqual(len(self.markup.ids), len(set(self.markup.ids)))
+    def test_pages_reference_existing_relative_assets_without_inline_code(self):
+        # The server's Content-Security-Policy allows only same-origin scripts and styles.
+        for name in ("index.html", "login.html"):
+            parsed = page(name)
+            self.assertEqual(parsed.inline, [], name)
+            self.assertTrue(parsed.scripts, name)
+            for ref in parsed.scripts + parsed.styles:
+                self.assertTrue(ref.startswith("./assets/"), ref)
+                self.assertTrue((WEB / ref).is_file(), ref)
 
-    def test_every_id_the_script_uses_exists(self):
-        used = set(re.findall(r"\$\('([\w-]+)'\)", self.script)) - {"nav-" + k for k in ("all", "due", "weak", "unseen")} - {"practice-response"}
-        filters = set(re.search(r"const filters = \[([^\]]+)\]", self.script).group(1).replace("'", "").replace(" ", "").split(","))
-        self.assertEqual(sorted(used - set(self.markup.ids)), [])
-        self.assertTrue(filters <= set(self.markup.ids))
+    def test_bundle_has_no_remote_resources_or_eval(self):
+        for asset in (WEB / "assets").iterdir():
+            text = asset.read_text(encoding="utf-8")
+            self.assertNotRegex(text, r"""(?:src|href)=["']https?://(?!github\.com/EXIST-D)""", asset.name)
+            self.assertNotIn("@import url(http", text, asset.name)
+            if asset.suffix == ".js":
+                self.assertNotRegex(text, r"\beval\(|new Function\(", asset.name)
 
     def test_both_languages_cover_every_key(self):
-        zh, en = text_tables(self.script)
-        self.assertEqual(sorted(zh ^ en), [])
-        used = set(re.findall(r"\bt\('([a-z_0-9]+)'", self.script)) | self.markup.keys
-        dynamic = {"status_", "rating_", "titles_", "all_", "relation_", "stat_", "size_", "theme_",
-                   "notes_learning_", "notes_kind_", "notes_verification_", "notes_set_", "notes_warning_",
-                   "notes_question_type_", "notes_connection_", "notes_domain_", "learning_hint_"}
-        self.assertEqual(sorted(k for k in used - zh if not k.startswith(tuple(dynamic))), [])
-
-    def test_notes_labels_cover_all_states_and_script_order(self):
-        zh, _ = text_tables(self.script)
-        for prefix, values in (
-            ('notes_kind_', ('material', 'qa', 'knowledge', 'case', 'reading', 'roadmap', 'tutorial',
-                             'exercise', 'resource', 'career', 'news', 'collection', 'info')),
-            ('notes_verification_', ('reference', 'verified', 'needs_review', 'outdated')),
-            ('notes_learning_', ('unread', 'read', 'review', 'mastered')),
-            ('notes_question_type_', ('concept', 'comparison', 'implementation', 'design', 'coding', 'troubleshooting', 'reference')),
-            ('notes_connection_', ('all', 'any', 'personal', 'public', 'none')),
-            ('learning_hint_', ('roadmap', 'tutorial', 'resource', 'career', 'news')),
-            ('notes_domain_', ('agent', 'llm', 'multimodal', 'backend', 'frontend', 'fullstack', 'infra', 'coding', 'career', 'other')),
-            ('notes_warning_', ('reference', 'verified', 'needs_review', 'outdated')),
-        ):
-            self.assertTrue({prefix + value for value in values} <= zh)
-        self.assertLess(self.html.index('src="notes-ui.js"'), self.html.index('src="app.js"'))
-        self.assertLess(self.html.index('src="source-shelf.js"'), self.html.index('src="app.js"'))
-
-    def test_stylesheet_is_readable_and_has_dark_mode(self):
-        css = (WEB / "app.css").read_text(encoding="utf-8")
-        self.assertLess(max(len(line) for line in css.splitlines()), 200)
-        self.assertIn("@media (prefers-color-scheme: dark)", css)
-        self.assertEqual(css.count("{"), css.count("}"))
+        source = (SOURCE / "lib" / "i18n.tsx").read_text(encoding="utf-8")
+        zh = source[source.index("const baseZh = {"):source.index("const baseEn")]
+        en = source[source.index("const baseEn"):source.index("export type TextKey")]
+        keys = re.compile(r"^\s+([a-z_0-9]+):", re.M)
+        self.assertEqual(sorted(set(keys.findall(zh)) ^ set(keys.findall(en))), [])
+        notes = (SOURCE / "lib" / "notes-text.ts").read_text(encoding="utf-8")
+        half = notes.index("export const notesEn")
+        quoted = re.compile(r'^\s+"([a-z_0-9]+)":', re.M)
+        self.assertEqual(sorted(set(quoted.findall(notes[:half])) ^ set(quoted.findall(notes[half:]))), [])
 
 
 if __name__ == "__main__":

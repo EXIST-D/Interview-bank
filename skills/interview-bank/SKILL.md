@@ -4,7 +4,7 @@ description: Build and maintain a personal interview question bank (面试题库
 license: MIT
 metadata:
   author: EXIST-D
-  version: "1.24.0"
+  version: "1.25.0"
   repository: https://github.com/EXIST-D/Interview-bank
 ---
 
@@ -28,7 +28,8 @@ Only optional `media-transcribe` runs a model. Prepare task JSON yourself.
    batches and let them choose: all, only the most frequent (ties: query-export), or the question edition first.
    Honour questions-only, no-research or export-only requests.
 7. Human decisions belong to the user: human review, self-ratings, interview answers and protection rules
-   come only from what the user did or said, and keep their words (`user_quote`).
+   come only from what the user did or said, and keep their words (`user_quote`). Read "my answers"
+   (`personal/my-answers.json`, written in the Web reader) for exports and feedback; never write them.
 8. Change canonical data only through CLI stage → commit. Never edit data/*.jsonl, runs/ or journals.
    Resolve review items with evidence or a reasoned skip, never by inflating confidence.
 

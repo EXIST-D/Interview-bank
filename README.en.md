@@ -4,34 +4,37 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.24.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.25.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.24 coherent reading units
+## This update: 1.25 a new Web reader and "my answer"
 
-- The Chinese knowledge entry is now named 八股资料, alongside Personal, Public interviews and Learning.
-- Reassemble an original article's introduction, steps, explanations and code into a reviewed reading unit. Keep standalone Q&A separate and label multi-question practice sets explicitly; add contextual display titles without rewriting source headings.
-- Preserve original segments, citations and evidence links. Existing bookmarks resolve to the reading unit; `notes show --original` retrieves the unchanged segment. Changed source content invalidates the group and makes every original segment visible again.
-- Aggregate existing learning states without fabricating member visits or losing review flags. Cleanup does not verify technical answers, release claims, prices or job openings.
+- **New interface:** a top bar switches an overview and the four sections; phones use a bottom tab bar. The overview offers continue-reading, section cards and the most-asked questions. One settings menu holds appearance, Think first, text size and the agent actions. The question and note reading area keeps its typography.
+- **My answer:** below each reference answer you can write your own answer. It may stay empty and is independent of the reference. It is saved in the bank's `personal/my-answers.json` with the last 10 versions; a stale page is told instead of overwriting another device. A hosted read-only reader opens only this with `--allow-my-answers`. The agent reads it for the answers edition of reports and mock-interview feedback, and never writes it.
+- **Notes:** source cards show reading progress and can be reordered; inside a source, contents (knowledge or original chapters), list and reader sit side by side on wide screens. Source cards load once per session; lists no longer carry them.
+- **Built with React, Vite and Tailwind** in `web/`; the bundle ships inside the Skill, so users and servers still need Python only, never Node. The Content-Security-Policy still allows no inline script.
 
-No V1/V2 migration. Update shared readers to 1.24+ before using reading groups. See the [cleanup protocol](skills/interview-bank/references/knowledge-cleanup.md).
+No V1/V2 migration. On a server, upgrade the reader to 1.25 and add `--allow-my-answers` to write your own answers on a phone.
 
 ## Interface preview
 
-Knowledge source overview with collapsible cards and reorder handles:
+Overview: continue reading, the four sections and the most-asked questions.
 
-![Knowledge sources: compact cards, counts, reading progress and reorder handles](assets/readme/source-shelf-preview.png)
+![Interview Bank overview: continue reading, section cards and most-asked questions](assets/readme/web-overview.png)
 
-On a computer: navigation, question list and reader in three columns; a question lists its related notes.
+Personal interviews: list, segmented views and topics on the left; reference answer, sources, my answer and related notes on the right.
 
-![Interview Bank on a computer: navigation and topics, question list, reference answer with sources and related notes](assets/readme/left-panels-preview.webp)
+![Interview Bank personal interviews: list and reader with "my answer" below the reference answer](assets/readme/web-reader.png)
 
-The notes section: chapters that fold, a peek at an answer in the list, and a note with its source and how interviews asked it.
+Notes: a source's contents, the list grouped by topic, and the collection's answer with learning state and how interviews asked it.
 
-![Interview Bank notes section on a computer: chapter groups, answer peek, the collection's answer and linked interview questions](assets/readme/notes-preview.png)
+![Interview Bank notes: source contents, grouped list and note reader](assets/readme/web-knowledge.png)
 
-On a phone: chapters with a peek (left), the full-screen reader with previous/next (right).
+On a phone: the list with the bottom tab bar (left), the full-screen reader with previous/next (right).
 
-![Interview Bank on a phone: notes list and reader](assets/readme/mobile-preview.png)
+<p>
+<img src="assets/readme/web-mobile-list.png" alt="Interview Bank on a phone: personal interview list and tab bar" width="300">
+<img src="assets/readme/web-mobile-reader.png" alt="Interview Bank on a phone: full-screen reader with my answer" width="300">
+</p>
 
 All come from the `demo` sample bank (synthetic questions, fictional companies, notes written for the demo); anyone can reproduce them with `demo --bank <new dir>` and `web`.
 
@@ -43,7 +46,8 @@ Interview-bank/
 ├── CHANGELOG.md                  # version history
 ├── CONTRIBUTING.md / SECURITY.md
 ├── LICENSE
-├── .github/workflows/ci.yml      # tests on Windows/macOS/Linux × Python 3.10–3.13, lint, legacy-format run, package check
+├── .github/workflows/ci.yml      # tests on Windows/macOS/Linux × Python 3.10–3.13, lint, Web bundle rebuild, legacy-format run, package check
+├── web/                          # Web reader source (React + Vite + Tailwind), built into skills/interview-bank/assets/web/
 ├── tests/                        # standard-library unittest suite (not installed with the Skill)
 ├── evals/                        # evaluation datasets, scorer, recorded runs, host verification
 ├── tools/                        # packaging, release checks, synthetic fixtures, measurements, eval runners, server deployment (deploy/)
@@ -54,7 +58,7 @@ Interview-bank/
         ├── SKILL.md
         ├── LICENSE.txt
         ├── agents/openai.yaml
-        ├── assets/web/           # local Web reader (HTML/CSS/JS, no build step)
+        ├── assets/web/           # local Web reader (prebuilt; no Node needed to use it)
         ├── references/           # protocols for each step
         └── scripts/
             ├── ibank.py          # CLI entry point
@@ -144,18 +148,19 @@ Open the local Web reader; I want to review answers myself and settle the uncert
 
 The agent organises the bank; the Web page is for reading it. The page runs no AI and searches nothing online; it only reads your bank.
 
-- **Four sections:** *Personal* holds your collected questions. *Notes* keeps Q&A, explanations, coding solutions and cases independent by source. *Public* groups interviews across sources by topic or year, with company/time filters. *Learning* offers five category cards for roadmaps, tutorials, resource indexes, career material and industry news, with source, text and learning-state filters. Every entry retains its text and provenance; existing interview-study links remain available.
-- **Made for spare minutes:** on a phone, a list and a full-screen reader with previous/next at the bottom or a swipe; a peek at any answer from the list; read marks and chapter progress; a random pick that prefers unread questions; Think first hides answers by default.
-- **Three columns on a computer:** navigation, list and reader. The navigation and the list fold away, and Focus lets the reader fill the window at a comfortable line length.
-- **Easy on the eyes:** three text sizes, a reading progress bar, light / dark / system themes, highlighted search words; tables, code, quotes and nested lists in long answers render properly. Read marks, folds, text size and theme stay in the browser.
-- **Practice and your own decisions** (when run locally): self-rated practice (V2 banks save progress and schedule reviews), **human review** of answers and **merge decisions** on pairs the agent was unsure about; only you can press these.
+- **Overview and four sections:** a top bar (a bottom tab bar on phones) switches the overview and the sections. *Personal* holds your collected questions. *Notes* keeps Q&A, explanations, coding solutions and cases by source. *Public* groups interviews across sources by topic or year, with company/year filters. *Learning* offers five category cards for roadmaps, tutorials, resource indexes, career material and industry news. Every entry retains its text and provenance, and interviews and notes link both ways.
+- **My answer:** write your own answer below the reference answer; it may stay empty, is independent of the reference and syncs across devices.
+- **Made for spare minutes:** on a phone, a list and a full-screen reader with previous/next at the bottom, a swipe, or the system back gesture to close; a peek at any answer from the list; read marks and group progress; a random pick that prefers unread questions; Think first hides answers by default.
+- **Side by side on a computer:** list and reader together, plus a contents column for a notes source. The list folds away, and Focus also hides the top bar so the reader fills the window at a comfortable line length.
+- **Easy on the eyes:** three text sizes, a reading progress bar, light / dark / system themes, highlighted search words; tables, code, quotes and nested lists in long answers render properly. Read marks, folds, text size, source order and theme stay in the browser.
+- **Practice and your own decisions** (on a writable reader): practise a round or one question with a self-rating (V2 banks save progress and schedule reviews), **human review** of answers and **merge decisions** on pairs the agent was unsure about; only you can do these.
 
 | Shortcut (computer) | Action |
 |---|---|
 | ← / → or K / J | Previous / next |
 | Space | Show the answer (in Think first) |
 | / | Search |
-| F | Focus (fold the navigation and the list) |
+| F | Focus (fold the top bar and the list) |
 | L | Fold / unfold the list |
 | Esc | Leave focus |
 
@@ -164,7 +169,7 @@ The agent organises the bank; the Web page is for reading it. The page runs no A
 | Way | For | How |
 |---|---|---|
 | **On your computer** | Reading on the machine where your bank is | `python -B <skill dir>/scripts/ibank.py web --bank <bank> --open`. Loopback only (127.0.0.1), no login; Ctrl+C stops it and `--read-only` disables writes. Or ask the agent to open your bank's Web reader. |
-| **On your own server** | Reading on a phone anywhere | The read-only reader sits behind your own HTTPS reverse proxy: its own login page (hashed passwords, lockout after failures), one bank per account, daily verified backups. `tools/deploy/sync.sh` copies the bank text and notes from your computer, never screenshots. Steps: [Web usage](skills/interview-bank/references/web.md) and `tools/deploy/`. |
+| **On your own server** | Reading on a phone anywhere | The read-only reader sits behind your own HTTPS reverse proxy: its own login page (hashed passwords, lockout after failures), one bank per account, daily verified backups; with `--allow-my-answers` you can write your own answers on the phone. `tools/deploy/sync.sh` copies the bank text and notes from your computer, never screenshots. Steps: [Web usage](skills/interview-bank/references/web.md) and `tools/deploy/`. |
 | **Test it with the author** | Trying the hosted reader first, or when you cannot deploy one yet | Contact the author through [GitHub Issues](https://github.com/EXIST-D/Interview-bank/issues) for an account to test with. Each account sees only its own bank; the server keeps only the bank text (no screenshots), deleted on request. |
 
 ## Processing policy
@@ -200,7 +205,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 ## Status and plans
 
-**v1.24.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
+**v1.25.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
 
 **Not implemented yet:**
 
@@ -214,7 +219,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 **Other limits:** review queues are generated on demand with no background reminders; exact token and cost figures depend on the host; splitting an arbitrary historical merge is not supported, only undoing the latest eligible operation.
 
-**Verification:** v1.19.0 completed the 345-test Windows suite (344 passed; one POSIX terminal test skipped). After the merged-ID correction, five retrieval/concurrency/retry tests and seven notes CLI tests passed separately. The Linux candidate, standalone package, Skill validation and lint passed. Desktop and 390px mobile viewports exercised directories, type/association filters, bidirectional links, original-text reading and both collapsible panels. CI covers Windows, macOS and Linux × Python 3.10–3.13, the legacy snapshot format and packages on all three systems; run the suite with `python -B -m unittest discover -s tests`. Historical Evaluation results and host checks are in [evals](evals/README.md): dedupe retrieval recall@10 is 1.00; blind dedupe judgments made 0 % false merges and 3.4 % missed merges (Opus and Sonnet); blind answers scored 1.7 / 2 from a separate judge with no unsupported claims; on Claude Code the trigger suite passes with Sonnet, while Haiku's recall (0.73–0.80) is below the gate. Extracted content and reference answers still need checking against the original material, sources and scope.
+**Verification:** v1.25.0 passed the full 369-test suite on macOS, lint, the Skill package/install check and the Web bundle rebuild check. The Web reader also passed 84 browser checks (computer and 390px phone) served by the Python reader under its real Content-Security-Policy with no violations, covering Personal, Notes, Public, Learning, my answer, practice and merge decisions. CI covers Windows, macOS and Linux × Python 3.10–3.13, the Web rebuild comparison, the legacy snapshot format and packages on all three systems; run the suite with `python -B -m unittest discover -s tests`. Historical Evaluation results and host checks are in [evals](evals/README.md): dedupe retrieval recall@10 is 1.00; blind dedupe judgments made 0 % false merges and 3.4 % missed merges (Opus and Sonnet); blind answers scored 1.7 / 2 from a separate judge with no unsupported claims; on Claude Code the trigger suite passes with Sonnet, while Haiku's recall (0.73–0.80) is below the gate. Extracted content and reference answers still need checking against the original material, sources and scope.
 
 The repository contains the Skill, tests, evaluations and development tools, documentation, license and the README image. Personal material, banks, research ledgers and local environments are not published; test and evaluation data are synthetic.
 

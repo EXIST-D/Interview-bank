@@ -2,6 +2,19 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.25.0] - 2026-10-17
+
+### Added
+- "My answer": the person's own answer to each interview question, written in the Web reader below the reference answer, independent of it and allowed to stay empty. Stored in `personal/my-answers.json` (never `data/`) with the last 10 versions per question; a save from a stale page is refused instead of overwriting another device; answers written before a merge show on the surviving question. `POST /api/my-answer`; `web --read-only --allow-my-answers` lets a hosted reader save only these. Backups include `personal/`; `show`, the answers edition of `export` (quoted, plus `my_answers` in the details JSON) and mock-interview feedback packets read it; the agent never writes it.
+- An overview page (continue reading, section cards, most-asked questions), a top navigation bar, a phone tab bar and one settings menu.
+- `GET /api/notes?meta=0` omits source cards so lists stay small; the page loads each section's cards once per session.
+
+### Changed
+- The Web reader is rebuilt with React, Vite and Tailwind from `web/` and ships prebuilt in `assets/web/`; using it still needs Python only. The question and note reading area keeps its typography; personal interviews, notes (contents/list/reader side by side), public interviews, learning materials, practice rounds, human review and merge decisions are all available. Earlier `#question=`, `#note=` and `#section=` links still open.
+- The server serves `/` (reader or login page) and hashed `/assets/*.js|css` only, with long-lived caching for the hashed files and a fresh per-page style nonce for dialog scroll locks; inline scripts stay disallowed.
+- Source-card order now moves through a menu (first/previous/next/last) instead of dragging; the saved order key is unchanged.
+- CI rebuilds the page and requires the committed bundle to match.
+
 ## [1.24.0] - 2026-10-15
 
 ### Added

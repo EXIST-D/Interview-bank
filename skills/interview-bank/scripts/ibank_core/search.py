@@ -121,7 +121,9 @@ def detail(bank, question_id):
         selected = next(q for q in select_questions(data, stale_days=config.get("answer_stale_days", 180),
                                                     question_ids={resolved_id}) if q["id"] == resolved_id)
         source_ids = {o["source_id"] for o in selected["occurrences"]}
+        from .my_answers import for_question, load
         return {"requested_id": question_id, "resolved_id": resolved_id, "question": selected,
+                "my_answer": for_question(load(bank), data, resolved_id),
                 "sources": [s for s in data["sources"] if s["id"] in source_ids],
                 "relations": [r for r in data["relations"] if resolved_id in (r["from_question_id"], r["to_question_id"])],
                 "merged_variants": [q for q in data["questions"] if q["merged_into"] == resolved_id]}

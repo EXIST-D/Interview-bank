@@ -1,7 +1,9 @@
 # Optional local Web reader and practice
 
 Use this mode when the user requests a local visual question library, browsing, or browser-based practice. The default intake and two-report workflow stays unchanged.
-No npm, build step, CDN, model key or extra Python package is required. HTML/CSS/JS ship in `assets/web`; Python 3.10+ serves the UI and the existing bank engine.
+No npm, build step, CDN, model key or extra Python package is required to use it: the page ships prebuilt in `assets/web`
+(built from the repository's `web/` with React and Tailwind; only people changing the page need Node), and Python 3.10+
+serves it and the existing bank engine.
 
 ## Start and stop
 
@@ -38,6 +40,12 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
 - Practice: select 5/10/20 questions in the current filtered order, or practise one question. Hide answers until reveal;
   accept optional written responses and an actual user self-rating. No automatic correctness score or new answer generation.
   Missing/draft/stale answers remain visibly distinguished.
+- My answer: below the reference answer, the reader can write their own answer (Markdown subset), edit or clear it;
+  it is independent of the reference answer and may stay empty. It is saved in `personal/my-answers.json`, never in
+  `data/`, with the last 10 versions of each kept; a save made from a stale page is refused instead of overwriting
+  another device's newer text. Saving needs a writable server, or `--read-only --allow-my-answers` on a hosted reader
+  (everything else stays read-only). Think first hides it together with the reference answer. The agent reads it
+  (`show`, the answers edition of `export`, mock-interview feedback packets) but never writes or rewrites it.
 - Human review: below a stored answer, 人工审阅 lets the reader write what they checked and press 人工审阅通过 (or mark it 待重新核验).
   The server stages and commits under one lock and audits `actor: local_web`; it refuses if the answer changed since the page loaded. Read-only mode hides it. Works in V1 and V2.
 - V2 saves each submitted response and self-rating through the existing stage/commit machinery. Due dates use the existing review scheduler.
@@ -47,7 +55,7 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
 - Saved events survive server/browser restarts and are shared with CLI review.
   An unfinished Web round is kept in the browser tab's session storage (question IDs and position only, never the written response): reloading the tab offers to resume it;
   closing the tab ends it. The Agent interview workflow remains the durable guided session.
-- Merge decisions: when a staged dedupe run has review items, the header shows 合并裁决.
+- Merge decisions: when a staged dedupe run has review items, a banner above the personal-interview list opens 合并裁决.
   The person sees both questions and the agent's reason, chooses 是同一题 / 相关但不同 / 不同的题 with a required note, and the choice is saved next to the stage
   (`runs/<run>/human-decisions.json`, actor local_web).
   Nothing canonical changes until the agent runs `dedupe --resolve <run>`, which re-stages the run with those decisions, and commits it.
@@ -64,27 +72,25 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
   in the existing reader. These five kinds do not appear in interview-knowledge lists, source counts or searches.
   Public-interview article membership still takes precedence. Old note links infer their current section; saved
   knowledge filters for these kinds recover to learning. Counts are entries/sections, not unique full documents.
-- Knowledge shelf: cards start collapsed, showing source title, language, content count and local reading progress.
-  Click the header to expand its description, topic tags and actions; use the separate entry action to read the source.
-  Drag the six-dot handle to reorder, with a card preview and insertion marker. Clicking the same handle opens
-  first/previous/next/last move actions, also usable with the keyboard and on phones. Escape, cancellation,
-  window changes and focus loss cancel an active drag. Expand/collapse all and reset order controls are available.
-  Order and expansion preferences are browser-local and separated by the declared account/bank, not synchronized
-  to the server or other devices. Newly added sources append; retired or invalid saved IDs are discarded.
-  Reading IDs, source files, canonical bank data, topic directories and occurrence counts stay unchanged.
-  This uses shipped JavaScript with no framework, package installation or external assets.
-- Left panels: result count and list collapse stay within the list column. Directory, material filters and
-  question filters start folded and open on demand. Current/other notes sources form collapsible sidebar groups.
-  The original reader toolbar, text styling, spacing and full-screen phone reading remain unchanged.
+- Layout: a top bar switches 概览 (overview: continue reading, section cards, most-asked questions) and the four
+  sections; settings (appearance, think first, text size, agent actions, refresh, sign out) sit in its menu.
+  Phones use a bottom tab bar (overview, interviews, knowledge, more). Hash routes (`#/bank?open=q_…`,
+  `#/knowledge/<source>?open=note_…`, `#/public`, `#/learning/<kind>`) are shareable; the earlier `#question=`,
+  `#note=` and `#section=` links still open the same place.
+- Knowledge shelf: source cards show title, language, content count, main areas and local reading progress; ⋯ opens
+  source information and first/previous/next/last moves. Order is browser-local per account/bank (the same
+  `ibank-source-shelf:` key as before) and can be reset. Inside a source: contents (knowledge areas/topics or the
+  original chapters), the list and the reader side by side from 1100px; narrower screens open contents as a sheet.
+  The page loads each section's source cards once per session and lists with `meta=0`.
 - Reading aids: each row can unfold a peek at its answer; opened questions count as read (this browser only), and
-  chapter headers in the notes list fold and show how many were read (全部折叠 turns the list into a table of contents).
-  随机一题 opens a random question of the current list, unread ones first. In the reader, Aa changes the text size
-  and a thin bar shows how far you have read. Sidebar sections fold; the choices are remembered on the device.
-- Wide screens: « folds the navigation (its section switch, chips and menu move above the list; » brings it back),
-  收起列表 (L) folds the list while a question is open, and 专注 (F) folds both so the reader fills the window;
-  Esc leaves focus. Phones keep the list and the full-screen reader.
+  topic or chapter groups fold and show how many were read. 随机一题 (top bar) opens an unread interview question
+  first. In the reader, Aa changes the text size and a thin bar shows how far you have read.
+- Wide screens (from 900px): the list and the reader sit side by side; L folds the list, F (专注) also hides the top
+  bar so the reader fills the window; Esc leaves focus. Phones open the reader full screen; the system back gesture closes it.
 - Language and theme: the page follows `config.language` (Chinese or English); the theme follows the operating
   system unless the reader picks light or dark (外观).
+- Page security: only the bundled scripts and styles are served (`/`, `/assets/<hashed>.js|css`); each page response
+  carries a fresh style nonce for the dialogs' scroll lock, and no inline script is allowed.
 
 The page fetches bank data on navigation, refresh and after practice; it does not automatically poll, research answers or watch directories.
 The overview distinguishes stored answers (including draft/stale) from currently valid source-backed/reviewed coverage in its tooltip.
@@ -126,6 +132,8 @@ read-only, with the bank copied there. Templates are in the repository's `tools/
 - The agent keeps working on the local bank, which stays the original. `tools/deploy/sync.sh <bank> <user@server>
   <bank name>` copies only `data/`, `config.json` and `manifest.json` to that account: no images, runs, caches or
   exports. Practice ratings are not saved there. `backup.sh` with its systemd timer keeps 14 daily verified backups.
+  Own answers written on the hosted reader live in that bank's `personal/`; `sync.sh` never sends or deletes it,
+  and backups include it.
 - Personal data leaves the machine: deploy only when the user asks, to a server they control, with HTTPS and login.
 
 Protocol endpoints for diagnostics: GET `/api/library`, `/api/question?id=...`, `/api/practice`; POST `/api/practice`. All require `X-Interview-Token` from the launch URL;

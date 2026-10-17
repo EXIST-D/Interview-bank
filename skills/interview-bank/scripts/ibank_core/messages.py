@@ -24,6 +24,7 @@ MESSAGES = {
         "reviewed": "已人工审阅", "sourced": "已核验来源", "sources": "参考资料：", "source_sep": "；",
         "spoken": "口述版", "follow_ups": "常见追问", "mistakes": "易错点", "colon": "：",
         "other": "其他知识题", "unverified_tag": "待核验", "anki_problem": "原题",
+        "my_answer": "我的答案（本人撰写，未经核验）",
     },
     "en": {
         "title": "Interview question report",
@@ -45,6 +46,7 @@ MESSAGES = {
         "reviewed": "human-reviewed", "sourced": "verified against sources", "sources": "Sources: ", "source_sep": "; ",
         "spoken": "Spoken version", "follow_ups": "Follow-up questions", "mistakes": "Common mistakes", "colon": ": ",
         "other": "Other questions", "unverified_tag": "unverified", "anki_problem": "Problem",
+        "my_answer": "My answer (written by me, not verified)",
     },
 }
 

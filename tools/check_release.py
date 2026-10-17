@@ -190,10 +190,17 @@ def main():
                     raise AssertionError("Packaged Web did not become ready")
             launch = json.loads(line)["result"]["url"]
             origin, token = launch.split('/#token=')
-            for route, expected in (("/", b"Interview Bank"), ("/app.js", b"saveRating"),
-                                    ("/notes-ui.js", b"renderSourceCards"), ("/source-shelf.js", b"sourceShelf"), ("/app.css", b"--canvas")):
-                with urllib.request.urlopen(origin+route, timeout=5) as response:
-                    assert expected in response.read()
+            with urllib.request.urlopen(origin+"/", timeout=5) as response:
+                page = response.read().decode("utf-8")
+            assert "Interview Bank" in page
+            built = re.findall(r'(?:src|href)="\./(assets/[^"]+)"', page)
+            assert any(p.endswith(".js") for p in built) and any(p.endswith(".css") for p in built), built
+            bodies = {}
+            for route in built:
+                with urllib.request.urlopen(origin+"/"+route, timeout=5) as response:
+                    bodies[route] = response.read()
+            assert any(b"/api/library" in body for route, body in bodies.items() if route.endswith(".js")), "Reader script missing"
+            assert any(b"--background" in body for route, body in bodies.items() if route.endswith(".css")), "Reader styles missing"
             request = urllib.request.Request(origin+'/api/library', headers={'X-Interview-Token':token})
             with urllib.request.urlopen(request, timeout=5) as response:
                 library = json.load(response)

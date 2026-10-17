@@ -184,6 +184,10 @@ def markdown(payload, *, include_answers=True, extras='folded', lang='zh-CN'):
                 out.append(text(lang, 'problem') + f"[{md(link['title'])}](<{link['url']}>)")
             if include_answers:
                 out.extend(answer_section(q, extras, lang))
+                mine = payload.get('my_answers', {}).get(q['id'])
+                if mine:
+                    # Quoted line by line so the person's own headings or lists cannot break the report outline.
+                    out.append(f"**{text(lang, 'my_answer')}**\n\n" + '\n'.join('> ' + line for line in mine.splitlines()))
             company_names = sorted({companies[o['company_id']] for o in q['occurrences'] if o['company_id'] in companies})
             tags = list(dict.fromkeys(label(lang, d, v, display(d, v)) for d in ('domains', 'technologies') for v in q[d]))
             meta = [text(lang, 'seen', count=q['frequency'])]
@@ -224,6 +228,8 @@ def export_bank(bank, output, format="markdown", *, include_paths=False, answer_
                    "relations": [r for r in data["relations"] if r["from_question_id"] in qids and r["to_question_id"] in qids]}
         if report_context is not None:
             payload["context"] = report_context
+        from .my_answers import load as load_my_answers, texts as my_answer_texts
+        payload["my_answers"] = {qid: value for qid, value in my_answer_texts(load_my_answers(bank), data).items() if qid in qids}
         excluded = [{"question_id": q["id"], "reason": exclusion_reason(q)} for q in questions if exclusion_reason(q)]
         omitted = {item["question_id"] for item in excluded}
         payload["report"] = {"question_ids": [q["id"] for q in questions if q["id"] not in omitted],

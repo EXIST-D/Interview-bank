@@ -15,5 +15,8 @@ dist/
 # Private development plans and iteration records
 /docs/
 
+# pnpm's content store when it lands inside the repository
+.pnpm-store/
+
 # OS noise
 .DS_Store

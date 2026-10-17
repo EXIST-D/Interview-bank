@@ -1,7 +1,8 @@
-"""Optional loopback-only reader. No framework, external assets or model calls."""
+"""Optional loopback-only reader. No server framework, external assets or model calls; the page ships prebuilt."""
 import copy
 import hmac
 import json
+import re
 import secrets
 import socketserver
 import threading
@@ -27,15 +28,27 @@ from .messages import group_title, label, language
 from . import notes as notebook
 from . import note_organization
 from . import note_experiences
+from . import my_answers
 from .timestamps import parse_timestamp
 
 ASSETS = Path(__file__).resolve().parents[2] / 'assets' / 'web'
+ASSET_TYPES = {'.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8'}
+ASSET_NAME = re.compile(r'/assets/[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*\.(?:js|css)')
+
+
+def bundled_asset(path):
+    """A built script or stylesheet of the reader (web/ builds them into assets/web/assets); nothing else is served."""
+    if not ASSET_NAME.fullmatch(path):
+        return None
+    candidate = ASSETS / 'assets' / path.removeprefix('/assets/')
+    folder = (ASSETS / 'assets').resolve()
+    return candidate if candidate.is_file() and candidate.resolve().parent == folder else None
 FILTERS = {'query', 'domain', 'role', 'technology', 'company', 'industry', 'answer_status', 'group'}
 ANSWERED = ('source_backed', 'reviewed')
 VIEWS = {'all', 'due', 'weak', 'unseen'}
 NOTE_FILTERS = {'collection', 'chapter', 'query', 'marked', 'asked', 'sort', 'offset', 'limit',
                 'area', 'topic', 'tag', 'kind', 'verification', 'view', 'section', 'company', 'year',
-                'question_type', 'connection', 'experience_domain'}
+                'question_type', 'connection', 'experience_domain', 'meta'}
 
 
 def progress(data, rows):
@@ -93,9 +106,11 @@ def filtered(rows, companies, states, params):
 
 
 class WebApp:
-    def __init__(self, bank, read_only=False):
+    def __init__(self, bank, read_only=False, allow_my_answers=False):
         self.bank = guard_bank_path(bank)
         self.read_only = read_only
+        # A hosted reader stays read-only for the bank but may let the person keep their own answers.
+        self.can_write_answer = not read_only or allow_my_answers
         self.mutation_lock = threading.Lock()
         self.notes_cache = (None, None)
         with open_bank(self.bank, shared=True):
@@ -135,10 +150,12 @@ class WebApp:
             facets['company'] = [{'value': c['id'], 'label': c['name'], 'count': company_counts[c['id']]} for c in data['companies'] if company_counts[c['id']]]
             used = [c for c in data['companies'] if company_counts[c['id']]]
             bundle = self._notes(data)
+            mine = set(my_answers.texts(my_answers.load(self.bank), data))
             facets['industry'] = [{'value': v, 'label': display('industries', v)} for v in sorted({v for c in used for v in c['industries']})]
             return {
                 'name': self.bank.name, 'version': __version__, 'schema_version': manifest['schema_version'],
                 'can_record': manifest['schema_version'] == 2 and not self.read_only, 'can_review': not self.read_only,
+                'can_write_answer': self.can_write_answer,
                 'language': language(config),
                 'read_only': self.read_only, 'updated_at': manifest.get('last_updated_at'),
                 'summary': {'questions': len(rows), 'answered': sum(q['answer_status'] in ('source_backed', 'reviewed') for q in rows),
@@ -150,7 +167,8 @@ class WebApp:
                 'offset': offset, 'limit': limit, 'facets': facets,
                 # The whole filtered order, so the reader can step to the previous or next question across pages.
                 'ids': [q['id'] for q in found],
-                'questions': [card(q, states[q['id']], language(config)) for q in found[offset:offset + limit]],
+                'questions': [{**card(q, states[q['id']], language(config)), 'has_my_answer': q['id'] in mine}
+                              for q in found[offset:offset + limit]],
             }
 
     def question(self, qid):
@@ -161,6 +179,7 @@ class WebApp:
             sources = {s['id']: s for s in data['sources']}
             result = card(q, progress(data, rows)[q['id']], language(config))
             result['answer'] = q['answer']
+            result['my_answer'] = my_answers.for_question(my_answers.load(self.bank), data, q['id'])
             bundle = self._notes(data)
             collections = {c['name']: c for c in bundle['collections']}
             notes = {n['id']: n for n in bundle['notes']}
@@ -191,6 +210,8 @@ class WebApp:
         # Note cards are short: the reader loads a whole collection so chapters can fold.
         limit, offset = int(params.get('limit', 30)), int(params.get('offset', 0))
         require(1 <= limit <= 1000 and offset >= 0, 'Invalid pagination (limit 1..1000)')
+        # meta=0: the caller already holds the source cards (hundreds of KB for large banks) and wants only the list.
+        require(params.get('meta', '1') in ('0', '1'), 'meta must be 0 or 1')
         with open_bank(self.bank, shared=True) as (_, config, data):
             bundle = self._notes(data)
             rows = select(data, config, self.bank)
@@ -269,7 +290,8 @@ class WebApp:
         learning = note_experiences.select(bundle, 'learning')
         return {
             'section': section,
-            'collections': [note_organization.collection_card(c, linked, section) for c in bundle['collections']],
+            **({'collections': [note_organization.collection_card(c, linked, section) for c in bundle['collections']]}
+               if params.get('meta', '1') == '1' else {}),
             'summary': {'notes': len(bundle['notes']), 'marked': sum(bool(n['marks']) for n in bundle['notes']),
                         'asked': sum(n['id'] in linked for n in bundle['notes'])},
             'section_counts': {'knowledge': sum(n['organization']['kind'] != 'info' for n in note_experiences.select(bundle, 'knowledge')),
@@ -366,6 +388,14 @@ class WebApp:
             return {'saved': True, **summary}
 
 
+    def my_answer(self, payload):
+        """The person's own answer to one question; independent of the reference answer and may be empty."""
+        require(self.can_write_answer, 'This server does not save your own answers')
+        require(isinstance(payload, dict) and set(payload) == {'question_id', 'text', 'expected_updated_at'}, 'Invalid answer payload')
+        require(all(isinstance(v, str) for v in payload.values()), 'Answer values must be strings')
+        with self.mutation_lock:
+            return my_answers.save(self.bank, payload['question_id'], payload['text'], payload['expected_updated_at'])
+
     def dedupe_decision(self, payload):
         """The person decides one uncertain merge; the agent applies it later with dedupe --resolve."""
         require(not self.read_only, 'This server is in read-only mode')
@@ -383,10 +413,11 @@ class LocalServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = False
 
-    def __init__(self, app, port=0, token=None, public_origins=(), login=None, banks_dir=None, read_only=True):
+    def __init__(self, app, port=0, token=None, public_origins=(), login=None, banks_dir=None, read_only=True, allow_my_answers=False):
         # One bank for everyone (app), or one bank per account under banks_dir (hosting several people).
         self.app = app
         self.banks_dir, self.read_only, self.apps, self.apps_lock = banks_dir, read_only, {}, threading.Lock()
+        self.allow_my_answers = allow_my_answers
         self.token = token or secrets.token_urlsafe(32)
         # Optional login page (hosting only): one account, signed session cookie, limited failed attempts.
         self.login = login
@@ -421,16 +452,18 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, *_):
         pass  # No credentials, question text or private paths in access logs.
 
-    def send(self, status, body, content_type='application/json; charset=utf-8', headers=()):
+    def send(self, status, body, content_type='application/json; charset=utf-8', headers=(), cache='no-store', nonce=None):
         if not isinstance(body, bytes):
             body = json.dumps(body, ensure_ascii=False, allow_nan=False).encode('utf-8')
+        # A page's nonce admits only the <style> elements its own scripts create (dialog scroll lock); no inline script.
+        styles = f"'self' 'nonce-{nonce}'" if nonce else "'self'"
         self.send_response(status)
         self.send_header('Content-Type', content_type)
         self.send_header('Content-Length', str(len(body)))
-        self.send_header('Cache-Control', 'no-store')
+        self.send_header('Cache-Control', cache)
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('Referrer-Policy', 'no-referrer')
-        self.send_header('Content-Security-Policy', "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'")
+        self.send_header('Content-Security-Policy', f"default-src 'none'; script-src 'self'; style-src {styles}; img-src 'self' data:; connect-src 'self'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'")
         for name, value in headers:
             self.send_header(name, value)
         self.end_headers()
@@ -444,17 +477,14 @@ class Handler(BaseHTTPRequestHandler):
                 or self.headers.get('Origin') not in (None, *(f'http://{h}' for h in hosts), *self.server.public_origins):
             return self.send(403, {'error': f'仅支持本机访问：请打开 Agent 提供的 http://127.0.0.1:{port}/ 链接。'})
         path = urlsplit(self.path).path
-        assets = {'/': ('index.html', 'text/html; charset=utf-8'), '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
-                  '/app.css': ('app.css', 'text/css; charset=utf-8'), '/login.js': ('login.js', 'text/javascript; charset=utf-8'),
-                  '/notes-ui.js': ('notes-ui.js', 'text/javascript; charset=utf-8'),
-                  '/source-shelf.js': ('source-shelf.js', 'text/javascript; charset=utf-8'),
-                  '/left-panels.js': ('left-panels.js', 'text/javascript; charset=utf-8'),
-                  '/left-panels.css': ('left-panels.css', 'text/css; charset=utf-8')}
-        if path in assets and not post:
-            name, mime = assets[path]
-            if path == '/' and self.server.login and not self.user():
-                name = 'login.html'
-            return self.send(200, (ASSETS / name).read_bytes(), mime)
+        if path == '/' and not post:
+            name = 'login.html' if self.server.login and not self.user() else 'index.html'
+            nonce = secrets.token_urlsafe(18)
+            page = (ASSETS / name).read_bytes().replace(b'__CSP_NONCE__', nonce.encode('ascii'))
+            return self.send(200, page, 'text/html; charset=utf-8', nonce=nonce)
+        if not post and (asset := bundled_asset(path)):
+            # Built file names carry a content hash, so a phone may keep them until the next release.
+            return self.send(200, asset.read_bytes(), ASSET_TYPES[asset.suffix], cache='public, max-age=31536000, immutable')
         supplied = self.headers.get('X-Interview-Token', '')
         if not hmac.compare_digest(supplied, self.server.token):
             return self.send(401, {'error': '访问凭据已失效，请使用 Agent 提供的完整启动链接重新打开。'})
@@ -468,10 +498,12 @@ class Handler(BaseHTTPRequestHandler):
         require(all(len(v) == 1 for v in query.values()), 'Duplicate query parameters')
         params = {k: v[0] for k, v in query.items()}
         if post:
-            if path not in ('/api/practice', '/api/review', '/api/dedupe-decision'):
+            handlers = {'/api/practice': app.record, '/api/review': app.review, '/api/dedupe-decision': app.dedupe_decision,
+                        '/api/my-answer': app.my_answer}
+            if path not in handlers:
                 return self.send(404, {'error': 'Unknown endpoint'})
             body = self.json_body()
-            handler = {'/api/practice': app.record, '/api/review': app.review, '/api/dedupe-decision': app.dedupe_decision}[path]
+            handler = handlers[path]
             result = handler(body)
         elif path == '/api/library':
             result = app.library(params)
@@ -525,7 +557,7 @@ class Handler(BaseHTTPRequestHandler):
             if name not in self.server.apps:
                 bank = Path(self.server.banks_dir) / name
                 require((bank / 'manifest.json').is_file(), '这个账号的题库还没有同步到服务器。')
-                self.server.apps[name] = WebApp(bank, self.server.read_only)
+                self.server.apps[name] = WebApp(bank, self.server.read_only, self.server.allow_my_answers)
             return self.server.apps[name]
 
     def client(self):
@@ -582,7 +614,8 @@ def _read_token(path):
     return token
 
 
-def serve(bank, port=0, read_only=False, open_browser=False, token_file=None, public_origins=(), login_file=None, banks_dir=None):
+def serve(bank, port=0, read_only=False, open_browser=False, token_file=None, public_origins=(), login_file=None, banks_dir=None,
+          allow_my_answers=False):
     require(0 <= port <= 65535, 'Port must be 0..65535')
     for origin in public_origins:
         parsed = urlsplit(origin)
@@ -598,11 +631,12 @@ def serve(bank, port=0, read_only=False, open_browser=False, token_file=None, pu
     if banks_dir:
         banks_dir = Path(banks_dir).expanduser().resolve()
         require(banks_dir.is_dir(), f'Not a directory: {banks_dir}')
-    server = LocalServer(None if banks_dir else WebApp(bank, read_only), port, _read_token(token_file) if token_file else None,
-                         [o.rstrip('/') for o in public_origins], login, banks_dir, read_only)
+    server = LocalServer(None if banks_dir else WebApp(bank, read_only, allow_my_answers), port, _read_token(token_file) if token_file else None,
+                         [o.rstrip('/') for o in public_origins], login, banks_dir, read_only, allow_my_answers)
     # A fixed token lives in a file the proxy also reads; never print it into service logs.
     url = server.origin + '/' if token_file else server.url
     print(json.dumps({'ok': True, 'command': 'web', 'result': {'url': url, 'pid': __import__('os').getpid(), 'read_only': read_only,
+                      'my_answers': not read_only or allow_my_answers,
                       'public_origins': list(server.public_origins), 'version': __version__}}, ensure_ascii=False), flush=True)
     if open_browser:
         webbrowser.open(server.url)

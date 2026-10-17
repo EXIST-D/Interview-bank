@@ -16,8 +16,11 @@ def next_item(data, config, bank, session):
         rows = select(data,config,bank,ids=[response['question_id']])
         q = rows[0] if rows else None
         valid = bool(q and q['answer_status'] in ('source_backed','reviewed') and q['answer']['sources'])
+        from .my_answers import for_question, load
         return {'status':'awaiting_feedback','response':response,'reference_answer':q['answer'] if valid else None,
                 'reference_status':q['answer_status'] if q else 'excluded',
+                # The person's own prepared answer: compare with it, but it is not a source of correctness.
+                'my_answer':for_question(load(bank),data,q['id']) if q else None,
                 'instruction':'Agent-only feedback packet. Cite actual answer omissions and boundaries; unavailable sources limit correctness judgments.'}
     pos = session['position']
     if session.get('follow_up'):
