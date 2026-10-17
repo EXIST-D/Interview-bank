@@ -133,7 +133,7 @@ read-only, with the bank copied there. Templates are in the repository's `tools/
   <bank name>` copies only `data/`, `config.json` and `manifest.json` to that account: no images, runs, caches or
   exports. Practice ratings are not saved there. `backup.sh` with its systemd timer keeps 14 daily verified backups.
   Own answers written on the hosted reader live in that bank's `personal/`; `sync.sh` never sends or deletes it,
-  and backups include it.
+  and backups include it. `nginx-gzip.conf` optionally compresses the page's scripts, styles and JSON.
 - Personal data leaves the machine: deploy only when the user asks, to a server they control, with HTTPS and login.
 
 Protocol endpoints for diagnostics: GET `/api/library`, `/api/question?id=...`, `/api/practice`; POST `/api/practice`. All require `X-Interview-Token` from the launch URL;
