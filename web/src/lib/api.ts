@@ -69,6 +69,7 @@ export type Library = {
   can_record: boolean;
   can_review: boolean;
   can_write_answer?: boolean;
+  can_write_personal?: boolean;
   summary: { questions: number; answered: number; due: number; weak: number; unseen: number; stale: number };
   notes?: { total: number; collections: number };
   total: number;

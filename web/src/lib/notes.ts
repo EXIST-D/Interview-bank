@@ -1,5 +1,6 @@
 import { api } from "./api";
 import { readIds as readIdSet, setPref } from "./prefs";
+import { queueState } from "./sync";
 import { store, stored } from "./storage";
 
 export type NotesSection = "knowledge" | "experiences" | "learning";
@@ -80,6 +81,7 @@ export type NoteCardData = {
   public_experience_count?: number;
   experience?: Experience;
   reading?: ReadingGroup;
+  has_my_answer?: boolean;
 };
 
 export type StudyEdge = {
@@ -103,6 +105,7 @@ export type NoteDetail = NoteCardData & {
   study_notes?: StudyEdge[];
   public_experiences?: StudyEdge[];
   study_links_incomplete?: number;
+  my_answer?: { text: string; updated_at: string } | null;
 };
 
 export type NotesFacets = {
@@ -153,7 +156,8 @@ export function notesPage(params: URLSearchParams) {
 
 const details = new Map<string, Promise<NoteDetail>>();
 
-export function noteDetail(id: string) {
+export function noteDetail(id: string, fresh = false) {
+  if (fresh) details.delete(id);
   if (!details.has(id)) {
     details.set(
       id,
@@ -218,19 +222,28 @@ export function recordVisit(id: string, group: ReadingGroup | undefined = groups
   const values = records();
   if (group) {
     const current = learningState(id, group);
-    values[id] = { state: current === "review" || current === "mastered" ? current : "read", at: new Date().toISOString(), reading_digest: group.content_digest };
+    const state = current === "review" || current === "mastered" ? current : "read";
+    if (values[id]?.state === state && values[id]?.reading_digest === group.content_digest) return;
+    values[id] = { state, at: new Date().toISOString(), reading_digest: group.content_digest };
   } else if (!values[id] || values[id].state === "unread") values[id] = { state: "read", at: new Date().toISOString() };
-  save(values);
+  else return;
+  save(values, id);
 }
 
 export function setLearning(id: string, state: LearningState | "", group?: ReadingGroup) {
   const values = records();
   values[id] = { state: state || "unread", at: new Date().toISOString(), ...(group ? { reading_digest: group.content_digest } : {}) };
-  save(values);
+  save(values, id);
 }
 
-function save(values: Record<string, LearningRecord>) {
+function save(values: Record<string, LearningRecord>, changed: string) {
   store(learningKey(), values);
   cached = { key: learningKey(), values };
+  queueState(changed, values[changed]);
   setPref("ibank-notes-learning", Date.now());
 }
+
+// The server's state merged into this browser (lib/sync) replaces the stored records.
+window.addEventListener("ibank-pref", (event) => {
+  if ((event as CustomEvent).detail === "ibank-notes-learning") cached = null;
+});

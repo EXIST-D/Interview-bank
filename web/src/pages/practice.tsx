@@ -43,7 +43,7 @@ function keep(round: Saved) {
   }
 }
 
-export type PracticeStart = { kind: "setup" } | { kind: "one"; question: QuestionDetail } | { kind: "resume" };
+export type PracticeStart = { kind: "setup" } | { kind: "one"; question: QuestionDetail } | { kind: "ids"; ids: string[] } | { kind: "resume" };
 
 export function Practice({
   start,
@@ -74,6 +74,7 @@ export function Practice({
     setCurrent(null);
     pending.current = null;
     if (start.kind === "one") setRound({ questions: [{ id: start.question.id }], index: 0, results: [] });
+    else if (start.kind === "ids") setRound({ questions: start.ids.map((id) => ({ id })), index: 0, results: [] });
     else if (start.kind === "resume") setRound(storedRound());
     else setRound(null);
   }, [start]);

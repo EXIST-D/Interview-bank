@@ -1,5 +1,7 @@
 # systemd unit for the read-only Web reader behind a reverse proxy.
 # Install as /etc/systemd/system/interview-bank-web.service; replace https://example.com with your site's origin.
+# --allow-personal lets the person keep their own answers, notes, favourites and learning state (personal/);
+# --allow-practice also saves practice ratings into a V2 bank (drop it to keep data/ untouched by the reader).
 [Unit]
 Description=Interview Bank Web reader (loopback, behind a reverse proxy)
 After=network.target
@@ -10,8 +12,8 @@ ConditionPathExists=/etc/interview-bank/login
 User=ibank
 Group=ibank
 ExecStart=/usr/bin/python3 -B /opt/interview-bank/interview-bank/scripts/ibank.py web --banks-dir /srv/interview-bank/banks \
-    --port 8765 --read-only --allow-my-answers --token-file /etc/interview-bank/token --public-origin https://example.com \
-    --login-file /etc/interview-bank/login
+    --port 8765 --read-only --allow-personal --allow-practice --token-file /etc/interview-bank/token \
+    --public-origin https://example.com --login-file /etc/interview-bank/login
 Restart=on-failure
 RestartSec=3
 NoNewPrivileges=true
@@ -19,7 +21,8 @@ ProtectSystem=strict
 ProtectHome=true
 PrivateTmp=true
 ReadWritePaths=/srv/interview-bank
-MemoryMax=256M
+# Parsing about 8,000 collection entries and building their search index peaks near 250 MB.
+MemoryMax=384M
 
 [Install]
 WantedBy=multi-user.target

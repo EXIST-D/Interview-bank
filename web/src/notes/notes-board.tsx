@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useBank } from "@/lib/bank";
 import { useToast } from "@/lib/hooks";
 import { useI18n } from "@/lib/i18n";
 import { learningState, noteDetail, notesPage, recordVisit, sectionOf, type NoteCardData, type NoteDetail, type NotesPage, type NotesSection } from "@/lib/notes";
@@ -76,6 +77,7 @@ export function NoteReader({
 }) {
   const { t } = useI18n();
   const toast = useToast();
+  const { library } = useBank();
   const { openId, open, close, step, index, layout, setLayout, focused } = reading;
   const [detail, setDetail] = useState<NoteDetail | null>(null);
   const [revealed, setRevealed] = useState(true);
@@ -144,6 +146,12 @@ export function NoteReader({
             onOpenQuestion={(id) => navigate("bank", [], { open: id })}
             onOpenNote={(id) => (rows.some((n) => n.id === id) ? open(id) : navigate("knowledge", [], { open: id }))}
             onToast={toast}
+            canWriteNote={Boolean(library?.can_write_personal)}
+            onMyNote={(value) => {
+              setDetail({ ...detail, my_answer: value });
+              noteDetail(detail.id, true).catch(() => {});
+            }}
+            onReload={async () => setDetail(await noteDetail(detail.id, true))}
           />
         </ReaderFrame>
       ) : (

@@ -40,12 +40,25 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
 - Practice: select 5/10/20 questions in the current filtered order, or practise one question. Hide answers until reveal;
   accept optional written responses and an actual user self-rating. No automatic correctness score or new answer generation.
   Missing/draft/stale answers remain visibly distinguished.
-- My answer: below the reference answer, the reader can write their own answer (Markdown subset), edit or clear it;
-  it is independent of the reference answer and may stay empty. It is saved in `personal/my-answers.json`, never in
-  `data/`, with the last 10 versions of each kept; a save made from a stale page is refused instead of overwriting
-  another device's newer text. Saving needs a writable server, or `--read-only --allow-my-answers` on a hosted reader
-  (everything else stays read-only). Think first hides it together with the reference answer. The agent reads it
-  (`show`, the answers edition of `export`, mock-interview feedback packets) but never writes or rewrites it.
+- My answer / my note: below the reference answer of a question (我的答案) and below the original of any knowledge,
+  public-interview or learning entry (我的笔记), the reader can write their own text (Markdown subset), edit or
+  clear it; it is independent of the reference and may stay empty. Saved in `personal/my-answers.json`, never in
+  `data/` or `collections/`, with the last 10 versions of each kept; a save made from a stale page is refused instead
+  of overwriting another device's newer text. A note outlives its entry: if a collection is removed, the note stays
+  listed and is marked. Think first hides it together with the reference answer. The agent reads it (`show`,
+  `notes show`, the answers edition of `export`, mock-interview feedback packets) but never writes or rewrites it.
+- 我的 (`#/mine`): every own answer and note, newest first, searchable (every space-separated term must appear),
+  filterable by section and exported as one Markdown file in the browser. Favourites: the star in the reader puts the
+  open question or entry into one or more folders (the first star creates 我的收藏). Folders are renamed, reordered,
+  deleted (the items themselves stay) and emptied item by item; 练习其中的面经题 runs a round over the folder's
+  interview questions. Stored in `personal/favorites.json` (up to 200 folders, 5000 items each).
+- Long text: when an original has three or more headings or bold numbered question lines, 本文目录 in the reader lists
+  them, follows the scroll position and jumps; far down, a button returns to the top.
+- 今日计划 on the overview: reviews due now, weak/changed and never-practised questions, each opening that list;
+  开始复习 opens a practice round on the first non-empty one.
+- Learning state: read marks, 待复习/已掌握 states of entries and the source order are kept in the browser and, when
+  the server allows personal writes, merged into `personal/learning.json` so another device sees them (read marks
+  union; per entry the newest change wins). Without personal writes they stay in the browser as before.
 - Human review: below a stored answer, 人工审阅 lets the reader write what they checked and press 人工审阅通过 (or mark it 待重新核验).
   The server stages and commits under one lock and audits `actor: local_web`; it refuses if the answer changed since the page loaded. Read-only mode hides it. Works in V1 and V2.
 - V2 saves each submitted response and self-rating through the existing stage/commit machinery. Due dates use the existing review scheduler.
@@ -64,6 +77,10 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
   directory or its original chapters. Search explicitly scopes to the current topic, current source or all sources;
   tag, content kind, verification and browser-local learning filters supplement key-only and most-asked views.
   Notes show the collection's original answer with its source, and link both ways to interview questions.
+  Note search (Web and `notes search`) needs every space-separated term, ranks entries holding all terms in the
+  title first, then by relevance (BM25, titles weighted). It uses an SQLite FTS5 trigram index in
+  `cache/notes-search.sqlite`, rebuilt when a collection changes and never backed up or synced; where SQLite lacks
+  FTS5 the same rules run as a plain scan. A hosted reader builds the index in the background at start.
   Source information separates notices from learning content. Directory maintenance stays with the Agent CLI.
   See [notes](notes.md).
 - Learning materials: use `#section=learning` to open the category home. Five cards separate roadmaps, tutorials,
@@ -73,9 +90,10 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
   Public-interview article membership still takes precedence. Old note links infer their current section; saved
   knowledge filters for these kinds recover to learning. Counts are entries/sections, not unique full documents.
 - Layout: a top bar switches 概览 (overview: continue reading, section cards, most-asked questions) and the four
-  sections; settings (appearance, think first, text size, agent actions, refresh, sign out) sit in its menu.
-  Phones use a bottom tab bar (overview, interviews, knowledge, more). Hash routes (`#/bank?open=q_…`,
-  `#/knowledge/<source>?open=note_…`, `#/public`, `#/learning/<kind>`) are shareable; the earlier `#question=`,
+  sections and 我的; settings (appearance, think first, text size, agent actions, refresh, sign out) sit in its menu.
+  Phones use a bottom tab bar (overview, interviews, knowledge, more: public, learning, 我的). Hash routes
+  (`#/bank?open=q_…`, `#/bank?view=due`, `#/knowledge/<source>?open=note_…`, `#/public`, `#/learning/<kind>`,
+  `#/mine?tab=favorites`) are shareable; the earlier `#question=`,
   `#note=` and `#section=` links still open the same place.
 - Knowledge shelf: source cards show title, language, content count, main areas and local reading progress; ⋯ opens
   source information and first/previous/next/last moves. Order is browser-local per account/bank (the same
@@ -97,7 +115,10 @@ The overview distinguishes stored answers (including draft/stale) from currently
 Old migrated answers can be stale until coverage is rechecked. Frequencies count matching collected occurrences.
 Domain facet counts may overlap because a question can have multiple labels.
 
-`--read-only` disables practice writes. Opening a bank still uses the normal lock, recoverable-transaction handling and rebuildable cache;
+`--read-only` disables every write. On a hosted reader, `--allow-personal` (formerly `--allow-my-answers`, still
+accepted) then allows only the person's own layer under `personal/`: answers and notes, favourites and learning
+state. `--allow-practice` separately allows saving practice ratings (V2 banks only), which write to `data/` through
+the normal stage/commit path; human review and merge decisions stay disabled. Opening a bank still uses the normal lock, recoverable-transaction handling and rebuildable cache;
 it is not a promise of zero filesystem activity. Do not open an unrelated or unauthorized bank.
 
 Appending `&question=<question-id>` to the launch URL opens that question directly (useful when pointing the user at one answer).
@@ -129,14 +150,20 @@ read-only, with the bank copied there. Templates are in the repository's `tools/
   login exists.
 - Several people: `--banks-dir <dir>` gives each account its own bank, `<dir>/<bank name of the account>`; an
   account never sees another's questions. Accounts are managed on the server with `set-login.py add|passwd|remove|list`.
-- The agent keeps working on the local bank, which stays the original. `tools/deploy/sync.sh <bank> <user@server>
-  <bank name>` copies only `data/`, `config.json` and `manifest.json` to that account: no images, runs, caches or
-  exports. Practice ratings are not saved there. `backup.sh` with its systemd timer keeps 14 daily verified backups.
-  Own answers written on the hosted reader live in that bank's `personal/`; `sync.sh` never sends or deletes it,
-  and backups include it. `nginx-gzip.conf` optionally compresses the page's scripts, styles and JSON.
+- `tools/deploy/sync.sh [--force] <bank> <user@server> <bank name>` copies only `data/`, `collections/`,
+  `config.json` and `manifest.json` to that account: no images, runs, caches or exports. It refuses when the
+  server's copy changed after the local one (practice saved there, or the agent worked on the server) unless
+  `--force`. With `--allow-practice` the server's `data/` becomes the original: bring it back first (latest backup,
+  `backup restore` into a new directory) before the agent works locally and syncs again.
+- What the person writes on the hosted reader lives in that bank's `personal/`; `sync.sh` never sends or deletes it.
+  `backup.sh` with its systemd timer keeps 14 daily verified backups on the server, `personal/` included.
+  `tools/deploy/pull-backups.sh <user@server> <local folder> [bank name]` copies the newest backups (NEWEST, default 3)
+  to your computer, checks each against its `.sha256`, skips ones already there and keeps the newest KEEP (default 30).
+  `nginx-gzip.conf` optionally compresses the page's scripts, styles and JSON.
 - Personal data leaves the machine: deploy only when the user asks, to a server they control, with HTTPS and login.
 
-Protocol endpoints for diagnostics: GET `/api/library`, `/api/question?id=...`, `/api/practice`; POST `/api/practice`. All require `X-Interview-Token` from the launch URL;
+Protocol endpoints for diagnostics: GET `/api/library`, `/api/question?id=...`, `/api/practice`, `/api/my-notes`,
+`/api/favorites`, `/api/learning`; POST `/api/practice`, `/api/my-answer`, `/api/favorites`, `/api/learning`. All require `X-Interview-Token` from the launch URL;
 keep it out of public logs. Use the browser for normal practice instead of submitting synthetic user ratings into a real bank.
 Unknown IDs, invalid requests, concurrent modification and locked banks report errors rather than overwrite data.
 

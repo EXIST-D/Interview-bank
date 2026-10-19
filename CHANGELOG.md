@@ -2,6 +2,26 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.26.0] - 2026-10-19
+
+### Added
+- My notes: an own note below the original of every knowledge, public-interview and learning entry, stored with own answers in `personal/my-answers.json` (same versions and stale-page protection). `notes show` returns it; notes whose collection was removed stay listed and are flagged.
+- 我的 page (`#/mine`): all own answers and notes, newest first, with section filter, multi-term search and a Markdown export; favourite folders for questions and entries (`personal/favorites.json`): create, rename, reorder, delete, add/remove items, and a practice round over a folder's interview questions. `GET /api/my-notes`, `GET|POST /api/favorites`.
+- A star in the reader to save the open question or entry into folders; the first star creates a default folder.
+- 本文目录 in the reader: headings and bold numbered question lines of long originals, with scroll position, jumps and back-to-top.
+- 今日计划 on the overview: reviews due, weak/changed and never-practised counts with a start-review shortcut (`#/bank?view=due&practice=1`).
+- Learning state on the server: read marks, entry states and source order merge into `personal/learning.json` (`GET|POST /api/learning`) when the reader allows personal writes; browsers still work alone otherwise.
+- `web --allow-practice` lets a read-only hosted reader save practice ratings (V2 only); `--allow-personal` is the new name of `--allow-my-answers`, which still works.
+- `tools/deploy/pull-backups.sh` copies the newest server backups to a local folder, verifies each `.sha256` and keeps the newest 30.
+- `notes describe --name <id> [--title …] [--origin …]` changes a collection's display name or origin line (author · licence · pinned URL) without re-importing; IDs, links and organization digests stay.
+- `web/e2e/reader.mjs` (`pnpm e2e`): browser checks on a demo bank in hosted mode, run in CI.
+
+### Changed
+- Note search (Web and `notes search`) needs every space-separated term and ranks title matches first, then BM25, using an SQLite FTS5 trigram index in `cache/notes-search.sqlite` that is rebuilt when collections change, built in the background when a reader starts, and never backed up; a plain scan applies the same rules where FTS5 is missing. My-notes search also takes several terms.
+- `tools/deploy/sync.sh` refuses to overwrite a server bank that changed after the local one unless `--force`.
+- The deploy unit template uses `--allow-personal --allow-practice` and `MemoryMax=384M`.
+- Backups skip `personal/.bank.lock`.
+
 ## [1.25.0] - 2026-10-17
 
 ### Added

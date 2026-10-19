@@ -96,6 +96,7 @@ function NoteRow({
             {note.marked && <span className="text-warning">{t("marked")}</span>}
             {note.asked > 0 && <span className="text-success">{t("asked_times", { n: note.asked })}</span>}
             {state !== "unread" && <span className={STATE_TONE[state]}>{t(`notes_learning_${state}`)}</span>}
+            {note.has_my_answer && <span className="text-primary">{t("my_note")}</span>}
             {experience && <span className="text-tertiary-foreground">{t("notes_public_source") + "：" + note.collection_title}</span>}
           </span>
         </button>

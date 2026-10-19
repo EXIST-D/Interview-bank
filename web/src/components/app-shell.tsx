@@ -1,5 +1,5 @@
 import { Dialog } from "radix-ui";
-import { BookOpen, Compass, House, MessagesSquare, MoreHorizontal, Newspaper, Shuffle } from "lucide-react";
+import { BookOpen, Bookmark, Compass, House, MessagesSquare, MoreHorizontal, Newspaper, Shuffle } from "lucide-react";
 import { useState } from "react";
 import { useBank } from "@/lib/bank";
 import { useI18n } from "@/lib/i18n";
@@ -28,6 +28,7 @@ function useBoards(): BoardItem[] {
       { board: "learning", count: notes.section_counts.learning },
     );
   }
+  items.push({ board: "mine" });
   return items;
 }
 
@@ -86,13 +87,16 @@ export function TopBar({
   );
 }
 
-const TAB_ICONS = { home: House, bank: MessagesSquare, knowledge: BookOpen, public: Newspaper, learning: Compass } as const;
+const TAB_ICONS = { home: House, bank: MessagesSquare, knowledge: BookOpen, public: Newspaper, learning: Compass, mine: Bookmark } as const;
 
 export function TabBar({ board }: { board: Board }) {
   const { t } = useI18n();
   const { notes } = useBank();
   const [more, setMore] = useState(false);
-  const inMore = board === "public" || board === "learning";
+  const inMore = board === "public" || board === "learning" || board === "mine";
+  const extras = notes ? (["public", "learning", "mine"] as const) : (["mine"] as const);
+  const count = (target: (typeof extras)[number]) =>
+    target === "public" ? notes?.section_counts.experiences : target === "learning" ? notes?.section_counts.learning : undefined;
   const tabs: { board: Board; label: string }[] = [
     { board: "home", label: t("board_home") },
     { board: "bank", label: t("tab_bank") },
@@ -102,7 +106,7 @@ export function TabBar({ board }: { board: Board }) {
     cn("flex flex-col items-center gap-0.5 pt-1.5 text-[10px] font-medium transition-colors", active ? "text-primary" : "text-tertiary-foreground");
   return (
     <nav aria-label={t("boards")} className="glass pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-border md:hidden">
-      <div className="grid h-[52px]" style={{ gridTemplateColumns: `repeat(${tabs.length + (notes ? 1 : 0)}, 1fr)` }}>
+      <div className="grid h-[52px]" style={{ gridTemplateColumns: `repeat(${tabs.length + 1}, 1fr)` }}>
         {tabs.map(({ board: target, label }) => {
           const Icon = TAB_ICONS[target as keyof typeof TAB_ICONS];
           return (
@@ -112,39 +116,35 @@ export function TabBar({ board }: { board: Board }) {
             </a>
           );
         })}
-        {notes && (
-          <Dialog.Root open={more} onOpenChange={setMore}>
-            <Dialog.Trigger className={tab(inMore)}>
-              <MoreHorizontal className="size-[22px]" strokeWidth={inMore ? 2.2 : 1.8} />
-              {t("tab_more")}
-            </Dialog.Trigger>
-            <Dialog.Portal>
-              <Dialog.Overlay className="fixed inset-0 z-50 bg-black/30" />
-              <Dialog.Content className="pb-safe fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-card p-3 shadow-soft-lg outline-none">
-                <Dialog.Title className="sr-only">{t("tab_more")}</Dialog.Title>
-                <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-secondary" />
-                {(["public", "learning"] as const).map((target) => {
-                  const Icon = TAB_ICONS[target];
-                  return (
-                    <a
-                      key={target}
-                      href={href(target)}
-                      onClick={() => setMore(false)}
-                      className="flex items-center gap-3 rounded-xl px-3 py-3 text-body active:bg-fill"
-                    >
-                      <Icon className="size-5 text-primary" />
-                      <span className="flex-1">{t(`board_${target}`)}</span>
-                      <span className="text-footnote text-muted-foreground tabular-nums">
-                        {target === "public" ? notes.section_counts.experiences : notes.section_counts.learning}
-                      </span>
-                    </a>
-                  );
-                })}
-                <div className="h-3" />
-              </Dialog.Content>
-            </Dialog.Portal>
-          </Dialog.Root>
-        )}
+        <Dialog.Root open={more} onOpenChange={setMore}>
+          <Dialog.Trigger className={tab(inMore)}>
+            <MoreHorizontal className="size-[22px]" strokeWidth={inMore ? 2.2 : 1.8} />
+            {t("tab_more")}
+          </Dialog.Trigger>
+          <Dialog.Portal>
+            <Dialog.Overlay className="fixed inset-0 z-50 bg-black/30" />
+            <Dialog.Content className="pb-safe fixed inset-x-0 bottom-0 z-50 rounded-t-3xl bg-card p-3 shadow-soft-lg outline-none">
+              <Dialog.Title className="sr-only">{t("tab_more")}</Dialog.Title>
+              <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-secondary" />
+              {extras.map((target) => {
+                const Icon = TAB_ICONS[target];
+                return (
+                  <a
+                    key={target}
+                    href={href(target)}
+                    onClick={() => setMore(false)}
+                    className="flex items-center gap-3 rounded-xl px-3 py-3 text-body active:bg-fill"
+                  >
+                    <Icon className="size-5 text-primary" />
+                    <span className="flex-1">{t(`board_${target}`)}</span>
+                    <span className="text-footnote text-muted-foreground tabular-nums">{count(target)}</span>
+                  </a>
+                );
+              })}
+              <div className="h-3" />
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog.Root>
       </div>
     </nav>
   );

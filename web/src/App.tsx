@@ -9,6 +9,8 @@ import { LearningPage } from "@/pages/learning";
 import { PublicPage } from "@/pages/public";
 import { BankPage } from "@/pages/bank";
 import { KnowledgePage } from "@/pages/knowledge";
+import { MinePage } from "@/pages/mine";
+import { FavoritesProvider } from "@/lib/favorites";
 import { ToastContext } from "@/lib/hooks";
 
 function Shell() {
@@ -44,6 +46,8 @@ function Shell() {
       <KnowledgePage route={route} />
     ) : route.board === "public" ? (
       <PublicPage route={route} />
+    ) : route.board === "mine" ? (
+      <MinePage route={route} />
     ) : (
       <LearningPage route={route} />
     );
@@ -63,7 +67,9 @@ function Shell() {
 export function App() {
   return (
     <BankProvider>
-      <Shell />
+      <FavoritesProvider>
+        <Shell />
+      </FavoritesProvider>
     </BankProvider>
   );
 }

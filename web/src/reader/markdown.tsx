@@ -87,6 +87,7 @@ export function RichText({ text }: { text: string }) {
 }
 
 const LIST_ITEM = /^(\s*)([-*+•]|\d+[.)、])\s+(.*)$/;
+const OUTLINE_LINE = /^\*\*\s*(?:\d{1,3}\s*[.、)．:：]|Q\s*\d{0,3}\s*[.:：]|问题?\s*\d{0,3}\s*[.:：])[^*]{2,}\*\*[:：]?$/;
 const indentOf = (line: string) => line.match(/^\s*/)![0].length;
 
 function table(rows: string[], key: number) {
@@ -194,12 +195,20 @@ function blocksOf(text: string): ReactNode[] {
       continue;
     }
     const paragraph: ReactNode[] = [];
+    const raw: string[] = [];
     while (i < lines.length && lines[i].trim() && !/^\s*(```|~~~|>|\||#{1,6}\s)/.test(lines[i]) && !LIST_ITEM.test(lines[i])) {
       if (anchorWrapper.test(lines[i])) { i++; continue; }
       if (paragraph.length) paragraph.push(<br key={"br" + paragraph.length} />);
+      raw.push(lines[i].trim());
       paragraph.push(<Fragment key={paragraph.length}>{inline(lines[i++].trim())}</Fragment>);
     }
-    out.push(<p key={key}>{paragraph}</p>);
+    // Long write-ups mark each question as a bold numbered line instead of a heading; those enter the outline.
+    const question = raw.length === 1 && OUTLINE_LINE.test(raw[0]);
+    out.push(
+      <p key={key} data-toc={question ? "" : undefined}>
+        {paragraph}
+      </p>,
+    );
   }
   return out;
 }

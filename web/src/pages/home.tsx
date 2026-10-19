@@ -1,11 +1,11 @@
-import { ArrowRight, BookOpen, Check, Compass, MessagesSquare, Newspaper } from "lucide-react";
+import { ArrowRight, BookOpen, CalendarCheck, Check, Compass, MessagesSquare, Newspaper, Play } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useBank } from "@/lib/bank";
 import { useI18n } from "@/lib/i18n";
 import { href, type Board } from "@/lib/router";
 import { keys, stored, type LastRead } from "@/lib/storage";
 import { cn } from "@/lib/utils";
-import type { QuestionRow } from "@/lib/api";
+import type { Library, QuestionRow } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 
 const TONES = ["text-blue bg-blue/10", "text-primary bg-accent", "text-purple bg-purple/12", "text-warning bg-orange/14"];
@@ -101,6 +101,44 @@ function QuestionLine({ question, rank }: { question: QuestionRow; rank: number 
   );
 }
 
+// Retrieval practice spaced by the scheduler: what is due first, then weak spots, then questions never tried.
+function TodayPlan({ summary, canRecord }: { summary: Library["summary"]; canRecord: boolean }) {
+  const { t } = useI18n();
+  // The server counts never-practised questions as due too; the plan shows them apart.
+  const reviews = Math.max(0, summary.due - summary.unseen);
+  const view = reviews ? "due" : summary.weak ? "weak" : "unseen";
+  const stats = [
+    { key: "due", label: t("today_due"), n: reviews, tone: "text-destructive" },
+    { key: "weak", label: t("today_weak"), n: summary.weak, tone: "text-warning" },
+    { key: "unseen", label: t("today_unseen"), n: summary.unseen, tone: "text-blue" },
+  ] as const;
+  return (
+    <section aria-label={t("today_title")} className="mt-3 flex flex-col gap-4 surface p-4 sm:flex-row sm:items-center sm:p-5">
+      <div className="min-w-0 flex-1">
+        <h2 className="flex items-center gap-2 text-headline font-semibold">
+          <CalendarCheck className="size-[18px] text-primary" />
+          {t("today_title")}
+        </h2>
+        <p className="mt-1 text-footnote text-muted-foreground">{!canRecord ? t("today_temporary") : !reviews ? t("today_done") : t("today_hint")}</p>
+      </div>
+      <div className="grid grid-cols-3 gap-2 sm:flex sm:gap-5">
+        {stats.map((stat) => (
+          <a key={stat.key} href={href("bank", [], { view: stat.key })} className="rounded-xl bg-fill/60 px-3 py-2 text-center sm:bg-transparent sm:p-0">
+            <span className={cn("block text-title-2 font-bold tabular-nums", stat.n ? stat.tone : "text-tertiary-foreground")}>{stat.n}</span>
+            <span className="text-caption text-muted-foreground">{stat.label}</span>
+          </a>
+        ))}
+      </div>
+      <Button asChild className="shrink-0">
+        <a href={href("bank", [], { view, practice: "1" })}>
+          <Play />
+          {t("today_start")}
+        </a>
+      </Button>
+    </section>
+  );
+}
+
 function Skeleton({ className }: { className?: string }) {
   return <div className={cn("animate-pulse rounded-2xl bg-fill", className)} />;
 }
@@ -140,6 +178,8 @@ export function HomePage() {
           {lastNote && <ContinueCard last={lastNote} board="knowledge" label={t("board_knowledge")} />}
         </div>
       )}
+
+      {library && library.summary.questions > 0 && <TodayPlan summary={library.summary} canRecord={library.can_record} />}
 
       <div className="mt-3 grid grid-cols-2 gap-3 sm:mt-4 sm:gap-4 lg:grid-cols-4">
         {!library ? (

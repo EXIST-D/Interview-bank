@@ -31,7 +31,9 @@ def bank_files(bank: Path, include_runs: bool = False) -> list[Path]:
     paths = []
     for name in roots:
         root = bank / name
-        candidates = [root] if root.is_file() else sorted(p for p in root.rglob("*") if p.is_file()) if root.is_dir() else []
+        # Lock files are runtime state, not content.
+        candidates = [root] if root.is_file() else sorted(p for p in root.rglob("*") if p.is_file() and p.name != ".bank.lock") \
+            if root.is_dir() else []
         for path in candidates:
             require(not path.is_symlink() and path.resolve().is_relative_to(bank.resolve()), f"Backup rejects escaped path: {path}")
             paths.append(path)

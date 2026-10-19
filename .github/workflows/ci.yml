@@ -43,13 +43,16 @@ jobs:
         run: ruff check --select F --target-version py310 skills tests tools evals
 
   web:
-    name: web reader (typecheck, rebuild, committed bundle matches)
+    name: web reader (typecheck, rebuild, committed bundle matches, browser checks)
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: web
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - uses: pnpm/action-setup@v4
         with:
           version: 10.30.3
@@ -63,6 +66,9 @@ jobs:
       - run: pnpm build
       - name: The skill ships exactly what web/ builds
         run: git diff --exit-code --stat -- ../skills/interview-bank/assets/web && test -z "$(git status --porcelain -- ../skills/interview-bank/assets/web)"
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: Notes, favourites, outline, practice and sync in a real browser (demo bank, hosted mode)
+        run: pnpm e2e
 
   legacy-runs:
     name: test (full-snapshot run format)

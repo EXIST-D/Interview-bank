@@ -185,6 +185,24 @@ def _prune_links(bank):
     return len(kept), len(rows) - len(kept)
 
 
+def describe_collection(bank, name, title=None, origin=None):
+    """Change only the display name or the origin line (author, licence, pinned URL); notes, IDs and links stay."""
+    require(title is not None or origin is not None, "Give --title or --origin")
+    require(title is None or 1 <= len(title.strip()) <= 120, "Title: 1..120 characters")
+    require(origin is None or len(origin.strip()) <= 500, "Origin: up to 500 characters")
+    path = _collection_path(bank, name)
+    with open_bank(bank):
+        require(path.is_file(), f"No collection named {name}")
+        value = read_json(path)
+        before = {"title": value["title"], "origin": value.get("origin", "")}
+        if title is not None:
+            value["title"] = title.strip()
+        if origin is not None:
+            value["origin"] = origin.strip()
+        atomic_write(path, dumps(value) + "\n")
+    return {"collection": name, "before": before, "after": {"title": value["title"], "origin": value["origin"]}}
+
+
 def remove_collection(bank, name):
     path = _collection_path(bank, name)
     with open_bank(bank):
@@ -248,14 +266,11 @@ def summary(bank):
 
 def search_notes(bank, query, limit=20, section='all'):
     require(isinstance(query, str) and query.strip(), "Give --query")
-    needle = query.strip().casefold()
     with open_bank(bank, shared=True):
         bundle = load_notes(bank)
     by_name = {c["name"]: c for c in bundle["collections"]}
-    from . import note_experiences
-    selected = note_experiences.select(bundle, section)
-    hits = [n for n in selected if needle in n["title"].casefold()] + \
-           [n for n in selected if needle not in n["title"].casefold() and needle in n["body"].casefold()]
+    from . import fulltext, note_experiences
+    hits = fulltext.search(bank, bundle, note_experiences.select(bundle, section), query)
     return {"total": len(hits), "notes": [note_card(n, by_name[n["collection"]]) | {"excerpt": _excerpt(n)} for n in hits[:limit]]}
 
 
@@ -270,7 +285,9 @@ def show_note(bank, note_id, original=False):
     collection = next(c for c in bundle["collections"] if c["name"] == note["collection"])
     linked = note_experiences.linked(note, linked_questions(bundle, rows))
     from .note_relations import detail
+    from .my_answers import for_note, load as load_my_answers
     return {**note_card(note, collection, [q for q, _ in linked]), **detail(note), "body": note["body"], "source": source_of(note, collection),
+            "my_answer": for_note(load_my_answers(bank), note["id"]),
             "questions": [{"id": q["id"], "canonical": q["canonical"], "frequency": q["frequency"], "relation": link["relation"]}
                           for q, link in linked]}
 
@@ -446,6 +463,10 @@ def add_parsers(sub, common):
     imp.add_argument("--title", help="Display name, e.g. Agent 八股")
     imp.add_argument("--origin", help="Where the collection comes from, shown with every answer")
     imp.add_argument("--order", type=int, help="Position among collections (lower first)")
+    describe = action.add_parser("describe", parents=[common], help="Change a collection's display name or origin line only")
+    describe.add_argument("--name", required=True)
+    describe.add_argument("--title")
+    describe.add_argument("--origin", help="Author · licence · pinned URL, shown with every answer")
     action.add_parser("list", parents=[common], help="Collections, chapters and link counts")
     catalog = action.add_parser("catalog", parents=[common], help="Source-local classification catalog and concurrency digests")
     catalog.add_argument("--name", required=True)
@@ -474,6 +495,8 @@ def dispatch(bank, args):
     name = args.notes_action
     if name == "import":
         return import_collection(bank, args.source, args.name, args.title, args.origin, args.order)
+    if name == "describe":
+        return describe_collection(bank, args.name, args.title, args.origin)
     if name == "list":
         return summary(bank)
     if name in ("catalog", "organize"):

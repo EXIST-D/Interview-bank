@@ -4,16 +4,19 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.25.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.26.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.25 a new Web reader and "my answer"
+## This update: 1.26 my notes, favourites, an outline for long text and today's plan
 
-- **New interface:** a top bar switches an overview and the four sections; phones use a bottom tab bar. The overview offers continue-reading, section cards and the most-asked questions. One settings menu holds appearance, Think first, text size and the agent actions. The question and note reading area keeps its typography.
-- **My answer:** below each reference answer you can write your own answer. It may stay empty and is independent of the reference. It is saved in the bank's `personal/my-answers.json` with the last 10 versions; a stale page is told instead of overwriting another device. A hosted read-only reader opens only this with `--allow-my-answers`. The agent reads it for the answers edition of reports and mock-interview feedback, and never writes it.
-- **Notes:** source cards show reading progress and can be reordered; inside a source, contents (knowledge or original chapters), list and reader sit side by side on wide screens. Source cards load once per session; lists no longer carry them.
-- **Built with React, Vite and Tailwind** in `web/`; the bundle ships inside the Skill, so users and servers still need Python only, never Node. The Content-Security-Policy still allows no inline script.
+- **My notes:** besides "my answer" on interview questions, every knowledge, public-interview and learning entry takes "my note" below the original. A new 我的 (Me) page lists all answers and notes, filters by section, searches several words and exports one Markdown file. A note stays (and is marked) when its entry's collection is removed.
+- **Favourites:** the star in the reader puts a question or entry into one or more folders; the first star creates a default folder. Folders can be renamed, reordered and deleted; "practise its interview questions" starts a round from a folder.
+- **On this page:** a long original with three or more headings or bold numbered questions gets an outline in the reader that jumps, follows the scroll position and offers back-to-top.
+- **Today's plan:** the overview shows reviews due, weak and never-practised questions; "start reviewing" opens a round. With `--allow-practice` a hosted reader saves ratings and the scheduler sets the next review.
+- **Learning state across devices:** read marks, to-review/mastered states and the source order merge into the server's `personal/learning.json`.
+- **Better search:** note search takes several words (all must appear), ranks title matches first and the rest by relevance, through the standard library's SQLite FTS5 trigram index (no word segmentation, Chinese and English alike), kept in `cache/` and never backed up.
+- **Keeping the data:** `tools/deploy/pull-backups.sh` copies the server's newest backups to your computer and verifies each; `sync.sh` refuses to overwrite a server copy that is newer than the local one.
 
-No V1/V2 migration. On a server, upgrade the reader to 1.25 and add `--allow-my-answers` to write your own answers on a phone.
+On a server, upgrade the reader and start it with `--read-only --allow-personal --allow-practice` (`--allow-my-answers` still works). Saving practice needs a V2 bank: back up, then `migrate`.
 
 ## Interface preview
 
@@ -149,7 +152,9 @@ Open the local Web reader; I want to review answers myself and settle the uncert
 The agent organises the bank; the Web page is for reading it. The page runs no AI and searches nothing online; it only reads your bank.
 
 - **Overview and four sections:** a top bar (a bottom tab bar on phones) switches the overview and the sections. *Personal* holds your collected questions. *Notes* keeps Q&A, explanations, coding solutions and cases by source. *Public* groups interviews across sources by topic or year, with company/year filters. *Learning* offers five category cards for roadmaps, tutorials, resource indexes, career material and industry news. Every entry retains its text and provenance, and interviews and notes link both ways.
-- **My answer:** write your own answer below the reference answer; it may stay empty, is independent of the reference and syncs across devices.
+- **My answer and my notes:** write your own answer or note below the reference or the original; it may stay empty, is independent of it and syncs across devices. The 我的 (Me) page lists, searches and exports them all and holds your favourite folders (practise from a folder).
+- **Outline for long text:** long interview write-ups and notes get "on this page" jumps to each question.
+- **Today's plan:** the overview counts reviews due, weak and never-practised questions and starts a review round.
 - **Made for spare minutes:** on a phone, a list and a full-screen reader with previous/next at the bottom, a swipe, or the system back gesture to close; a peek at any answer from the list; read marks and group progress; a random pick that prefers unread questions; Think first hides answers by default.
 - **Side by side on a computer:** list and reader together, plus a contents column for a notes source. The list folds away, and Focus also hides the top bar so the reader fills the window at a comfortable line length.
 - **Easy on the eyes:** three text sizes, a reading progress bar, light / dark / system themes, highlighted search words; tables, code, quotes and nested lists in long answers render properly. Read marks, folds, text size, source order and theme stay in the browser.
@@ -169,7 +174,7 @@ The agent organises the bank; the Web page is for reading it. The page runs no A
 | Way | For | How |
 |---|---|---|
 | **On your computer** | Reading on the machine where your bank is | `python -B <skill dir>/scripts/ibank.py web --bank <bank> --open`. Loopback only (127.0.0.1), no login; Ctrl+C stops it and `--read-only` disables writes. Or ask the agent to open your bank's Web reader. |
-| **On your own server** | Reading on a phone anywhere | The read-only reader sits behind your own HTTPS reverse proxy: its own login page (hashed passwords, lockout after failures), one bank per account, daily verified backups; with `--allow-my-answers` you can write your own answers on the phone. `tools/deploy/sync.sh` copies the bank text and notes from your computer, never screenshots. Steps: [Web usage](skills/interview-bank/references/web.md) and `tools/deploy/`. |
+| **On your own server** | Reading on a phone anywhere | The read-only reader sits behind your own HTTPS reverse proxy: its own login page (hashed passwords, lockout after failures), one bank per account, daily verified backups; with `--allow-personal` you can write answers and notes, keep favourites and sync learning state on the phone, and `--allow-practice` also saves practice ratings (V2 banks). `tools/deploy/sync.sh` copies the bank text and notes from your computer, never screenshots; `tools/deploy/pull-backups.sh` brings the server's backups back to your computer. Steps: [Web usage](skills/interview-bank/references/web.md) and `tools/deploy/`. |
 | **Test it with the author** | Trying the hosted reader first, or when you cannot deploy one yet | Contact the author through [GitHub Issues](https://github.com/EXIST-D/Interview-bank/issues) for an account to test with. Each account sees only its own bank; the server keeps only the bank text (no screenshots), deleted on request. |
 
 ## Processing policy
@@ -205,7 +210,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 ## Status and plans
 
-**v1.25.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
+**v1.26.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
 
 **Not implemented yet:**
 
@@ -219,7 +224,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 **Other limits:** review queues are generated on demand with no background reminders; exact token and cost figures depend on the host; splitting an arbitrary historical merge is not supported, only undoing the latest eligible operation.
 
-**Verification:** v1.25.0 passed the full 369-test suite on macOS, lint, the Skill package/install check and the Web bundle rebuild check. The Web reader also passed 84 browser checks (computer and 390px phone) served by the Python reader under its real Content-Security-Policy with no violations, covering Personal, Notes, Public, Learning, my answer, practice and merge decisions. CI covers Windows, macOS and Linux × Python 3.10–3.13, the Web rebuild comparison, the legacy snapshot format and packages on all three systems; run the suite with `python -B -m unittest discover -s tests`. Historical Evaluation results and host checks are in [evals](evals/README.md): dedupe retrieval recall@10 is 1.00; blind dedupe judgments made 0 % false merges and 3.4 % missed merges (Opus and Sonnet); blind answers scored 1.7 / 2 from a separate judge with no unsupported claims; on Claude Code the trigger suite passes with Sonnet, while Haiku's recall (0.73–0.80) is below the gate. Extracted content and reference answers still need checking against the original material, sources and scope.
+**Verification:** v1.26.0 passed the full 379-test suite on macOS, lint, the Skill package/install check and the Web bundle rebuild check. The Web reader also passed 90 browser checks (computer and 390px phone) served by the Python reader under its real Content-Security-Policy with no violations, covering the four sections, own answers and notes, favourites, the outline, today's plan, learning-state sync and practice; 17 of them run in CI on a demo bank (`pnpm e2e`). CI covers Windows, macOS and Linux × Python 3.10–3.13, the Web rebuild comparison, the legacy snapshot format and packages on all three systems; run the suite with `python -B -m unittest discover -s tests`. Historical Evaluation results and host checks are in [evals](evals/README.md): dedupe retrieval recall@10 is 1.00; blind dedupe judgments made 0 % false merges and 3.4 % missed merges (Opus and Sonnet); blind answers scored 1.7 / 2 from a separate judge with no unsupported claims; on Claude Code the trigger suite passes with Sonnet, while Haiku's recall (0.73–0.80) is below the gate. Extracted content and reference answers still need checking against the original material, sources and scope.
 
 The repository contains the Skill, tests, evaluations and development tools, documentation, license and the README image. Personal material, banks, research ledgers and local environments are not published; test and evaluation data are synthetic.
 

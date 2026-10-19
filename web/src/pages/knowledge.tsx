@@ -6,9 +6,10 @@ import { useToast } from "@/lib/hooks";
 import { useI18n, type TextKey } from "@/lib/i18n";
 import { learningState, noteDetail, notesPage, rememberReadingGroups, sectionOf, sourceCards, type NotesPage, type SourceCard } from "@/lib/notes";
 import { usePref } from "@/lib/prefs";
+import { queueShelf, shelfKey } from "@/lib/sync";
 import { useReading } from "@/lib/reading";
 import { href, navigate, type Route } from "@/lib/router";
-import { keys, store, stored, type LastRead } from "@/lib/storage";
+import { keys, stored, type LastRead } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/segmented";
@@ -74,17 +75,14 @@ export function useSourceCards(section: "knowledge" | "experiences" | "learning"
 
 // ---------------------------------------------------------------- shelf
 
-type ShelfPrefs = { version: 1; order: string[]; expanded: string[] };
+type ShelfPrefs = { version: 1; order: string[]; expanded: string[]; at?: string };
+const NO_SHELF: ShelfPrefs = { version: 1, order: [], expanded: [] };
 
 function useShelfOrder(sources: SourceCard[], account: string) {
-  const key = "ibank-source-shelf:" + account;
+  // Per account; the name arrives after the first render, and other devices' order arrives through lib/sync.
+  const [prefs, setPrefs] = usePref<ShelfPrefs>(shelfKey(account), NO_SHELF);
   const joined = sources.map((s) => s.name).join("\n");
   const names = useMemo(() => (joined ? joined.split("\n") : []), [joined]);
-  const [prefs, setPrefs] = useState<ShelfPrefs>(() => stored<ShelfPrefs>(key, { version: 1, order: [], expanded: [] }));
-  // The account name arrives after the first render; its saved order is per account.
-  useEffect(() => {
-    setPrefs(stored<ShelfPrefs>(key, { version: 1, order: [], expanded: [] }));
-  }, [key]);
   const order = useMemo(() => {
     // Newly added sources append; retired or invalid saved names are dropped.
     const known = new Set(names);
@@ -92,9 +90,8 @@ function useShelfOrder(sources: SourceCard[], account: string) {
     return [...saved, ...names.filter((id) => !saved.includes(id))];
   }, [prefs, names]);
   const save = (next: string[]) => {
-    const value: ShelfPrefs = { version: 1, order: next, expanded: prefs.expanded ?? [] };
-    store(key, value);
-    setPrefs(value);
+    setPrefs({ version: 1, order: next, expanded: prefs.expanded ?? [], at: new Date().toISOString() });
+    queueShelf(next);
   };
   const move = (id: string, position: number) => {
     const rest = order.filter((name) => name !== id);

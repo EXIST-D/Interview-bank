@@ -28,7 +28,9 @@ from .messages import group_title, label, language
 from . import notes as notebook
 from . import note_organization
 from . import note_experiences
+from . import fulltext
 from . import my_answers
+from . import personal
 from .timestamps import parse_timestamp
 
 ASSETS = Path(__file__).resolve().parents[2] / 'assets' / 'web'
@@ -106,15 +108,24 @@ def filtered(rows, companies, states, params):
 
 
 class WebApp:
-    def __init__(self, bank, read_only=False, allow_my_answers=False):
+    def __init__(self, bank, read_only=False, allow_my_answers=False, allow_practice=False):
         self.bank = guard_bank_path(bank)
         self.read_only = read_only
-        # A hosted reader stays read-only for the bank but may let the person keep their own answers.
-        self.can_write_answer = not read_only or allow_my_answers
+        # A hosted reader stays read-only for the bank but may let the person keep their own layer (notes, favourites,
+        # learning state) and, separately, save practice ratings.
+        self.allow_my_answers, self.allow_practice = allow_my_answers, allow_practice
         self.mutation_lock = threading.Lock()
         self.notes_cache = (None, None)
         with open_bank(self.bank, shared=True):
             pass
+
+    @property
+    def can_write_answer(self):
+        return not self.read_only or self.allow_my_answers
+
+    @property
+    def can_practise(self):
+        return not self.read_only or self.allow_practice
 
     def _notes(self, data):
         """Collections and links, parsed once per change. The caller holds the bank lock."""
@@ -122,6 +133,16 @@ class WebApp:
         if self.notes_cache[0] != key:
             self.notes_cache = (key, notebook.load_notes(self.bank))
         return notebook.resolve_links(self.notes_cache[1], data)
+
+    def warm(self):
+        """Parse the notes and build the search index in the background, so the first visitor does not wait."""
+        def run():
+            try:
+                with open_bank(self.bank, shared=True) as (_, _config, data):
+                    fulltext.prepare(self.bank, self._notes(data))
+            except Exception:  # A failed warm-up only means the first search builds the index itself.
+                pass
+        threading.Thread(target=run, name='ibank-warm', daemon=True).start()
 
     def library(self, params, practice=False):
         require(set(params) <= FILTERS | {'view', 'sort', 'offset', 'limit'}, 'Unknown filter')
@@ -154,8 +175,8 @@ class WebApp:
             facets['industry'] = [{'value': v, 'label': display('industries', v)} for v in sorted({v for c in used for v in c['industries']})]
             return {
                 'name': self.bank.name, 'version': __version__, 'schema_version': manifest['schema_version'],
-                'can_record': manifest['schema_version'] == 2 and not self.read_only, 'can_review': not self.read_only,
-                'can_write_answer': self.can_write_answer,
+                'can_record': manifest['schema_version'] == 2 and self.can_practise, 'can_review': not self.read_only,
+                'can_write_answer': self.can_write_answer, 'can_write_personal': self.can_write_answer,
                 'language': language(config),
                 'read_only': self.read_only, 'updated_at': manifest.get('last_updated_at'),
                 'summary': {'questions': len(rows), 'answered': sum(q['answer_status'] in ('source_backed', 'reviewed') for q in rows),
@@ -252,9 +273,7 @@ class WebApp:
             found = [n for n in found if n['experience']['domain'] == params['experience_domain']]
         require(params.get('view', 'original') in ('original', 'knowledge'), 'Unknown notes view')
         if params.get('query', '').strip():
-            needle = params['query'].strip().casefold()
-            found = [n for n in found if needle in n['title'].casefold()] + \
-                    [n for n in found if needle not in n['title'].casefold() and needle in n['body'].casefold()]
+            found = fulltext.search(self.bank, bundle, found, params['query'])
         if params.get('marked') == '1':
             found = [n for n in found if n['marks']]
         if params.get('asked') == '1':
@@ -286,7 +305,9 @@ class WebApp:
             found = sorted(found, key=lambda n: (list(collections).index(n['collection']),
                            area_order.get((n['collection'], n['organization']['area']), 999),
                            topic_order.get((n['collection'], n['organization']['topic']), 999), n['order']))
-        card = lambda n: notebook.note_card(n, collections[n['collection']], [q for q, _ in article_links(n)])
+        mine = {key for key, entry in my_answers.load(self.bank).items() if key.startswith('note_') and entry.get('text')}
+        card = lambda n: {**notebook.note_card(n, collections[n['collection']], [q for q, _ in article_links(n)]),
+                          'has_my_answer': n['id'] in mine}
         learning = note_experiences.select(bundle, 'learning')
         return {
             'section': section,
@@ -331,13 +352,13 @@ class WebApp:
         section = 'experiences' if 'experience' in note else (
             'learning' if note['organization']['kind'] in note_organization.LEARNING_KINDS else 'knowledge')
         return {**notebook.note_card(note, collection, [q for q, _ in linked]), **detail(note), 'body': note['body'],
-                'section': section,
+                'section': section, 'my_answer': my_answers.for_note(my_answers.load(self.bank), note['id']),
                 'source': notebook.source_of(note, collection),
                 'questions': [{'id': q['id'], 'canonical': q['canonical'], 'frequency': q['frequency'], 'relation': link['relation'],
                                'answered': q['answer_status'] in ANSWERED} for q, link in linked]}
 
     def record(self, payload):
-        require(not self.read_only, 'This server is in read-only mode')
+        require(self.can_practise, 'This server is in read-only mode')
         require(isinstance(payload, dict) and set(payload) == {'question_id', 'revision', 'rating', 'request_id', 'note', 'timezone'}, 'Invalid practice payload')
         require(all(isinstance(v, str) for v in payload.values()), 'Practice values must be strings')
         require(len(payload['note']) <= 10000 and 1 <= len(payload['request_id']) <= 100, 'Practice input too long')
@@ -389,12 +410,59 @@ class WebApp:
 
 
     def my_answer(self, payload):
-        """The person's own answer to one question; independent of the reference answer and may be empty."""
+        """The person's own note on a question or a collection entry; independent of reference answers, may be empty."""
         require(self.can_write_answer, 'This server does not save your own answers')
-        require(isinstance(payload, dict) and set(payload) == {'question_id', 'text', 'expected_updated_at'}, 'Invalid answer payload')
+        require(isinstance(payload, dict) and len({'question_id', 'item_id'} & set(payload)) == 1 and
+                set(payload) - {'question_id', 'item_id'} == {'text', 'expected_updated_at'}, 'Invalid answer payload')
         require(all(isinstance(v, str) for v in payload.values()), 'Answer values must be strings')
         with self.mutation_lock:
-            return my_answers.save(self.bank, payload['question_id'], payload['text'], payload['expected_updated_at'])
+            return my_answers.save(self.bank, payload.get('item_id') or payload['question_id'], payload['text'], payload['expected_updated_at'])
+
+    def my_notes(self, params):
+        require(set(params) <= {'query', 'section'}, 'Unknown filter')
+        require(params.get('section', '') in ('', 'bank', 'knowledge', 'experiences', 'learning'), 'Unknown section')
+        with open_bank(self.bank, shared=True) as (_, _config, data):
+            bundle = self._notes(data)
+            rows = my_answers.listing(self.bank, data, bundle, params.get('query', ''), params.get('section', ''))
+        return {'notes': rows, 'can_write': self.can_write_answer}
+
+    def _describe(self, ids):
+        """Title and section of favourite items now; removed ones stay listed and are flagged."""
+        with open_bank(self.bank, shared=True) as (_, _config, data):
+            bundle = self._notes(data)
+            targets = {q['id']: q['merged_into'] or q['id'] for q in data['questions']}
+            questions = {q['id']: q for q in data['questions']}
+        sources = {c['name']: c['title'] for c in bundle['collections']}
+        described = {}
+        for key in ids:
+            if key.startswith('q_'):
+                q = questions.get(targets.get(key, key))
+                described[key] = {'section': 'bank', 'target': q['id'] if q else key, 'title': q['canonical'] if q else '',
+                                  'where': report_group(q) if q else None, 'missing': q is None or q['status'] != 'active'}
+            else:
+                note = note_experiences.find(bundle, key)
+                described[key] = {'section': my_answers.section_of(note) if note else 'knowledge', 'target': note['id'] if note else key,
+                                  'title': note['title'] if note else '', 'where': sources.get(note['collection']) if note else None,
+                                  'missing': note is None}
+        return described
+
+    def favorites(self, folders=None):
+        folders = personal.favorites(self.bank) if folders is None else folders
+        described = self._describe({entry['id'] for f in folders for entry in f['items']})
+        return {'can_write': self.can_write_answer,
+                'folders': [{**f, 'items': [{**entry, **described[entry['id']]} for entry in f['items']]} for f in folders]}
+
+    def change_favorites(self, payload):
+        require(self.can_write_answer, 'This server does not save favourites')
+        with self.mutation_lock:
+            return self.favorites(personal.change_favorites(self.bank, payload))
+
+    def learning(self):
+        return {**personal.learning(self.bank), 'can_write': self.can_write_answer}
+
+    def change_learning(self, payload):
+        require(self.can_write_answer, 'This server does not save learning state')
+        return {**personal.change_learning(self.bank, payload), 'can_write': True}
 
     def dedupe_decision(self, payload):
         """The person decides one uncertain merge; the agent applies it later with dedupe --resolve."""
@@ -413,11 +481,12 @@ class LocalServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = False
 
-    def __init__(self, app, port=0, token=None, public_origins=(), login=None, banks_dir=None, read_only=True, allow_my_answers=False):
+    def __init__(self, app, port=0, token=None, public_origins=(), login=None, banks_dir=None, read_only=True, allow_my_answers=False,
+                 allow_practice=False):
         # One bank for everyone (app), or one bank per account under banks_dir (hosting several people).
         self.app = app
         self.banks_dir, self.read_only, self.apps, self.apps_lock = banks_dir, read_only, {}, threading.Lock()
-        self.allow_my_answers = allow_my_answers
+        self.allow_my_answers, self.allow_practice = allow_my_answers, allow_practice
         self.token = token or secrets.token_urlsafe(32)
         # Optional login page (hosting only): one account, signed session cookie, limited failed attempts.
         self.login = login
@@ -499,7 +568,7 @@ class Handler(BaseHTTPRequestHandler):
         params = {k: v[0] for k, v in query.items()}
         if post:
             handlers = {'/api/practice': app.record, '/api/review': app.review, '/api/dedupe-decision': app.dedupe_decision,
-                        '/api/my-answer': app.my_answer}
+                        '/api/my-answer': app.my_answer, '/api/favorites': app.change_favorites, '/api/learning': app.change_learning}
             if path not in handlers:
                 return self.send(404, {'error': 'Unknown endpoint'})
             body = self.json_body()
@@ -522,6 +591,14 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/question':
             require(set(params) == {'id'}, 'Expected question ID')
             result = app.question(params['id'])
+        elif path == '/api/my-notes':
+            result = app.my_notes(params)
+        elif path == '/api/favorites':
+            require(not params, 'No parameters expected')
+            result = app.favorites()
+        elif path == '/api/learning':
+            require(not params, 'No parameters expected')
+            result = app.learning()
         else:
             return self.send(404, {'error': 'Unknown endpoint'})
         self.send(200, result)
@@ -557,7 +634,8 @@ class Handler(BaseHTTPRequestHandler):
             if name not in self.server.apps:
                 bank = Path(self.server.banks_dir) / name
                 require((bank / 'manifest.json').is_file(), '这个账号的题库还没有同步到服务器。')
-                self.server.apps[name] = WebApp(bank, self.server.read_only, self.server.allow_my_answers)
+                self.server.apps[name] = WebApp(bank, self.server.read_only, self.server.allow_my_answers, self.server.allow_practice)
+                self.server.apps[name].warm()
             return self.server.apps[name]
 
     def client(self):
@@ -615,7 +693,7 @@ def _read_token(path):
 
 
 def serve(bank, port=0, read_only=False, open_browser=False, token_file=None, public_origins=(), login_file=None, banks_dir=None,
-          allow_my_answers=False):
+          allow_my_answers=False, allow_practice=False):
     require(0 <= port <= 65535, 'Port must be 0..65535')
     for origin in public_origins:
         parsed = urlsplit(origin)
@@ -631,13 +709,16 @@ def serve(bank, port=0, read_only=False, open_browser=False, token_file=None, pu
     if banks_dir:
         banks_dir = Path(banks_dir).expanduser().resolve()
         require(banks_dir.is_dir(), f'Not a directory: {banks_dir}')
-    server = LocalServer(None if banks_dir else WebApp(bank, read_only, allow_my_answers), port, _read_token(token_file) if token_file else None,
-                         [o.rstrip('/') for o in public_origins], login, banks_dir, read_only, allow_my_answers)
+    server = LocalServer(None if banks_dir else WebApp(bank, read_only, allow_my_answers, allow_practice), port,
+                         _read_token(token_file) if token_file else None, [o.rstrip('/') for o in public_origins], login, banks_dir,
+                         read_only, allow_my_answers, allow_practice)
     # A fixed token lives in a file the proxy also reads; never print it into service logs.
     url = server.origin + '/' if token_file else server.url
     print(json.dumps({'ok': True, 'command': 'web', 'result': {'url': url, 'pid': __import__('os').getpid(), 'read_only': read_only,
-                      'my_answers': not read_only or allow_my_answers,
+                      'my_answers': not read_only or allow_my_answers, 'practice': not read_only or allow_practice,
                       'public_origins': list(server.public_origins), 'version': __version__}}, ensure_ascii=False), flush=True)
+    if server.app:
+        server.app.warm()
     if open_browser:
         webbrowser.open(server.url)
     try:

@@ -6,7 +6,7 @@ import { useToast } from "@/lib/hooks";
 import { useI18n } from "@/lib/i18n";
 import { markRead, usePref } from "@/lib/prefs";
 import { useReading } from "@/lib/reading";
-import { navigate, type Route } from "@/lib/router";
+import { href, navigate, type Route } from "@/lib/router";
 import { keys, store, stored } from "@/lib/storage";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/app-shell";
@@ -122,7 +122,12 @@ export function BankPage({ route }: { route: Route }) {
   const toast = useToast();
   const { library: overview } = useBank();
 
-  const [view, setView] = useState<View>("all");
+  // The home page's plan links here with a view, and asks for a round straight away.
+  const [view, setView] = useState<View>(() => {
+    const asked = route.params.get("view") as View | null;
+    return asked && VIEWS.includes(asked) ? asked : "all";
+  });
+  const askedRound = useRef(route.params.get("practice") === "1");
   const [group, setGroup] = useState("");
   const [filters, setFilters] = useState<Filters>(NO_FILTERS);
   const [answeredOnly, setAnsweredOnly] = useState(() => stored("ibank-answered-only", false));
@@ -226,6 +231,13 @@ export function BankPage({ route }: { route: Route }) {
   const [resumable, setResumable] = useState(() => storedRound());
   const merges = useMerges(Boolean(data && !data.read_only));
   const [mergesOpen, setMergesOpen] = useState(false);
+
+  useEffect(() => {
+    if (!askedRound.current || !data) return;
+    askedRound.current = false;
+    history.replaceState(null, "", href("bank", [], view === "all" ? undefined : { view }));
+    if (data.total) setPractice({ kind: "setup" });
+  }, [data, view]);
 
   const summary = data?.summary ?? overview?.summary;
   const groups = data?.facets.group ?? [];

@@ -118,6 +118,20 @@ class NotesCliTests(unittest.TestCase):
         (self.source / "01-Redis.md").write_text(CACHE.replace("双写一致性怎么保证", "一致性"), encoding="utf-8")
         self.assertEqual(self.import_java()["links_dropped"], 1)
 
+    def test_describe_changes_only_the_name_and_origin(self):
+        self.import_java()
+        before = self.bank.result("notes", "catalog", "--name", "java")
+        ids = [n["id"] for n in self.bank.result("notes", "search", "--query", "缓存")["notes"]]
+        result = self.bank.result("notes", "describe", "--name", "java", "--origin", "作者 · MIT · https://example.org/x/tree/abc")
+        self.assertEqual((result["before"]["origin"], result["after"]["title"]), ("网络整理", "Java 八股"))
+        self.assertEqual(self.bank.result("notes", "show", ids[0])["source"]["origin"], "作者 · MIT · https://example.org/x/tree/abc")
+        self.assertEqual([n["id"] for n in self.bank.result("notes", "search", "--query", "缓存")["notes"]], ids)
+        self.assertEqual(self.bank.result("notes", "catalog", "--name", "java")["source_digest"], before["source_digest"])
+        self.assertEqual(self.bank.result("notes", "describe", "--name", "java", "--title", " Java 面试 ")["after"]["title"], "Java 面试")
+        for args, message in (([], "Give --title or --origin"), (["--title", " "], "Title"), (["--name", "nope", "--origin", "x"], "No collection")):
+            proc = self.bank.cli("notes", "describe", *(["--name", "java"] if "--name" not in args else []), *args, check=False)
+            self.assertIn(message, proc.stderr)
+
     def test_link_validation(self):
         self.import_java()
         task = self.bank.result("notes", "link-candidates")

@@ -19,7 +19,10 @@ notes import --source <folder> --name <id> --title "<display name>" --origin "<w
 ```
 
 - One folder is one collection; `--name` is a short lowercase ID (`agent`, `java`). Ask the user for the origin
-  when the folder does not say; never invent an author or a URL.
+  when the folder does not say; never invent an author or a URL. For a public repository write
+  `author · licence · URL pinned to the imported commit`, with the licence read from that commit's licence file
+  and README (some add attribution or non-commercial terms). `notes describe --name <id> --origin "…"` (or
+  `--title`) changes only that line later; notes, IDs, links and organization stay.
 - The folder is only read. Re-importing the same name replaces the collection: unchanged headings keep their
   note IDs and links, and removed headings drop theirs (`links_dropped`).
 - Tell the user the chapter, note and 重点 counts. If a chapter has no `## ` headings, it was imported as one note:

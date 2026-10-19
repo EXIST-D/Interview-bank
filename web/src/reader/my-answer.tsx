@@ -25,7 +25,8 @@ function writeDraft(id: string, value: string | null) {
   }
 }
 
-// The person's own answer: written and kept by them, independent of the reference answer, and may stay empty.
+// The person's own answer (questions) or note (collection entries): written and kept by them, independent of the
+// reference text, and may stay empty.
 export function MyAnswer({
   questionId,
   saved,
@@ -33,8 +34,12 @@ export function MyAnswer({
   onSaved,
   onReload,
   onToast,
+  note = false,
 }: {
+  /** A question ID or a collection note ID. */
   questionId: string;
+  /** Labels it "my note" for collection entries. */
+  note?: boolean;
   saved: Saved | null;
   canWrite: boolean;
   onSaved: (value: Saved | null) => void;
@@ -43,6 +48,7 @@ export function MyAnswer({
   onToast: (text: string) => void;
 }) {
   const { t, lang } = useI18n();
+  const label = t(note ? "my_note" : "my_answer");
   const draft = readDraft(questionId);
   const [editing, setEditing] = useState(() => canWrite && draft !== null && draft !== (saved?.text ?? ""));
   const [text, setText] = useState(() => draft ?? saved?.text ?? "");
@@ -72,7 +78,7 @@ export function MyAnswer({
     setConflict(null);
     try {
       const result = await api<{ my_answer: Saved | null }>("/api/my-answer", {
-        question_id: questionId,
+        item_id: questionId,
         text: value,
         expected_updated_at: saved?.updated_at ?? "",
       });
@@ -91,10 +97,10 @@ export function MyAnswer({
   };
 
   return (
-    <section className="my-answer" aria-label={t("my_answer")}>
+    <section className="my-answer" aria-label={label}>
       <h2 className="answer-head">
         <PenLine className="size-3.5" />
-        {t("my_answer")}
+        {label}
         {saved && !editing && <small className="ml-auto font-normal">{t("my_answer_updated", { d: new Date(saved.updated_at).toLocaleDateString(lang) })}</small>}
       </h2>
       {editing ? (
@@ -112,7 +118,7 @@ export function MyAnswer({
             maxLength={MAX}
             autoFocus
             placeholder={t("my_answer_placeholder")}
-            aria-label={t("my_answer")}
+            aria-label={label}
             onChange={(event) => {
               setText(event.target.value);
               writeDraft(questionId, event.target.value);
@@ -171,10 +177,10 @@ export function MyAnswer({
         </>
       ) : (
         <div className="my-answer-empty">
-          <p className="hint">{t("my_answer_hint")}</p>
+          <p className="hint">{t(note ? "my_note_hint" : "my_answer_hint")}</p>
           <Button size="sm" variant="tinted" onClick={() => setEditing(true)}>
             <PenLine />
-            {t("my_answer_write")}
+            {t(note ? "my_note_write" : "my_answer_write")}
           </Button>
         </div>
       )}
