@@ -6,25 +6,28 @@
 
 目前已在作者本人的小服务器上线在线测试版。如需使用，欢迎联系 QQ：**1939123241**，一起参与测试并提出建议。
 
-适用于校招、实习、秋招和社招。当前版本为 **1.27.0**。详见 [更新记录](CHANGELOG.md) 与 [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases)。
+适用于校招、实习、秋招和社招。当前版本为 **1.28.0**。详见 [更新记录](CHANGELOG.md) 与 [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases)。
 
-## 本次更新：1.27 学习资料课程与主题目录
+## 本次更新：1.28 右侧 Markdown 笔记
 
-- 学习资料的每个分类先展示可折叠的来源卡片，再展开课程、项目或主题目录，分别显示目录数与篇目数，方便管理长篇课程。
-- 目录支持按来源筛选、按名称查找；也可以进入完整篇目列表，搜索文章正文。选择目录后仅浏览对应内容，并可在左侧切换课程或主题。
-- 连续章节、README 和配套代码实践保留为独立篇目；目录中的数量按当前资料类别计算。右侧阅读、原文来源、个人笔记与学习记录继续保留。
-
-无需迁移题库。通过 Agent 的 `notes organize` 按来源配置领域和主题，目录即可随分类更新。
+- 阅读区右上角新增「笔记」入口，桌面端在右侧展开独立编辑面板，可一边读原文、一边记笔记；手机端使用侧滑面板，收起后返回当前资料。
+- 支持 Markdown 编辑与预览，标题、列表、代码块和链接沿用阅读器样式；`Ctrl/⌘ + Enter` 保存，打开或收起面板时保留正文阅读位置。
+- 笔记按当前题目或资料绑定，列表中的笔记标记和「我的笔记」卡片可直达对应笔记，也可复制直达链接。未保存草稿按账号与资料分别保留在当前浏览器。
+- 已有笔记、版本历史与保存接口保持兼容；遇到另一台设备的新版本会保留草稿并提示比较，不覆盖对方的修改。无需迁移题库。
 
 ## 界面示例
+
+右侧笔记：保持原文可读，随时编辑、预览并保存当前资料的 Markdown 笔记。
+
+![Interview Bank 右侧 Markdown 笔记面板（合成测试资料）](assets/readme/web-note-panel.png)
 
 概览：继续阅读、四个板块入口和高频考点。
 
 ![Interview Bank 概览：继续阅读、四个板块卡片与高频考点](assets/readme/web-overview.png)
 
-个人面经：左侧是列表、分段视图和主题标签，右侧是参考答案、出处、我的答案和相关八股资料。
+个人面经：左侧是列表、分段视图和主题标签，右侧是参考答案、出处和相关八股资料。右上角「笔记」展开独立编辑面板。
 
-![Interview Bank 个人面经：题目列表与阅读区，参考答案下方是“我的答案”](assets/readme/web-reader.png)
+![Interview Bank 个人面经：题目列表与阅读区，参考答案与阅读工具栏（旧版示意）](assets/readme/web-reader.png)
 
 八股资料：一个来源的目录、按专题分组的列表，以及原文答案、学习状态和“面经里这样问”。
 
@@ -34,7 +37,7 @@
 
 <p>
 <img src="assets/readme/web-mobile-list.png" alt="Interview Bank 手机：个人面经列表与底部标签栏" width="300">
-<img src="assets/readme/web-mobile-reader.png" alt="Interview Bank 手机：全屏阅读与我的答案" width="300">
+<img src="assets/readme/web-mobile-reader.png" alt="Interview Bank 手机：全屏阅读（旧版示意）" width="300">
 </p>
 
 截图都来自 `demo` 示例题库（合成题目、虚构公司、为演示编写的八股资料），任何人都可以用 `demo --bank <新目录>` 和 `web` 复现。

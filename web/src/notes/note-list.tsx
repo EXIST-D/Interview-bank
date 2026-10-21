@@ -1,10 +1,12 @@
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, StickyNote } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useI18n, type TextKey } from "@/lib/i18n";
 import { learningState, noteDetail, type LearningState, type NoteCardData } from "@/lib/notes";
 import { usePref } from "@/lib/prefs";
 import { store, stored } from "@/lib/storage";
 import { cn } from "@/lib/utils";
+import { usePersonalNoteMark } from "@/lib/personal-note-mark";
+import { noteHref } from "./notes-board";
 import { Markdown } from "@/reader/markdown";
 
 export function Highlight({ text, words }: { text: string; words: string }) {
@@ -48,6 +50,7 @@ function NoteRow({
   onOpen: () => void;
 }) {
   const { t } = useI18n();
+  const hasNote = usePersonalNoteMark(note.id, Boolean(note.has_my_answer));
   const [peek, setPeek] = useState<ReactNode | null>(null);
   const experience = note.experience;
   const topic = note.topic_title || note.area_title || note.chapter_title;
@@ -96,10 +99,11 @@ function NoteRow({
             {note.marked && <span className="text-warning">{t("marked")}</span>}
             {note.asked > 0 && <span className="text-success">{t("asked_times", { n: note.asked })}</span>}
             {state !== "unread" && <span className={STATE_TONE[state]}>{t(`notes_learning_${state}`)}</span>}
-            {note.has_my_answer && <span className="text-primary">{t("my_note")}</span>}
+            {hasNote && <span className="text-primary">{t("my_note")}</span>}
             {experience && <span className="text-tertiary-foreground">{t("notes_public_source") + "：" + note.collection_title}</span>}
           </span>
         </button>
+        {hasNote && <a href={noteHref(note) + "&panel=notes"} aria-label={t("note_open_item")} title={t("note_open_item")} className="mt-2 grid size-8 shrink-0 place-items-center rounded-full text-primary hover:bg-accent"><StickyNote className="size-4" /></a>}
         <button
           type="button"
           aria-label={t("peek")}

@@ -4,6 +4,7 @@ import { useToast } from "@/lib/hooks";
 import { useI18n } from "@/lib/i18n";
 import { learningState, noteDetail, notesPage, recordVisit, sectionOf, type NoteCardData, type NoteDetail, type NotesPage, type NotesSection } from "@/lib/notes";
 import { markRead } from "@/lib/prefs";
+import { noteSaved } from "@/lib/personal-note-mark";
 import { thinkFirst, type useReading } from "@/lib/reading";
 import { navigate } from "@/lib/router";
 import { keys, store } from "@/lib/storage";
@@ -78,7 +79,7 @@ export function NoteReader({
   const { t } = useI18n();
   const toast = useToast();
   const { library } = useBank();
-  const { openId, open, close, step, index, layout, setLayout, focused } = reading;
+  const { openId, open, close, step, index, layout, setLayout, focused, notesOpen, setNotesOpen } = reading;
   const [detail, setDetail] = useState<NoteDetail | null>(null);
   const [revealed, setRevealed] = useState(true);
 
@@ -92,7 +93,7 @@ export function NoteReader({
       .then((note) => {
         if (!live) return;
         if (!accepts(note)) {
-          history.replaceState(null, "", noteHref(note));
+          history.replaceState(null, "", noteHref(note) + (notesOpen ? "&panel=notes" : ""));
           dispatchEvent(new HashChangeEvent("hashchange"));
           return;
         }
@@ -126,7 +127,7 @@ export function NoteReader({
 
   return (
     <div className={cn(openId ? "fixed inset-0 z-50 wide:static wide:z-auto" : "hidden wide:block", "min-h-0 min-w-0")}>
-      {openId && detail ? (
+      {openId && detail?.id === openId ? (
         <ReaderFrame
           contentKey={detail.id}
           nav={{ index, total: ids.length, onStep: step }}
@@ -138,6 +139,24 @@ export function NoteReader({
           hasAnswer={Boolean(detail.body)}
           revealed={revealed}
           onToggleAnswer={() => setRevealed(!revealed)}
+          notesOpen={notesOpen}
+          onNotesOpen={setNotesOpen}
+          personalNote={detail.kind !== "info" && library ? {
+            title: detail.title,
+            account: library.account || library.name,
+            saved: detail.my_answer ?? null,
+            canWrite: Boolean(library.can_write_personal),
+            onSaved: (value) => {
+              noteSaved(detail.id, Boolean(value));
+              setDetail((current) => current?.id === detail.id ? { ...current, my_answer: value, has_my_answer: Boolean(value) } : current);
+              noteDetail(detail.id, true).catch(() => {});
+            },
+            onReload: async () => {
+              const latest = await noteDetail(detail.id, true);
+              setDetail((current) => current?.id === detail.id ? latest : current);
+              return latest.my_answer ?? null;
+            },
+          } : undefined}
         >
           <NoteView
             note={detail}
@@ -146,12 +165,6 @@ export function NoteReader({
             onOpenQuestion={(id) => navigate("bank", [], { open: id })}
             onOpenNote={(id) => (rows.some((n) => n.id === id) ? open(id) : navigate("knowledge", [], { open: id }))}
             onToast={toast}
-            canWriteNote={Boolean(library?.can_write_personal)}
-            onMyNote={(value) => {
-              setDetail({ ...detail, my_answer: value });
-              noteDetail(detail.id, true).catch(() => {});
-            }}
-            onReload={async () => setDetail(await noteDetail(detail.id, true))}
           />
         </ReaderFrame>
       ) : (

@@ -1,4 +1,4 @@
-import { Check, ChevronDown, ChevronRight, GitMerge, PenLine, Play, Search, SlidersHorizontal } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, GitMerge, PenLine, Play, Search, SlidersHorizontal, StickyNote } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api, clearDetails, questionDetail, type Library, type QuestionDetail, type QuestionRow } from "@/lib/api";
 import { useBank } from "@/lib/bank";
@@ -95,6 +95,7 @@ function Row({ question, current, read, words, onOpen }: { question: QuestionRow
             {read && <span>{t("read_mark")}</span>}
           </span>
         </button>
+        {question.has_my_answer && <a href={href("bank", [], { open: question.id, panel: "notes" })} aria-label={t("note_open_item")} title={t("note_open_item")} className="mt-2 grid size-8 shrink-0 place-items-center rounded-full text-primary hover:bg-accent"><StickyNote className="size-4" /></a>}
         <button
           type="button"
           aria-label={t("peek")}
@@ -146,7 +147,7 @@ export function BankPage({ route }: { route: Route }) {
   const [readList] = usePref<string[]>("ibank-read", []);
   const read = useMemo(() => new Set(readList), [readList]);
   const ids = data?.ids ?? [];
-  const { openId, open, close, step, index, layout, setLayout, focused, listHidden, registerReveal } = useReading({
+  const { openId, open, close, step, index, layout, setLayout, focused, listHidden, registerReveal, notesOpen, setNotesOpen } = useReading({
     route,
     board: "bank",
     ids,
@@ -394,7 +395,7 @@ export function BankPage({ route }: { route: Route }) {
       </section>
 
       <div className={cn(openId ? "fixed inset-0 z-50 wide:static wide:z-auto" : "hidden wide:block", "min-h-0 min-w-0")}>
-        {openId && detail ? (
+        {openId && detail?.id === openId ? (
           <ReaderFrame
             contentKey={detail.id}
             nav={{ index, total: ids.length, onStep: step }}
@@ -406,6 +407,24 @@ export function BankPage({ route }: { route: Route }) {
             hasAnswer={Boolean(detail.answer)}
             revealed={revealed}
             onToggleAnswer={() => setRevealed(!revealed)}
+            notesOpen={notesOpen}
+            onNotesOpen={setNotesOpen}
+            personalNote={overview ? {
+              title: detail.canonical,
+              account: overview.account || overview.name,
+              saved: detail.my_answer ?? null,
+              canWrite: Boolean(data?.can_write_answer ?? overview.can_write_answer),
+              onSaved: (value) => {
+                setDetail((current) => current?.id === detail.id ? { ...current, my_answer: value } : current);
+                setRows((current) => current.map((row) => row.id === detail.id ? { ...row, has_my_answer: Boolean(value) } : row));
+                questionDetail(detail.id, true).catch(() => {});
+              },
+              onReload: async () => {
+                const latest = await questionDetail(detail.id, true);
+                setDetail((current) => current?.id === detail.id ? latest : current);
+                return latest.my_answer ?? null;
+              },
+            } : undefined}
           >
             <QuestionView
               question={detail}
@@ -416,13 +435,6 @@ export function BankPage({ route }: { route: Route }) {
                 setDetail(await questionDetail(detail.id, true));
                 load(0);
               }}
-              canWriteAnswer={Boolean(data?.can_write_answer ?? overview?.can_write_answer)}
-              onMyAnswer={(value) => {
-                setDetail({ ...detail, my_answer: value });
-                setRows((current) => current.map((row) => (row.id === detail.id ? { ...row, has_my_answer: Boolean(value) } : row)));
-                questionDetail(detail.id, true).catch(() => {});
-              }}
-              onReload={async () => setDetail(await questionDetail(detail.id, true))}
               onOpenNote={(id) => navigate("knowledge", [], { open: id })}
               onPractise={() => setPractice({ kind: "one", question: detail })}
               onToast={toast}

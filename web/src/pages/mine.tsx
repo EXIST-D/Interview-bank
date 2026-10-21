@@ -106,7 +106,7 @@ function NotesTab() {
         {rows?.map((row) => (
           <a
             key={row.id}
-            href={row.missing ? undefined : itemHref(row.section, row.id)}
+            href={row.missing ? undefined : itemHref(row.section, row.id) + "&panel=notes"}
             aria-disabled={row.missing || undefined}
             className={cn("block surface px-4 py-3.5 transition-shadow", row.missing ? "opacity-70" : "hover:shadow-soft-lg")}
           >

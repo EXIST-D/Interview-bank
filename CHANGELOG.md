@@ -2,6 +2,17 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.28.0] - 2026-10-21
+
+### Added
+- A Notes toolbar entry and an independent right-side Markdown editor shared by interview questions, knowledge, public interviews and learning materials. Desktop reading stays interactive; phones use an accessible modal panel.
+- Account/item-scoped local drafts, Markdown preview, keyboard save, and linked-item context. My-notes cards, saved-note list badges and copyable `panel=notes` links open the correct item's note.
+- Browser regression journeys for draft restoration, item isolation, note deep links, mobile dismissal, Markdown preview and real stale-save conflict reconciliation.
+
+### Changed
+- Remove the bottom personal editor and unify visible labels as notes; keep `personal/my-answers.json`, the API, version history and permissions compatible. No bank migration.
+- Preserve the visible paragraph when opening or closing the panel; late saves cannot replace another open item's details. Conflicting saves retain the local draft and require loading the latest version before saving.
+
 ## [1.27.0] - 2026-10-21
 
 ### Added

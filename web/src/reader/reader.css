@@ -401,44 +401,6 @@
   margin: 8px 0;
 }
 
-/* The person's own answer, below the reference answer */
-
-.ib-reading .my-answer {
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--r-line);
-}
-
-.ib-reading .my-answer .rich {
-  margin-bottom: 10px;
-  padding: 10px 14px;
-  border-left: 3px solid var(--r-accent);
-  border-radius: 0 10px 10px 0;
-  background: var(--r-accent-soft);
-}
-
-.ib-reading .my-answer-empty {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 12px;
-  padding: 12px 14px;
-  border: 1px dashed var(--r-line);
-  border-radius: 12px;
-}
-
-.ib-reading .my-answer-empty .hint {
-  margin: 0;
-}
-
-.ib-reading textarea.my-answer-input {
-  min-height: 140px;
-  background: var(--card);
-  font-size: 15px;
-  line-height: 1.7;
-}
-
 /* Collection notes: source line and links between interviews and notes */
 
 .ib-reading .source-evidence blockquote {
@@ -514,3 +476,36 @@
 .ib-reading .has-answer {
   color: var(--r-green);
 }
+
+/* A quiet, independent writing column. The original reader remains scrollable beside it. */
+.ib-reader-body { --ib-note-width: clamp(300px, 38%, 400px); }
+.ib-reader-body:has(> .ib-notes-panel) > .ib-reading { padding-inline: max(24px, calc((100% - var(--ib-note-width) - 720px) / 2)); }
+.ib-notes-panel {
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: var(--ib-note-width);
+  flex-shrink: 0;
+  border-left: 1px solid var(--border);
+  background: var(--card);
+  box-shadow: -8px 0 24px color-mix(in srgb, var(--foreground) 3%, transparent);
+  outline: none;
+}
+.ib-notes-panel[data-state="open"] { animation: note-enter 180ms ease-out; }
+.ib-note-editor { display: flex; flex: 1; min-height: 0; flex-direction: column; border-top: 1px solid var(--border); }
+.ib-note-tab { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 7px; font-size: 12px; color: var(--muted-foreground); }
+.ib-note-icon, .ib-note-reset { display: grid; width: 32px; height: 32px; flex-shrink: 0; place-items: center; border-radius: 50%; color: var(--muted-foreground); }
+.ib-note-icon:hover, .ib-note-reset:enabled:hover { background: var(--fill); color: var(--foreground); }
+.ib-note-reset:disabled { opacity: .35; }
+.ib-note-input { display: block; width: 100%; height: 100%; min-height: 220px; resize: none; border: 1px solid var(--border); border-radius: 12px; background: var(--card); padding: 13px 14px; color: var(--foreground); font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 14px; line-height: 1.8; outline: none; tab-size: 2; }
+.ib-note-input:focus-visible { border-color: color-mix(in srgb, var(--primary) 40%, var(--border)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 8%, transparent); }
+.ib-note-input::placeholder { color: var(--tertiary-foreground); }
+.ib-notes-panel .ib-note-preview { padding: 6px 0 12px; zoom: 1; font-size: 14px; }
+.ib-note-preview .md { font-size: 14px; line-height: 1.8; }
+.ib-note-preview .md h3, .ib-note-preview .md h4 { margin-top: 16px; font-size: 16px; }
+@keyframes note-enter { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
+@media (max-width: 899px) {
+  .ib-notes-panel { position: fixed; z-index: 61; inset: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom)); width: auto; border: 1px solid var(--border); border-radius: 20px; box-shadow: 0 12px 48px #0002; overflow: hidden; }
+}
+@media (prefers-reduced-motion: reduce) { .ib-notes-panel[data-state="open"] { animation: none; } }

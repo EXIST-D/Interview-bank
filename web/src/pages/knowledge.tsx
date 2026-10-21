@@ -650,6 +650,7 @@ export function KnowledgePage({ route }: { route: Route }) {
   const toast = useToast();
   const name = route.rest[0];
   const pending = !name ? route.params.get("open") : null;
+  const notesPanel = route.params.get("panel") === "notes";
 
   // A link to one note without its source (#note=…, related notes): find where it lives first.
   useEffect(() => {
@@ -658,7 +659,7 @@ export function KnowledgePage({ route }: { route: Route }) {
     noteDetail(pending)
       .then((note) => {
         if (!live) return;
-        history.replaceState(null, "", noteHref(note));
+        history.replaceState(null, "", noteHref(note) + (notesPanel ? "&panel=notes" : ""));
         dispatchEvent(new HashChangeEvent("hashchange"));
       })
       .catch((cause) => {
@@ -670,7 +671,7 @@ export function KnowledgePage({ route }: { route: Route }) {
     return () => {
       live = false;
     };
-  }, [pending, toast, t]);
+  }, [pending, notesPanel, toast, t]);
 
   if (pending) return <p className="p-10 text-center text-footnote text-muted-foreground">{t("loading")}</p>;
   return name ? <SourceView key={name} route={route} name={name} /> : <Shelf />;

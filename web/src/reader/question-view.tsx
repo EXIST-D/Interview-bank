@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { api, type Answer, type MyAnswer as MyAnswerValue, type QuestionDetail } from "@/lib/api";
-import { MyAnswer } from "./my-answer";
+import { api, type Answer, type QuestionDetail } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
 import { RichText, SafeLink } from "./markdown";
@@ -148,9 +147,6 @@ export function QuestionView({
   onReveal,
   canReview,
   onReviewed,
-  canWriteAnswer,
-  onMyAnswer,
-  onReload,
   onOpenNote,
   onPractise,
   onToast,
@@ -161,9 +157,6 @@ export function QuestionView({
   onReveal: () => void;
   canReview: boolean;
   onReviewed: () => void;
-  canWriteAnswer: boolean;
-  onMyAnswer: (value: MyAnswerValue | null) => void;
-  onReload: () => void;
   onOpenNote: (id: string) => void;
   onToast: (text: string) => void;
 }) {
@@ -199,18 +192,6 @@ export function QuestionView({
         <Button className="reveal" onClick={onReveal}>
           {t("show_answer")}
         </Button>
-      )}
-      {/* Hidden with the reference answer while thinking first: it would give the answer away. */}
-      {(revealed || !q.answer) && (
-        <MyAnswer
-          key={q.id + (q.my_answer?.updated_at ?? "")}
-          questionId={q.id}
-          saved={q.my_answer ?? null}
-          canWrite={canWriteAnswer}
-          onSaved={onMyAnswer}
-          onReload={onReload}
-          onToast={onToast}
-        />
       )}
       {q.notes && q.notes.length > 0 && (
         <section className="linked">

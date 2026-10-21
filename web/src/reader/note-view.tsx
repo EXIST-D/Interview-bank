@@ -4,7 +4,6 @@ import { usePref } from "@/lib/prefs";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Markdown, SafeLink } from "./markdown";
-import { MyAnswer } from "./my-answer";
 
 function SourceBox({ source }: { source: NoteDetail["source"] }) {
   // The collection's own answer is quoted as published; say where it came from.
@@ -105,9 +104,6 @@ export function NoteView({
   onOpenQuestion,
   onOpenNote,
   onToast,
-  canWriteNote,
-  onMyNote,
-  onReload,
 }: {
   note: NoteDetail;
   revealed: boolean;
@@ -115,9 +111,6 @@ export function NoteView({
   onOpenQuestion: (id: string) => void;
   onOpenNote: (id: string) => void;
   onToast: (text: string) => void;
-  canWriteNote: boolean;
-  onMyNote: (value: NoteDetail["my_answer"]) => void;
-  onReload: () => void;
 }) {
   const { t } = useI18n();
   const value = n.experience;
@@ -178,18 +171,6 @@ export function NoteView({
         <Button className="reveal" onClick={onReveal}>
           {t("show_answer")}
         </Button>
-      )}
-      {n.kind !== "info" && (revealed || !n.body) && (
-        <MyAnswer
-          key={n.id + (n.my_answer?.updated_at ?? "")}
-          questionId={n.id}
-          note
-          saved={n.my_answer ?? null}
-          canWrite={canWriteNote}
-          onSaved={onMyNote}
-          onReload={onReload}
-          onToast={onToast}
-        />
       )}
       {quotes.length > 0 && (
         <details className="source-evidence">

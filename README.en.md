@@ -4,25 +4,29 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.27.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.28.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.27 course and topic directories for learning materials
+## This update: 1.28 right-side Markdown notes
 
-- Each learning category opens collapsible source cards with course, project and topic directories. Directory counts and entry counts are shown separately.
-- Filter sources or find directory names, browse the complete entry list, or search article text. Choose a directory to read only its entries, and switch courses/topics beside the reader.
-- Chapters, README guides and companion code practice remain separate entries. Counts respect the selected content category; the reader, original sources, own notes and learning records are retained.
+- Select **Notes** in the reader toolbar to open an independent writing panel beside the original on desktop. Phones use a slide-in panel that returns to the same item when closed.
+- Edit and preview Markdown headings, lists, code and links; save with `Ctrl/⌘ + Enter`. Opening or closing notes preserves your reading position.
+- Each note belongs to its question or source entry. List badges and **My notes** cards open the linked item and its note together; direct links can be copied. Unsaved drafts stay separate by account and item in this browser.
+- Existing saved notes, version history and storage remain compatible. A newer save on another device is protected; the local draft is retained for comparison. No bank migration is needed.
 
-No bank migration is needed. Configure source-local areas/topics through the Agent's `notes organize` command.
 
 ## Interface preview
+
+Right-side Markdown notes, shown with synthetic demonstration material:
+
+![Interview Bank right-side Markdown note editor](assets/readme/web-note-panel.png)
 
 Overview: continue reading, the four sections and the most-asked questions.
 
 ![Interview Bank overview: continue reading, section cards and most-asked questions](assets/readme/web-overview.png)
 
-Personal interviews: list, segmented views and topics on the left; reference answer, sources, my answer and related notes on the right.
+Personal interviews: list, segmented views and topics on the left; reference answer, sources and related material on the right. Notes open from the reader toolbar.
 
-![Interview Bank personal interviews: list and reader with "my answer" below the reference answer](assets/readme/web-reader.png)
+![Interview Bank personal interviews: list and reader (earlier interface)](assets/readme/web-reader.png)
 
 Notes: a source's contents, the list grouped by topic, and the collection's answer with learning state and how interviews asked it.
 

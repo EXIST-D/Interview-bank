@@ -40,13 +40,17 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
 - Practice: select 5/10/20 questions in the current filtered order, or practise one question. Hide answers until reveal;
   accept optional written responses and an actual user self-rating. No automatic correctness score or new answer generation.
   Missing/draft/stale answers remain visibly distinguished.
-- My answer / my note: below the reference answer of a question (我的答案) and below the original of any knowledge,
-  public-interview or learning entry (我的笔记), the reader can write their own text (Markdown subset), edit or
-  clear it; it is independent of the reference and may stay empty. Saved in `personal/my-answers.json`, never in
-  `data/` or `collections/`, with the last 10 versions of each kept; a save made from a stale page is refused instead
-  of overwriting another device's newer text. A note outlives its entry: if a collection is removed, the note stays
-  listed and is marked. Think first hides it together with the reference answer. The agent reads it (`show`,
-  `notes show`, the answers edition of `export`, mock-interview feedback packets) but never writes or rewrites it.
+- Personal notes: **笔记 / Notes** in the reader toolbar opens a right-side Markdown panel, independent of
+  the original content and its answer visibility. On desktop the original remains interactive with an independent
+  scrollbar; on phones it is a modal panel with a close/return-to-item control. The bottom editor is removed.
+  Markdown edit/preview supports the reader's headings, lists, code and safe links; Ctrl/⌘ + Enter saves. Opening
+  or closing notes preserves the visible paragraph. Each note is bound to the open question or collection entry;
+  saved-note badges, My notes cards and `panel=notes` deep links open the correct item and note together.
+  Unsaved drafts are local to this browser, scoped by account, bank path and item, and survive closing, item
+  switching or reloading. They are not cross-device synchronization; save explicitly to store the note on the server.
+  Storage remains `personal/my-answers.json` with the last 10 versions; a stale save is refused and the draft is
+  retained while loading the latest version for comparison. Existing saved notes need no migration. Notes outlive
+  removed entries and stay listed as missing. The Agent reads personal notes but never writes or rewrites them.
 - 我的 (`#/mine`): every own answer and note, newest first, searchable (every space-separated term must appear),
   filterable by section and exported as one Markdown file in the browser. Favourites: the star in the reader puts the
   open question or entry into one or more folders (the first star creates 我的收藏). Folders are renamed, reordered,
@@ -93,7 +97,7 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
   sections and 我的; settings (appearance, think first, text size, agent actions, refresh, sign out) sit in its menu.
   Phones use a bottom tab bar (overview, interviews, knowledge, more: public, learning, 我的). Hash routes
   (`#/bank?open=q_…`, `#/bank?view=due`, `#/knowledge/<source>?open=note_…`, `#/public`, `#/learning/<kind>`,
-  `#/mine?tab=favorites`) are shareable; the earlier `#question=`,
+  `#/mine?tab=favorites`, `#/bank?open=q_…&panel=notes`) are shareable; the earlier `#question=`,
   `#note=` and `#section=` links still open the same place.
 - Knowledge shelf: source cards show title, language, content count, main areas and local reading progress; ⋯ opens
   source information and first/previous/next/last moves. Order is browser-local per account/bank (the same

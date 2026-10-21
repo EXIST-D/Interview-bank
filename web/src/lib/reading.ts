@@ -16,24 +16,39 @@ export function useReading({ route, board, ids, searchId }: { route: Route; boar
     reveal.current = { fn, revealed };
   }, []);
   const [openId, setOpenId] = useState<string | null>(() => route.params.get("open"));
+  const [notesOpen, setNotesOpenState] = useState(() => route.params.get("panel") === "notes");
+  const routeRef = useRef(route);
+  routeRef.current = route;
+  const notesOpenRef = useRef(notesOpen);
+  notesOpenRef.current = notesOpen;
   const [layout, setLayoutState] = useState<Layout>(() => ({ list: false, focus: false, ...stored<Partial<Layout>>("ibank-layout", {}) }));
   const pushed = useRef(false);
 
   useEffect(() => {
     setOpenId(route.params.get("open"));
+    setNotesOpenState(route.params.get("panel") === "notes");
   }, [route]);
 
   const here = useCallback(
     (open?: string) => {
       const params: Record<string, string> = {};
-      route.params.forEach((value, key) => {
-        if (key !== "open") params[key] = value;
+      routeRef.current.params.forEach((value, key) => {
+        if (key !== "open" && key !== "panel") params[key] = value;
       });
       if (open) params.open = open;
-      return { rest: route.rest, params };
+      if (open && notesOpenRef.current) params.panel = "notes";
+      return { rest: routeRef.current.rest, params };
     },
-    [route],
+    [],
   );
+
+  const setNotesOpen = useCallback((value: boolean) => {
+    const { rest, params } = here(openId ?? undefined);
+    if (value && openId) params.panel = "notes";
+    else delete params.panel;
+    history.replaceState(history.state, "", href(board, rest, params));
+    setNotesOpenState(value);
+  }, [here, openId, board]);
 
   const open = useCallback(
     (id: string) => {
@@ -118,7 +133,7 @@ export function useReading({ route, board, ids, searchId }: { route: Route; boar
     if (openId) document.querySelector(`[data-id="${CSS.escape(openId)}"]`)?.scrollIntoView({ block: "nearest" });
   }, [openId]);
 
-  return { wide, openId, open, close, step, index, layout, setLayout, focused, listHidden, registerReveal };
+  return { wide, openId, open, close, step, index, layout, setLayout, focused, listHidden, registerReveal, notesOpen, setNotesOpen };
 }
 
 export const thinkFirst = () => stored("ibank-think-first", false);
