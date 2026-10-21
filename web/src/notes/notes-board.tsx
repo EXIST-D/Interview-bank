@@ -127,7 +127,7 @@ export function NoteReader({
 
   return (
     <div className={cn(openId ? "fixed inset-0 z-50 wide:static wide:z-auto" : "hidden wide:block", "min-h-0 min-w-0")}>
-      {openId && detail?.id === openId ? (
+      {openId && detail && (detail.id === openId || detail.reading?.note_ids.includes(openId)) ? (
         <ReaderFrame
           contentKey={detail.id}
           nav={{ index, total: ids.length, onStep: step }}

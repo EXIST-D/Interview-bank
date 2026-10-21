@@ -45,6 +45,27 @@ try {
     notes: Object.fromEntries(catalog.notes.map((n) => [n.id, { area: "lab", topic: "course", kind: n.title === "课程资源" ? "resource" : "tutorial" }])) }));
   ibank("notes", "organize", "--name", "tutorials", "--input", organization);
 
+  // A genuine reading group: earlier bookmarks can address a member instead of its visible anchor.
+  const readingSource = join(root, "reading-source");
+  mkdirSync(readingSource);
+  writeFileSync(join(readingSource, "01.md"), "# 连续阅读\\n\\n## 第一部分\\n\\n先理解原理。\\n\\n原文：[查看来源](https://example.org/guide#one)\\n\\n## 第二部分\\n\\n再看代码。\\n\\n原文：[查看来源](https://example.org/guide#two)\\n".replaceAll("\\n", "\n"));
+  ibank("notes", "import", "--source", readingSource, "--name", "reading-book", "--title", "连续阅读演示");
+  const readingIds = JSON.parse(execFileSync(python, ["-B", "-X", "utf8", "-c", `
+import json, sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+from ibank_core import notes, note_organization, note_readings
+bank = Path(sys.argv[2])
+collection = next(c for c in notes.load_notes(bank)['collections'] if c['name'] == 'reading-book')
+members = collection['notes']
+catalog = note_organization.catalog(bank, 'reading-book')
+payload = {'schema_version': 1, 'collection': 'reading-book', 'source_digest': catalog['source_digest'], 'organization_digest': catalog['organization_digest'],
+    'reading_groups': {'guide': {'title': '连续阅读条目', 'note_ids': [n['id'] for n in members], 'source_url': 'https://example.org/guide',
+        'content_digest': note_readings.digest(members), 'reason': '同一原文的连续章节，保留旧书签。'}}}
+note_organization.organize(bank, 'reading-book', payload)
+print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
+`, fileURLToPath(new URL("../../skills/interview-bank/scripts", import.meta.url)), bank], { encoding: "utf8" }));
+
   server = spawn(python, ["-B", "-X", "utf8", cli, "--bank", bank, "web", "--port", "0", "--read-only", "--allow-personal", "--allow-practice", "--json"]);
   const first = await new Promise((resolve, reject) => {
     createInterface({ input: server.stdout }).once("line", resolve);
@@ -266,6 +287,14 @@ try {
   await settle(page);
   check("a late save cannot replace the newly opened item's title or editor", (await page.locator("article .reading-title").innerText()) === "HTTP 长连接是什么？" && await area.inputValue() === "" && (await api(page, "/api/note?id=" + note)).my_answer.text.includes("延迟保存"));
   await page.unroute("**/api/my-answer");
+
+  await page.goto(base + "#/knowledge/reading-book?open=" + readingIds.alias + "&panel=notes");
+  await settle(page);
+  check("an earlier reading-group bookmark opens its article and note panel", (await page.locator("article .reading-title").innerText()) === "连续阅读条目" && await mine.isVisible());
+  await area.fill("这条笔记属于完整阅读条目。");
+  await mine.getByRole("button", { name: "保存", exact: true }).click();
+  await settle(page);
+  check("a grouped bookmark saves to its actual reading item", (await api(page, "/api/note?id=" + readingIds.head)).my_answer?.text === "这条笔记属于完整阅读条目。");
 
   check("no page errors", errors.length === 0, errors.join(" | "));
   check("no Content-Security-Policy violations", violations.length === 0, violations.join(" | "));
