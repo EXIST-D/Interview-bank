@@ -137,6 +137,10 @@ labelled as such unless the user asks to remove them too.
   - learning materials have five category cards: roadmaps, tutorials, resources, career material and industry news;
     these are omitted from the interview-knowledge section, without moving or duplicating original records;
   - category/source filters, search and local learning progress work within the learning section;
+  - each learning category opens a collapsible source directory, with kind-specific area/topic counts;
+    use source-local topics for courses or related projects and preserve chapters as separate entries.
+    Directory search finds course/topic names; full-text search and the complete entry list remain available.
+    Deep links keep source, area and topic, with a course/topic selector beside the unchanged reader.
   - knowledge materials and public interview articles, with independent source shelves and counts;
   - public articles distinguish interview accounts, company question lists and career advice, with company and
     explicit interview-year filters; unknown dates never inherit publication/import dates;
@@ -167,6 +171,11 @@ Section-aware Web deep links keep original note IDs and learning marks; no bank 
 Use reading groups when import fragments are successive parts of **one original article**, such as a learning
 route, tutorial, system-design case or algorithm explanation. Keep independently answered interview questions
 separate. A multi-question practice sheet is a `collection`, not a count of unique questions.
+
+Different articles/chapters in one course belong to the same source-local area/topic directory, not one reading
+group. Keep README guides and companion notebooks accessible as separate entries; shared project names alone
+are not evidence of duplicate text. Count directories separately from chapter entries. Inspect course indexes,
+resume templates, announcements and placeholders before calling them hands-on tutorials.
 
 `notes organize` also accepts a `reading_groups` object keyed by a source-local lowercase key (1–80 characters,
 letters/digits/underscore/hyphen). Each value has exactly:

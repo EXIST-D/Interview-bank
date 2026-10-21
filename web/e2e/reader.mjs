@@ -33,6 +33,17 @@ try {
   writeFileSync(join(source, "01-Redis.md"), LONG);
   ibank("notes", "import", "--source", source, "--name", "demo", "--title", "演示八股", "--origin", "测试");
 
+  const tutorials = join(root, "tutorials");
+  mkdirSync(tutorials);
+  writeFileSync(join(tutorials, "01.md"), "# 配套课程\n\n## 01 环境安装\n\n准备环境的操作步骤。\n\n## 02 启动验证\n\n运行项目并检查结果。\n\n## 课程资源\n\n配套链接索引。\n");
+  ibank("notes", "import", "--source", tutorials, "--name", "tutorials", "--title", "教程演示来源", "--origin", "测试");
+  const catalog = ibank("notes", "catalog", "--name", "tutorials");
+  const organization = join(root, "tutorial-organization.json");
+  writeFileSync(organization, JSON.stringify({ schema_version: 1, collection: "tutorials", source_digest: catalog.source_digest, organization_digest: catalog.organization_digest,
+    areas: [{ id: "lab", title: "实践", topics: [{ id: "course", title: "演示课程" }] }],
+    notes: Object.fromEntries(catalog.notes.map((n) => [n.id, { area: "lab", topic: "course", kind: n.title === "课程资源" ? "resource" : "tutorial" }])) }));
+  ibank("notes", "organize", "--name", "tutorials", "--input", organization);
+
   server = spawn(python, ["-B", "-X", "utf8", cli, "--bank", bank, "web", "--port", "0", "--read-only", "--allow-personal", "--allow-practice", "--json"]);
   const first = await new Promise((resolve, reject) => {
     createInterface({ input: server.stdout }).once("line", resolve);
@@ -133,12 +144,33 @@ try {
   await settle(page);
   check("start review opens a round setup", await page.getByRole("dialog").getByRole("button", { name: "开始", exact: true }).isVisible());
 
+  // A course directory counts only this category, then opens the original entries in the reader.
+  await page.goto(base + "#/learning/tutorial");
+  await settle(page);
+  const courseSource = page.getByRole("button", { name: "教程演示来源 1 组目录 · 2 篇内容", exact: true });
+  check("learning source directories start collapsed", (await courseSource.getAttribute("aria-expanded")) === "false");
+  await courseSource.click();
+  check("tutorial directory excludes its resource entry", await page.getByRole("link", { name: "演示课程 2", exact: true }).isVisible());
+  await page.getByRole("link", { name: "演示课程 2", exact: true }).click();
+  await settle(page);
+  check("course deep link scopes the list", (await page.locator("button[data-id]").count()) === 2 && page.url().includes("topic=course"));
+  await page.getByRole("button", { name: /^01 环境安装/ }).click();
+  await settle(page);
+  check("a course opens the unchanged original reader", await page.getByRole("heading", { name: "01 环境安装", exact: true }).isVisible());
+
   // Phone: 我的 lives in the more sheet.
   const phone = await open({ width: 390, height: 844 });
   await phone.getByRole("button", { name: "更多" }).click();
   await phone.getByRole("link", { name: /我的/ }).click();
   await settle(phone);
   check("phone reaches 我的 from the more sheet", (await phone.locator("main h1").innerText()) === "我的笔记");
+
+  await phone.goto(base + "#/learning/tutorial");
+  await settle(phone);
+  await phone.getByRole("button", { name: "教程演示来源 1 组目录 · 2 篇内容", exact: true }).click();
+  await phone.getByRole("link", { name: "演示课程 2", exact: true }).click();
+  await settle(phone);
+  check("phone course navigation fits its viewport", (await phone.locator("button[data-id]").count()) === 2 && await phone.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth));
 
   check("no page errors", errors.length === 0, errors.join(" | "));
   check("no Content-Security-Policy violations", violations.length === 0, violations.join(" | "));

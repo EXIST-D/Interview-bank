@@ -9,7 +9,7 @@ export type LearningState = "unread" | "read" | "review" | "mastered";
 
 export type ReadingGroup = { note_ids: string[]; content_digest: string };
 
-export type Area = { id: string; title: string; count: number; topics: { id: string; title: string; count: number }[] };
+export type Area = { id: string; title: string; count: number; kinds?: Record<string, number>; topics: { id: string; title: string; count: number; kinds?: Record<string, number> }[] };
 
 export type SourceCard = {
   name: string;

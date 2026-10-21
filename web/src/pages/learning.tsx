@@ -11,6 +11,7 @@ import { chipClass, Segmented } from "@/components/ui/segmented";
 import { NoteList } from "@/notes/note-list";
 import { NoteReader, useNotesList } from "@/notes/notes-board";
 import { SearchField, useDebounced, useSourceCards } from "./knowledge";
+import { LearningCatalog, learningCount } from "./learning-catalog";
 
 const PAGE = 100;
 type Kind = (typeof LEARNING_KINDS)[number];
@@ -82,26 +83,33 @@ function Materials({ route, kind }: { route: Route; kind: Kind | "all" }) {
   const { t } = useI18n();
   const { page: meta } = useSourceCards("learning");
   const source = route.params.get("source") ?? "";
+  const area = route.params.get("area") ?? "";
+  const topic = route.params.get("topic") ?? "";
   const [learning, setLearning] = useState<LearningFilter>("all");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(route.params.get("query") ?? "");
   const words = useDebounced(query);
 
   const params = useCallback(
     (offset: number, limit = PAGE) => {
       const search = new URLSearchParams({ section: "learning", kind: kind === "all" ? "study" : kind, sort: "order", view: "knowledge", offset: String(offset), limit: String(limit) });
       if (source) search.set("collection", source);
+      if (source && area) search.set("area", area);
+      if (source && topic) search.set("topic", topic);
       if (words) search.set("query", words);
       return search;
     },
-    [kind, source, words],
+    [kind, source, area, topic, words],
   );
   const { data, rows, loading, error, load } = useNotesList(params, learning);
   const ids = data?.ids ?? [];
   const reading = useReading({ route, board: "learning", ids, searchId: "learning-search" });
   const { openId, open, focused, listHidden } = reading;
-  const go = (nextKind: string, nextSource = source) => navigate("learning", [nextKind], nextSource ? { source: nextSource } : undefined);
+  const go = (nextKind: string, nextSource = source) => navigate("learning", [nextKind], { view: "list", ...(nextSource ? { source: nextSource } : {}) });
   const sources = (meta?.collections ?? []).filter((c) => (kind === "all" ? c.content_total : c.kinds?.[kind]) > 0);
   const kinds = meta?.learning_categories ?? [];
+  const selectedSource = sources.find((s) => s.name === source);
+  const selectedArea = selectedSource?.areas.find((a) => a.id === area);
+  const selectedTopic = selectedArea?.topics.find((value) => value.id === topic);
 
   return (
     <div
@@ -114,12 +122,13 @@ function Materials({ route, kind }: { route: Route; kind: Kind | "all" }) {
       <section aria-label={t("board_learning")} className={cn("min-w-0 wide:overflow-y-auto wide:border-r wide:border-border", listHidden && "wide:hidden")}>
         <div className="flex flex-col gap-3 px-4 pt-5 pb-28 wide:pb-8">
           <div>
-            <a href={href("learning")} className="mb-1 flex items-center gap-0.5 text-footnote font-medium text-primary">
+            <a href={href("learning", [kind])} className="mb-1 flex items-center gap-0.5 text-footnote font-medium text-primary">
               <ChevronLeft className="size-4" />
-              {t("learning_home")}
+              {t("learning_directory_back")}
             </a>
             <h1 className="text-title-1 font-bold">{kind === "all" ? t("learning_all") : t(`notes_kind_${kind}`)}</h1>
             <p className="mt-1 text-footnote text-muted-foreground">{kind === "all" ? t("learning_home_hint") : t(`learning_hint_${kind}`)}</p>
+            {selectedSource && <p className="mt-2 text-footnote leading-relaxed text-primary">{[selectedSource.title, selectedArea?.title, selectedTopic?.title].filter(Boolean).join(" / ")}</p>}
           </div>
           <SearchField id="learning-search" value={query} onChange={setQuery} placeholder={t("search_learning")} />
           <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4">
@@ -155,6 +164,19 @@ function Materials({ route, kind }: { route: Route; kind: Kind | "all" }) {
               ))}
             </select>
           </label>
+          {selectedSource && <label className="flex items-center justify-between gap-3 rounded-xl bg-card px-3.5 py-2 text-subhead shadow-soft-sm">
+            <span className="shrink-0 text-muted-foreground">{t("learning_topic")}</span>
+            <select aria-label={t("learning_topic")} value={topic} onChange={(event) => {
+              const next = event.target.value;
+              const parent = selectedSource.areas.find((a) => a.topics.some((value) => value.id === next));
+              navigate("learning", [kind], { view: "list", source, ...(parent ? { area: parent.id, topic: next } : {}) });
+            }} className="min-w-0 max-w-[70%] truncate bg-transparent text-right outline-none">
+              <option value="">{t("learning_topic_all")}</option>
+              {selectedSource.areas.filter((a) => learningCount(a, kind) > 0).map((a) => <optgroup key={a.id} label={a.title}>
+                {a.topics.filter((value) => learningCount(value, kind) > 0).map((value) => <option key={value.id} value={value.id}>{value.title} · {learningCount(value, kind)}</option>)}
+              </optgroup>)}
+            </select>
+          </label>}
           <Segmented
             label={t("notes_learning")}
             value={learning}
@@ -171,7 +193,7 @@ function Materials({ route, kind }: { route: Route; kind: Kind | "all" }) {
             </div>
           )}
           <div aria-busy={loading}>
-            <NoteList notes={rows} openId={openId} words={words} crossSource={!source} groupBy={null} onOpen={open} />
+            <NoteList notes={rows} openId={openId} words={words} crossSource={!source} groupBy={topic || words ? null : (note) => ({ key: `learning:${note.collection}:${note.area}:${note.topic}`, label: `${!source ? note.collection_title + " · " : ""}${note.topic_title || note.area_title || note.chapter_title}` })} onOpen={open} />
             {!loading && !rows.length && !error && (
               <p className="rounded-2xl border border-dashed border-border px-4 py-10 text-center text-footnote text-muted-foreground">{t("empty_notes")}</p>
             )}
@@ -194,5 +216,7 @@ export function LearningPage({ route }: { route: Route }) {
   if (!kind && route.params.get("open")) return <Materials key="all" route={route} kind="all" />;
   if (!kind) return <Categories />;
   const valid = kind === "all" || (LEARNING_KINDS as readonly string[]).includes(kind);
-  return <Materials key={kind} route={route} kind={valid ? (kind as Kind | "all") : "all"} />;
+  const current = valid ? (kind as Kind | "all") : "all";
+  if (!route.params.get("open") && route.params.get("view") !== "list" && !route.params.get("topic") && !route.params.get("area")) return <LearningCatalog key={current} kind={current} initialSource={route.params.get("source") ?? ""} />;
+  return <Materials key={current} route={route} kind={current} />;
 }

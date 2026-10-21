@@ -277,8 +277,15 @@ def collection_card(collection, linked=(), section='all'):
             {'id': k, 'title': note_experiences.LABELS[k]} for k in note_experiences.KINDS]}]
     for area in directory:
         mine = [n for n in active if n['organization']['area'] == area['id']]
-        areas.append({**area, 'count': len(mine), 'topics': [
-            {**t, 'count': sum(n['organization']['topic'] == t['id'] for n in mine)} for t in area['topics']]})
+        # Learning categories share a source directory. Count each kind within a topic so a tutorial
+        # shelf never advertises resource/news entries as tutorials, without fetching every note card.
+        kinds = lambda entries: ({'kinds': dict(Counter(n['organization']['kind'] for n in entries))}
+                                 if section == 'learning' else {})
+        topics = []
+        for topic in area['topics']:
+            members = [n for n in mine if n['organization']['topic'] == topic['id']]
+            topics.append({**topic, 'count': len(members), **kinds(members)})
+        areas.append({**area, 'count': len(mine), **kinds(mine), 'topics': topics})
     return {'name': collection['name'], 'title': collection['title'], 'origin': collection.get('origin', ''),
             'imported_at': collection['imported_at'], 'total': len(notes), 'content_total': len(active),
             'information_total': len(notes) - len(raw_active), 'content_ids': [n['id'] for n in active],

@@ -72,6 +72,28 @@ class LearningHub(unittest.TestCase):
         self.assertEqual(app.note(experiences['ids'][0])['section'], 'experiences')
         self.assertEqual(next(c for c in learning['learning_categories'] if c['kind'] == 'career')['count'], 0)
 
+    def test_directory_counts_kinds_and_retains_scoped_deep_links(self):
+        catalog = self.bank.result('notes', 'catalog', '--name', 'first')
+        self.bank.result('notes', 'organize', '--name', 'first', payload={
+            'schema_version': 1, 'collection': 'first', 'source_digest': catalog['source_digest'],
+            'organization_digest': catalog['organization_digest'],
+            'areas': [{'id': 'course', 'title': '课程', 'topics': [
+                {'id': 'setup', 'title': '环境与准备'}, {'id': 'unused', 'title': '空目录'}]}],
+            'chapters': {'01.md': {'area': 'course', 'topic': 'setup'}}})
+        app = WebApp(self.bank.path, read_only=True)
+        card = app.notes({'section': 'learning'})['collections'][0]
+        area = card['areas'][0]
+        self.assertEqual(area['count'], 5)
+        self.assertEqual(area['kinds'], dict.fromkeys(LEARNING_KINDS, 1))
+        self.assertEqual(area['topics'][0]['kinds']['tutorial'], 1)
+        self.assertEqual(area['topics'][1]['kinds'], {})
+        found = app.notes({'section': 'learning', 'collection': 'first', 'area': 'course',
+                           'topic': 'setup', 'kind': 'tutorial', 'meta': '0'})
+        self.assertEqual(found['ids'], [self.ids['tutorial']])
+        self.assertEqual(app.note(found['ids'][0])['body'], '独立原文 tutorial')
+        self.assertNotIn('collections', found)
+        self.assertNotIn('kinds', app.notes({'section': 'knowledge'})['collections'][0]['areas'][0])
+
     def test_empty_hub_keeps_five_categories(self):
         self.organize({'article': {'title': '公开材料汇总', 'kind': 'career',
                                   'note_ids': [self.ids[k] for k in LEARNING_KINDS]}})

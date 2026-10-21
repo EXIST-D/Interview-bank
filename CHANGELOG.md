@@ -2,6 +2,13 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.27.0] - 2026-10-21
+
+### Added
+- Learning categories open a collapsible source directory with courses/topics and separate entry counts, instead of a flat chapter list. Directory-name search and full-text search have distinct scopes; a complete list remains available.
+- Source-local course/topic deep links and a selector in the learning list. Existing reader, note IDs, original text, personal notes and learning marks are retained.
+- Learning source cards expose per-kind area/topic counts so resource indexes or announcements do not inflate tutorial directory counts. No bank migration is needed.
+
 ## [1.26.0] - 2026-10-19
 
 ### Added

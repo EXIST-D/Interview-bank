@@ -4,19 +4,15 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.26.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.27.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.26 my notes, favourites, an outline for long text and today's plan
+## This update: 1.27 course and topic directories for learning materials
 
-- **My notes:** besides "my answer" on interview questions, every knowledge, public-interview and learning entry takes "my note" below the original. A new 我的 (Me) page lists all answers and notes, filters by section, searches several words and exports one Markdown file. A note stays (and is marked) when its entry's collection is removed.
-- **Favourites:** the star in the reader puts a question or entry into one or more folders; the first star creates a default folder. Folders can be renamed, reordered and deleted; "practise its interview questions" starts a round from a folder.
-- **On this page:** a long original with three or more headings or bold numbered questions gets an outline in the reader that jumps, follows the scroll position and offers back-to-top.
-- **Today's plan:** the overview shows reviews due, weak and never-practised questions; "start reviewing" opens a round. With `--allow-practice` a hosted reader saves ratings and the scheduler sets the next review.
-- **Learning state across devices:** read marks, to-review/mastered states and the source order merge into the server's `personal/learning.json`.
-- **Better search:** note search takes several words (all must appear), ranks title matches first and the rest by relevance, through the standard library's SQLite FTS5 trigram index (no word segmentation, Chinese and English alike), kept in `cache/` and never backed up.
-- **Keeping the data:** `tools/deploy/pull-backups.sh` copies the server's newest backups to your computer and verifies each; `sync.sh` refuses to overwrite a server copy that is newer than the local one.
+- Each learning category opens collapsible source cards with course, project and topic directories. Directory counts and entry counts are shown separately.
+- Filter sources or find directory names, browse the complete entry list, or search article text. Choose a directory to read only its entries, and switch courses/topics beside the reader.
+- Chapters, README guides and companion code practice remain separate entries. Counts respect the selected content category; the reader, original sources, own notes and learning records are retained.
 
-On a server, upgrade the reader and start it with `--read-only --allow-personal --allow-practice` (`--allow-my-answers` still works). Saving practice needs a V2 bank: back up, then `migrate`.
+No bank migration is needed. Configure source-local areas/topics through the Agent's `notes organize` command.
 
 ## Interface preview
 
@@ -210,7 +206,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 ## Status and plans
 
-**v1.26.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
+**v1.27.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
 
 **Not implemented yet:**
 
@@ -219,7 +215,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 | On-screen text in videos | Only speech is processed; capture silent on-screen questions as screenshots |
 | Speaker separation, resuming inside long recordings | Speaker labels from the tool are kept; resume is per file |
 | Editing in the Web reader | Question edits and intake stay with the agent; the Web reader reads, practises, reviews and decides merges |
-| Reading progress across devices | Read marks and folds stay in one browser; a hosted reader does not yet send practice ratings back |
+| Real-time sync and offline merging | Read marks, learning states and source order already merge through the server; folds and text size remain partly browser-local, without real-time sync |
 | MCP server | Planned as a separate optional package; the core stays dependency-free |
 
 **Other limits:** review queues are generated on demand with no background reminders; exact token and cost figures depend on the host; splitting an arbitrary historical merge is not supported, only undoing the latest eligible operation.
