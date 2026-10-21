@@ -98,9 +98,9 @@ try {
   await page.getByRole("button", { name: "隐藏答案", exact: true }).click();
   await page.getByRole("button", { name: "笔记", exact: true }).click();
   await settle(page);
-  check("notes do not reveal a deliberately hidden original", await page.getByRole("button", { name: "显示答案", exact: true }).isVisible() && (await page.locator("article .md").count()) === 0);
+  check("notes do not reveal a deliberately hidden original", await page.locator("section[aria-label='阅读'] > header").getByRole("button", { name: "显示答案", exact: true }).isVisible() && (await page.locator("article .md").count()) === 0);
   await mine.getByRole("button", { name: "收起笔记", exact: true }).click();
-  await page.getByRole("button", { name: "显示答案", exact: true }).click();
+  await page.locator("section[aria-label='阅读'] > header").getByRole("button", { name: "显示答案", exact: true }).click();
   await page.getByRole("button", { name: "本文目录" }).click();
   const entries = page.locator("[data-radix-popper-content-wrapper] button");
   check("outline lists the numbered questions", (await entries.count()) === 5, `${await entries.count()} entries`);
