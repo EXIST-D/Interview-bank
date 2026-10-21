@@ -228,6 +228,9 @@ try {
   await phoneNote.evaluate((n) => Promise.all(n.getAnimations().map((animation) => animation.finished.catch(() => {}))));
   const phoneBounds = await phoneNote.evaluate((n) => ({ modal: n.getAttribute("aria-modal"), ...n.getBoundingClientRect().toJSON(), viewport: { width: innerWidth, height: innerHeight } }));
   check("phone notes open as an accessible modal within the screen", phoneBounds.modal === "true" && phoneBounds.left >= 0 && phoneBounds.right <= phoneBounds.viewport.width && phoneBounds.top >= 0 && phoneBounds.bottom <= phoneBounds.viewport.height, JSON.stringify(phoneBounds));
+  await phoneNote.getByRole("button", { name: "收起笔记", exact: true }).focus();
+  for (let i = 0; i < 12; i++) await phone.keyboard.press("Tab");
+  check("phone note keyboard focus stays inside its modal", await phoneNote.evaluate((n) => n.contains(document.activeElement)));
   await phoneNote.getByRole("button", { name: "编辑", exact: true }).click();
   const phoneArea = phoneNote.getByRole("textbox", { name: "我的笔记", exact: true });
   await phoneArea.fill("手机草稿，只属于这道题。");

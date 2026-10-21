@@ -198,6 +198,7 @@ export function ReaderFrame({
   const panel = personalNote && (
     <Dialog.Content
       className="ib-notes-panel"
+      aria-modal={!wide || undefined}
       onOpenAutoFocus={(event) => {
         // Focus the panel without moving the article, and avoid summoning a phone keyboard just by opening it.
         event.preventDefault();
