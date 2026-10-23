@@ -8,6 +8,7 @@ import { usePref } from "@/lib/prefs";
 import type { ThemeChoice } from "@/lib/theme";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { loginHref, onSignIn } from "@/lib/access";
 import { AgentDialog, type AgentAction } from "./agent-dialog";
 
 const item =
@@ -28,7 +29,7 @@ export function SettingsMenu({
   const [thinkFirst, setThinkFirst] = usePref(keys.thinkFirst, false);
   const [size, setSize] = usePref(keys.textSize, 0);
   const [action, setAction] = useState<AgentAction | null>(null);
-  const initials = (library?.account || library?.name || "iB").slice(0, 2).toUpperCase();
+  const initials = library?.guest ? t("guest") : (library?.account || library?.name || "iB").slice(0, 2).toUpperCase();
   const status = library?.read_only ? t("read_only") : library?.schema_version === 1 ? t("v1_notice") : "";
 
   return (
@@ -47,11 +48,12 @@ export function SettingsMenu({
             className="z-50 w-64 rounded-2xl border border-border bg-popover p-1.5 shadow-soft-lg outline-none"
           >
             <div className="px-2.5 pt-1.5 pb-2">
-              <div className="text-subhead font-semibold">{library?.account || library?.name}</div>
+              <div className="text-subhead font-semibold">{library?.guest ? t("guest") : library?.account || library?.name}</div>
               <div className="text-caption text-muted-foreground">
                 {[status, library && "v" + library.version].filter(Boolean).join(" · ")}
               </div>
             </div>
+            {library?.guest && <DropdownMenu.Item className={cn(item, "font-medium text-primary")} asChild><a href={loginHref()} onClick={onSignIn}>{t("login")}</a></DropdownMenu.Item>}
             <DropdownMenu.Separator className="my-1 h-px bg-border" />
 
             <DropdownMenu.Label className={label}>{t("appearance")}</DropdownMenu.Label>
@@ -145,6 +147,7 @@ export function SettingsMenu({
           </DropdownMenu.Content>
         </DropdownMenu.Portal>
       </DropdownMenu.Root>
+      {library?.guest && <a href={loginHref()} onClick={onSignIn} className="inline-flex h-8 shrink-0 items-center rounded-full bg-primary px-3 text-footnote font-medium text-primary-foreground hover:brightness-95">{t("login")}</a>}
       <AgentDialog action={action} onClose={() => setAction(null)} />
     </>
   );

@@ -253,7 +253,7 @@ export function BankPage({ route }: { route: Route }) {
   return (
     <div
       className={cn(
-        "wide:grid wide:h-[calc(100dvh-3.25rem)]",
+        "wide:grid wide:h-[calc(100dvh-var(--ib-header-height,3.25rem))]",
         focused && "wide:h-dvh",
         listHidden ? "wide:grid-cols-1" : "wide:grid-cols-[minmax(340px,400px)_1fr]",
       )}

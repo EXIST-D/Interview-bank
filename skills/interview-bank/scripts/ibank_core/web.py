@@ -116,6 +116,7 @@ class WebApp:
         self.allow_my_answers, self.allow_practice = allow_my_answers, allow_practice
         self.mutation_lock = threading.Lock()
         self.notes_cache = (None, None)
+        self.notes_cache_lock = threading.Lock()
         with open_bank(self.bank, shared=True):
             pass
 
@@ -130,8 +131,9 @@ class WebApp:
     def _notes(self, data):
         """Collections and links, parsed once per change. The caller holds the bank lock."""
         key = notebook.signature(self.bank)
-        if self.notes_cache[0] != key:
-            self.notes_cache = (key, notebook.load_notes(self.bank))
+        with self.notes_cache_lock:
+            if self.notes_cache[0] != key:
+                self.notes_cache = (key, notebook.load_notes(self.bank))
         return notebook.resolve_links(self.notes_cache[1], data)
 
     def warm(self):
@@ -192,6 +194,25 @@ class WebApp:
                               for q in found[offset:offset + limit]],
             }
 
+    def public_library(self, params):
+        """Bootstrap the public reader without disclosing the personal bank's name, counts or state."""
+        require(set(params) <= FILTERS | {'view', 'sort', 'offset', 'limit'}, 'Unknown filter')
+        limit, offset = int(params.get('limit', 20)), int(params.get('offset', 0))
+        require(1 <= limit <= 100 and offset >= 0, 'Invalid pagination (limit 1..100)')
+        with open_bank(self.bank, shared=True) as (manifest, config, data):
+            bundle = self._notes(data)
+        return {
+            'name': 'Public library', 'version': __version__, 'schema_version': manifest['schema_version'],
+            'language': language(config), 'guest': True, 'can_login': True, 'can_logout': False,
+            'read_only': True, 'can_record': False, 'can_review': False,
+            'can_write_answer': False, 'can_write_personal': False,
+            'summary': dict.fromkeys(('questions', 'answered', 'answer_count', 'stale', 'due', 'weak', 'unseen', 'domains'), 0),
+            'notes': {'total': len(bundle['notes']), 'collections': len(bundle['collections'])},
+            'total': 0, 'total_answered': 0, 'offset': offset, 'limit': limit,
+            'facets': {key: [] for key in ('group', 'domain', 'technology', 'company', 'role', 'industry')},
+            'ids': [], 'questions': [],
+        }
+
     def question(self, qid):
         with open_bank(self.bank, shared=True) as (_, config, data):
             rows = select(data, config, self.bank, ids=[qid])
@@ -225,7 +246,7 @@ class WebApp:
             result['history'] = [{k: e[k] for k in ('rating', 'occurred_at', 'next_review_at', 'note')} for e in sorted(history, key=lambda e: (e['occurred_at'], e['id']), reverse=True)[:20]]
             return result
 
-    def notes(self, params):
+    def notes(self, params, *, public=False):
         """八股 collections: chapters, filters and one page of note cards in reading order."""
         require(set(params) <= NOTE_FILTERS, 'Unknown filter')
         # Note cards are short: the reader loads a whole collection so chapters can fold.
@@ -235,7 +256,7 @@ class WebApp:
         require(params.get('meta', '1') in ('0', '1'), 'meta must be 0 or 1')
         with open_bank(self.bank, shared=True) as (_, config, data):
             bundle = self._notes(data)
-            rows = select(data, config, self.bank)
+            rows = [] if public else select(data, config, self.bank)
         linked = notebook.linked_questions(bundle, rows)
         collections = {c['name']: c for c in bundle['collections']}
         section = params.get('section', 'all')
@@ -305,11 +326,12 @@ class WebApp:
             found = sorted(found, key=lambda n: (list(collections).index(n['collection']),
                            area_order.get((n['collection'], n['organization']['area']), 999),
                            topic_order.get((n['collection'], n['organization']['topic']), 999), n['order']))
-        mine = {key for key, entry in my_answers.load(self.bank).items() if key.startswith('note_') and entry.get('text')}
+        mine = set() if public else {key for key, entry in my_answers.load(self.bank).items()
+                                    if key.startswith('note_') and entry.get('text')}
         card = lambda n: {**notebook.note_card(n, collections[n['collection']], [q for q, _ in article_links(n)]),
                           'has_my_answer': n['id'] in mine}
         learning = note_experiences.select(bundle, 'learning')
-        return {
+        result = {
             'section': section,
             **({'collections': [note_organization.collection_card(c, linked, section) for c in bundle['collections']]}
                if params.get('meta', '1') == '1' else {}),
@@ -338,11 +360,16 @@ class WebApp:
             'total': len(found), 'offset': offset, 'limit': limit, 'ids': [n['id'] for n in found],
             'notes': [card(n) for n in found[offset:offset + limit]],
         }
+        if public:
+            from .public_reader import collection as public_collection
+            if 'collections' in result:
+                result['collections'] = [public_collection(c) for c in result['collections']]
+        return result
 
-    def note(self, note_id):
+    def note(self, note_id, *, public=False):
         with open_bank(self.bank, shared=True) as (_, config, data):
             bundle = self._notes(data)
-            rows = select(data, config, self.bank)
+            rows = [] if public else select(data, config, self.bank)
         note = note_experiences.find(bundle, note_id)
         require(note is not None, 'This note is no longer available; refresh the list')
         collection = next(c for c in bundle['collections'] if c['name'] == note['collection'])
@@ -351,11 +378,15 @@ class WebApp:
         from .note_relations import detail
         section = 'experiences' if 'experience' in note else (
             'learning' if note['organization']['kind'] in note_organization.LEARNING_KINDS else 'knowledge')
-        return {**notebook.note_card(note, collection, [q for q, _ in linked]), **detail(note), 'body': note['body'],
-                'section': section, 'my_answer': my_answers.for_note(my_answers.load(self.bank), note['id']),
+        result = {**notebook.note_card(note, collection, [q for q, _ in linked]), **detail(note), 'body': note['body'],
+                'section': section, 'my_answer': None if public else my_answers.for_note(my_answers.load(self.bank), note['id']),
                 'source': notebook.source_of(note, collection),
                 'questions': [{'id': q['id'], 'canonical': q['canonical'], 'frequency': q['frequency'], 'relation': link['relation'],
                                'answered': q['answer_status'] in ANSWERED} for q, link in linked]}
+        if public:
+            from .public_reader import origin
+            result['source']['origin'] = origin(result['source']['origin'])
+        return result
 
     def record(self, payload):
         require(self.can_practise, 'This server is in read-only mode')
@@ -482,11 +513,18 @@ class LocalServer(ThreadingHTTPServer):
     allow_reuse_address = False
 
     def __init__(self, app, port=0, token=None, public_origins=(), login=None, banks_dir=None, read_only=True, allow_my_answers=False,
-                 allow_practice=False):
+                 allow_practice=False, public_bank=None):
         # One bank for everyone (app), or one bank per account under banks_dir (hosting several people).
         self.app = app
         self.banks_dir, self.read_only, self.apps, self.apps_lock = banks_dir, read_only, {}, threading.Lock()
         self.allow_my_answers, self.allow_practice = allow_my_answers, allow_practice
+        require(not public_bank or login and public_origins, 'Public reading needs a hosted login and public origin')
+        self.public_app = None
+        if public_bank:
+            from .public_reader import ReadBudget
+            path = guard_bank_path(public_bank)
+            self.public_app = app if app and app.bank == path else WebApp(path, read_only, allow_my_answers, allow_practice)
+            self.public_budget, self.public_active = ReadBudget(), threading.BoundedSemaphore(4)
         self.token = token or secrets.token_urlsafe(32)
         # Optional login page (hosting only): one account, signed session cookie, limited failed attempts.
         self.login = login
@@ -547,9 +585,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(403, {'error': f'仅支持本机访问：请打开 Agent 提供的 http://127.0.0.1:{port}/ 链接。'})
         path = urlsplit(self.path).path
         if path == '/' and not post:
-            name = 'login.html' if self.server.login and not self.user() else 'index.html'
+            needs_login = not self.server.public_app or parse_qs(urlsplit(self.path).query).get('login') == ['1']
+            name = 'login.html' if self.server.login and not self.user() and needs_login else 'index.html'
             nonce = secrets.token_urlsafe(18)
             page = (ASSETS / name).read_bytes().replace(b'__CSP_NONCE__', nonce.encode('ascii'))
+            if self.server.public_app:
+                page = page.replace(b'</head>', b'<meta name="public-reading" content="1"></head>')
             return self.send(200, page, 'text/html; charset=utf-8', nonce=nonce)
         if not post and (asset := bundled_asset(path)):
             # Built file names carry a content hash, so a phone may keep them until the next release.
@@ -561,7 +602,10 @@ class Handler(BaseHTTPRequestHandler):
             if post and path in ('/api/login', '/api/logout'):
                 return self.login(path)
             if not self.user():
-                return self.send(401, {'error': '请先登录。', 'login': True})
+                if self.server.public_app and not post and path in ('/api/library', '/api/notes', '/api/note'):
+                    return self.public_read(path)
+                return self.send(401, {'error': '请先登录。', 'login': True,
+                                       'public_access': bool(self.server.public_app)})
         app = self.app()
         query = parse_qs(urlsplit(self.path).query, keep_blank_values=True)
         require(all(len(v) == 1 for v in query.values()), 'Duplicate query parameters')
@@ -577,7 +621,8 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/library':
             result = app.library(params)
             if self.server.login:
-                result = {**result, 'can_logout': True, 'account': self.user()}
+                result = {**result, 'can_logout': True, 'account': self.user(),
+                          'guest': False, 'can_login': bool(self.server.public_app)}
         elif path == '/api/practice':
             result = app.library(params, practice=True)
         elif path == '/api/dedupe-reviews':
@@ -601,6 +646,33 @@ class Handler(BaseHTTPRequestHandler):
             result = app.learning()
         else:
             return self.send(404, {'error': 'Unknown endpoint'})
+        self.send(200, result)
+
+    def public_read(self, path):
+        """A GET-only allowlist. Future account endpoints remain private without needing to remember a denylist."""
+        if not self.server.public_budget.allow(self.client()):
+            return self.send(429, {'error': '公开资料访问较频繁，请稍后重试。'}, headers=[('Retry-After', '60')])
+        if not self.server.public_active.acquire(blocking=False):
+            return self.send(503, {'error': '公开资料正在读取，请稍后重试。'}, headers=[('Retry-After', '2')])
+        try:
+            return self.public_result(path)
+        finally:
+            self.server.public_active.release()
+
+    def public_result(self, path):
+        require(len(self.path) <= 8192, 'Request URL too long')
+        query = parse_qs(urlsplit(self.path).query, keep_blank_values=True)
+        require(all(len(v) == 1 for v in query.values()), 'Duplicate query parameters')
+        params = {k: v[0] for k, v in query.items()}
+        require(len(params.get('query', '')) <= 500, 'Search query too long')
+        app = self.server.public_app
+        if path == '/api/library':
+            result = app.public_library(params)
+        elif path == '/api/notes':
+            result = app.notes(params, public=True)
+        else:
+            require(set(params) == {'id'}, 'Expected note ID')
+            result = app.note(params['id'], public=True)
         self.send(200, result)
 
     def json_body(self):
@@ -634,7 +706,9 @@ class Handler(BaseHTTPRequestHandler):
             if name not in self.server.apps:
                 bank = Path(self.server.banks_dir) / name
                 require((bank / 'manifest.json').is_file(), '这个账号的题库还没有同步到服务器。')
-                self.server.apps[name] = WebApp(bank, self.server.read_only, self.server.allow_my_answers, self.server.allow_practice)
+                shared = self.server.public_app
+                self.server.apps[name] = shared if shared and shared.bank == bank.resolve() else WebApp(
+                    bank, self.server.read_only, self.server.allow_my_answers, self.server.allow_practice)
                 self.server.apps[name].warm()
             return self.server.apps[name]
 
@@ -693,7 +767,7 @@ def _read_token(path):
 
 
 def serve(bank, port=0, read_only=False, open_browser=False, token_file=None, public_origins=(), login_file=None, banks_dir=None,
-          allow_my_answers=False, allow_practice=False):
+          allow_my_answers=False, allow_practice=False, public_bank=None):
     require(0 <= port <= 65535, 'Port must be 0..65535')
     for origin in public_origins:
         parsed = urlsplit(origin)
@@ -701,6 +775,7 @@ def serve(bank, port=0, read_only=False, open_browser=False, token_file=None, pu
                 'A public origin is https://host[:port] without a path')
     require(not public_origins or token_file, 'A public origin needs --token-file: the reverse proxy must add the token')
     require(not login_file or public_origins, 'A login page is only for hosting: also pass --public-origin')
+    require(not public_bank or login_file and public_origins, '--public-bank needs --login-file and --public-origin')
     login = None
     if login_file:
         from .weblogin import load_login
@@ -711,14 +786,17 @@ def serve(bank, port=0, read_only=False, open_browser=False, token_file=None, pu
         require(banks_dir.is_dir(), f'Not a directory: {banks_dir}')
     server = LocalServer(None if banks_dir else WebApp(bank, read_only, allow_my_answers, allow_practice), port,
                          _read_token(token_file) if token_file else None, [o.rstrip('/') for o in public_origins], login, banks_dir,
-                         read_only, allow_my_answers, allow_practice)
+                         read_only, allow_my_answers, allow_practice, public_bank)
     # A fixed token lives in a file the proxy also reads; never print it into service logs.
     url = server.origin + '/' if token_file else server.url
     print(json.dumps({'ok': True, 'command': 'web', 'result': {'url': url, 'pid': __import__('os').getpid(), 'read_only': read_only,
                       'my_answers': not read_only or allow_my_answers, 'practice': not read_only or allow_practice,
-                      'public_origins': list(server.public_origins), 'version': __version__}}, ensure_ascii=False), flush=True)
+                      'public_origins': list(server.public_origins), 'public_reading': bool(server.public_app),
+                      'version': __version__}}, ensure_ascii=False), flush=True)
     if server.app:
         server.app.warm()
+    if server.public_app and server.public_app is not server.app:
+        server.public_app.warm()
     if open_browser:
         webbrowser.open(server.url)
     try:

@@ -2,6 +2,17 @@ import { createContext, useContext } from "react";
 import { notesEn, notesZh } from "./notes-text";
 
 const baseZh = {
+  login: "登录",
+  guest: "游客",
+  public_reading: "公开阅读",
+  public_home_title: "公开资料，随时开始阅读",
+  public_home_lead: "八股资料、公开面经与学习资料免登录浏览；登录后使用个人面经、笔记、收藏与练习记录。",
+  public_home_summary: "八股资料 {k} 条 · 公开面经 {e} 篇 · 学习资料 {l} 条",
+  login_required_title: "登录后，继续你的个人积累",
+  login_required_hint: "个人面经、笔记、收藏和练习记录仅对登录账户开放。公开资料可以直接阅读。",
+  browse_public: "浏览公开资料",
+  login_to_track: "登录后记录学习进度",
+  private_stat: "登录后查看",
   app_name: "Interview Bank",
   board_home: "概览",
   board_bank: "个人面经",
@@ -310,6 +321,17 @@ const baseZh = {
 };
 
 const baseEn: Record<keyof typeof baseZh, string> = {
+  login: "Sign in",
+  guest: "Guest",
+  public_reading: "Public reading",
+  public_home_title: "Public resources. Start reading.",
+  public_home_lead: "Browse study materials and public interviews freely. Sign in for your interviews, notes, favourites and practice history.",
+  public_home_summary: "{k} knowledge entries · {e} public interviews · {l} learning resources",
+  login_required_title: "Sign in to your personal space",
+  login_required_hint: "Your interviews, notes, favourites and practice history require an account. Public resources are ready to read.",
+  browse_public: "Browse public resources",
+  login_to_track: "Sign in to track your learning",
+  private_stat: "Sign in to view",
   app_name: "Interview Bank",
   board_home: "Overview",
   board_bank: "My interviews",

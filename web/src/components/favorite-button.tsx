@@ -5,15 +5,19 @@ import { useFavorites } from "@/lib/favorites";
 import { useToast } from "@/lib/hooks";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { useBank } from "@/lib/bank";
+import { loginHref } from "@/lib/access";
 
 // The star in the reader's toolbar: tick the folders an item belongs to, or start a new one.
 export function FavoriteButton({ itemId }: { itemId: string }) {
   const { t } = useI18n();
   const toast = useToast();
   const { folders, canWrite, change, holding } = useFavorites();
+  const { library } = useBank();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  if (library?.guest) return <a href={loginHref()} aria-label={t("fav")} title={t("login_required_hint")} className="grid size-8 place-items-center rounded-full text-muted-foreground hover:bg-fill"><Star className="size-[18px]" /></a>;
   if (!canWrite || !folders) return null;
   const inside = new Set(holding(itemId).map((f) => f.id));
 

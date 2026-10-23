@@ -4,14 +4,16 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.29.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.30.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.29 live Markdown notes
+## This update: 1.30 public reading and personal accounts
 
-- Write directly in the right-side note panel while headings, emphasis, lists, quotes, code, task lists and tables render in place. Markdown syntax is editable at the cursor; click a table to edit its source. No edit/preview switching.
-- A compact formatting toolbar, keyboard formatting, undo/redo, Chinese composition support and the existing mobile slide-in panel keep writing close to the original.
-- Existing Markdown is retained as source, with no rich-text conversion or migration. Account/item-scoped drafts, direct links, conflict protection and `Ctrl/⌘ + Enter` saving remain. Live preview does not automatically save to the server.
-- The prebuilt editor loads only when Notes opens. No CDN, AI calls, extra user dependencies or bank migration.
+- Guests can browse, search and read knowledge, public interviews and learning resources. Personal interviews, notes, favourites and practice history require sign-in.
+- Personal actions lead to sign-in and return to the original reading route afterward. The sign-in page also links back to public browsing.
+- Public responses omit personal interview associations/counts, private notes and account state. Guest reading never syncs to an account.
+- GitHub is visible beside the account controls on desktop and phone. Self-hosted publishing requires explicit `--public-bank` configuration; existing readers keep their defaults.
+
+Try the [online test site](https://exist.qd.je/) without an account for public reading. Contact the maintainer on QQ **1939123241** for full-feature testing and suggestions.
 
 ## Interface preview
 

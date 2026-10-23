@@ -1,6 +1,6 @@
 import { Dialog } from "radix-ui";
-import { BookOpen, Bookmark, Compass, House, MessagesSquare, MoreHorizontal, Newspaper, Shuffle } from "lucide-react";
-import { useState } from "react";
+import { BookOpen, Bookmark, Compass, GitFork, House, MessagesSquare, MoreHorizontal, Newspaper, Shuffle } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { useBank } from "@/lib/bank";
 import { useI18n } from "@/lib/i18n";
 import { href, navigate, type Board } from "@/lib/router";
@@ -20,7 +20,7 @@ export function Logo() {
 
 function useBoards(): BoardItem[] {
   const { library, notes } = useBank();
-  const items: BoardItem[] = [{ board: "home" }, { board: "bank", count: library?.summary.questions }];
+  const items: BoardItem[] = [{ board: "home" }, { board: "bank", count: library?.guest ? undefined : library?.summary.questions }];
   if (notes) {
     items.push(
       { board: "knowledge", count: notes.section_counts.knowledge },
@@ -57,21 +57,29 @@ export function TopBar({
   const { library } = useBank();
   const boards = useBoards();
   const pick = randomQuestion();
+  const header = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    const measure = () => document.documentElement.style.setProperty("--ib-header-height", `${header.current?.offsetHeight || 52}px`);
+    const observer = new ResizeObserver(measure);
+    if (header.current) observer.observe(header.current);
+    measure();
+    return () => { observer.disconnect(); document.documentElement.style.removeProperty("--ib-header-height"); };
+  }, []);
   return (
-    <header className="ib-topbar glass sticky top-0 z-40 border-b border-border">
+    <header ref={header} className="ib-topbar glass sticky top-0 z-40 border-b border-border">
       <div className="mx-auto flex h-13 max-w-[1440px] items-center gap-4 px-4 sm:px-5">
         <a href={href("home")} className="flex min-w-0 items-center gap-2.5">
           <Logo />
           <span className="text-headline font-semibold tracking-tight whitespace-nowrap">{t("app_name")}</span>
           {library && (
-            <span className="hidden truncate text-footnote text-muted-foreground lg:inline">{library.account || library.name}</span>
+              <span className="hidden truncate text-footnote text-muted-foreground lg:inline">{library.guest ? t("public_reading") : library.account || library.name}</span>
           )}
         </a>
-        <div className="mx-auto hidden md:block">
+        <div className="mx-auto hidden xl:block">
           <BoardNav items={boards} current={board} />
         </div>
-        <div className="ml-auto flex items-center gap-1.5 md:ml-0">
-          <button
+        <div className="ml-auto flex shrink-0 items-center gap-1.5 xl:ml-0">
+          {!library?.guest && <button
             type="button"
             title={t("random")}
             aria-label={t("random")}
@@ -79,10 +87,15 @@ export function TopBar({
             className="grid size-8 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-fill hover:text-foreground"
           >
             <Shuffle className="size-4" />
-          </button>
+          </button>}
+          <a href="https://github.com/EXIST-D/Interview-bank" target="_blank" rel="noopener noreferrer" aria-label={t("repo")} title={t("repo")}
+            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2 text-footnote font-medium text-muted-foreground transition-colors hover:bg-fill hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50">
+            <GitFork className="size-[18px]" /><span className="hidden sm:inline">GitHub</span>
+          </a>
           <SettingsMenu theme={theme} onTheme={onTheme} onToast={onToast} />
         </div>
       </div>
+      <div className="hidden overflow-x-auto px-4 pb-2 md:block xl:hidden"><BoardNav items={boards} current={board} /></div>
     </header>
   );
 }

@@ -12,6 +12,7 @@ import { KnowledgePage } from "@/pages/knowledge";
 import { MinePage } from "@/pages/mine";
 import { FavoritesProvider } from "@/lib/favorites";
 import { ToastContext } from "@/lib/hooks";
+import { LoginRequired } from "@/components/login-required";
 
 function Shell() {
   const route = useRoute();
@@ -24,7 +25,7 @@ function Shell() {
 
   useEffect(() => {
     document.documentElement.lang = lang;
-    document.title = `Interview Bank · ${library?.account || library?.name || ""}`;
+    document.title = library?.guest ? "Interview Bank · 公开资料" : `Interview Bank · ${library?.account || library?.name || ""}`;
   }, [lang, library]);
 
   useEffect(() => {
@@ -56,7 +57,7 @@ function Shell() {
     <I18n.Provider value={i18n}>
       <ToastContext.Provider value={showToast}>
         <TopBar board={route.board} theme={theme} onTheme={setTheme} onToast={showToast} />
-        <main>{page}</main>
+        <main>{!library ? <HomePage /> : library.guest && (route.board === "bank" || route.board === "mine") ? <LoginRequired /> : page}</main>
         <TabBar board={route.board} />
         <Toast text={toast} />
       </ToastContext.Provider>

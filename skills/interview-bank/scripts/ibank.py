@@ -68,6 +68,7 @@ def parser():
                      help="Hosting behind a reverse proxy: the https:// origin the browser uses (repeatable)")
     web.add_argument("--login-file", help="Hosting: show a login page; the file is written by tools/deploy/set-login.py")
     web.add_argument("--banks-dir", help="Hosting several people: each account reads <dir>/<its bank>; needs --login-file")
+    web.add_argument("--public-bank", help="Hosting: explicitly publish this bank's collections for guest reading; personal interviews and state stay private")
     demo = sub.add_parser("demo", parents=[common], help="Create a sample bank (20 synthetic questions, 8 sourced answers) in a new directory")
     demo.add_argument("--v2", action="store_true", help="Also migrate it to V2 so Web practice can be saved")
     for name in ("init", "doctor", "validate", "rebuild-index"):
@@ -236,7 +237,7 @@ def dispatch(args):
     if args.command == "web":
         from ibank_core.web import serve
         return serve(bank, args.port, args.read_only, args.open, args.token_file, args.public_origin, args.login_file, args.banks_dir,
-                     args.allow_my_answers, args.allow_practice)
+                     args.allow_my_answers, args.allow_practice, args.public_bank)
     if args.command in ("media-plan", "media-provider-task", "media-provider-import"):
         from ibank_core.portability import dispatch as portability_dispatch
         return portability_dispatch(bank, args)

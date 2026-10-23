@@ -9,6 +9,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { FavoriteButton } from "@/components/favorite-button";
 import { NoteEditor, type PersonalNote } from "./note-editor";
+import { useBank } from "@/lib/bank";
+import { notesLoginHref } from "@/lib/access";
 import "./reader.css";
 
 export type ReaderNav = { index: number; total: number; onStep: (delta: number) => void };
@@ -147,6 +149,7 @@ export function ReaderFrame({
 }) {
   const { t } = useI18n();
   const toast = useToast();
+  const { library } = useBank();
   const wide = useMedia(WIDE);
   const [size, setSize] = usePref(keys.textSize, 0);
   const article = useRef<HTMLElement>(null);
@@ -268,6 +271,7 @@ export function ReaderFrame({
           <StickyNote className="size-3.5" /><span className="hidden sm:inline">{t("note_open")}</span>
           {personalNote?.saved && <span aria-label={t("note_exists")} className="absolute top-1 right-1 size-1.5 rounded-full bg-primary" />}
         </button></Dialog.Trigger>}
+        {library?.guest && <a href={notesLoginHref()} aria-label={t("note_open")} title={t("login_required_hint")} className={cn(chip, "inline-flex items-center gap-1.5")}><StickyNote className="size-3.5" /><span className="hidden sm:inline">{t("note_open")}</span></a>}
       </header>
       <div aria-hidden className="h-0.5 shrink-0">
         <span className="block h-full origin-left bg-primary transition-transform duration-75" style={{ transform: `scaleX(${progress})` }} />

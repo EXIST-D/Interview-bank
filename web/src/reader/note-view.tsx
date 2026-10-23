@@ -4,6 +4,8 @@ import { usePref } from "@/lib/prefs";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Markdown, SafeLink } from "./markdown";
+import { useBank } from "@/lib/bank";
+import { loginHref } from "@/lib/access";
 
 function SourceBox({ source }: { source: NoteDetail["source"] }) {
   // The collection's own answer is quoted as published; say where it came from.
@@ -22,7 +24,9 @@ function SourceBox({ source }: { source: NoteDetail["source"] }) {
 
 function LearningControls({ note, onToast }: { note: NoteDetail; onToast: (text: string) => void }) {
   const { t } = useI18n();
+  const { library } = useBank();
   usePref("ibank-notes-learning", 0);
+  if (library?.guest) return <p className="my-3 text-footnote"><a href={loginHref()} className="text-primary hover:underline">{t("login_to_track")}</a></p>;
   const state = learningState(note.id, note.reading);
   const change = (value: LearningState | "") => {
     setLearning(note.id, value, note.reading);

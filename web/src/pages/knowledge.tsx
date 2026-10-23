@@ -394,6 +394,7 @@ const NOTE_FILTERS = { tag: "", kind: "study", question_type: "", connection: ""
 
 function SourceView({ route, name }: { route: Route; name: string }) {
   const { t } = useI18n();
+  const { library } = useBank();
   const toast = useToast();
   const { page: meta, error: metaError } = useSourceCards("knowledge");
   const source = meta?.collections?.find((c) => c.name === name) ?? null;
@@ -497,7 +498,7 @@ function SourceView({ route, name }: { route: Route; name: string }) {
         {
           key: "connection",
           label: t("notes_connection"),
-          options: [{ value: "", label: t("notes_connection_all") }, ...(["any", "personal", "public", "none"] as const).map((c) => ({ value: c, label: t(`notes_connection_${c}`) }))],
+          options: [{ value: "", label: t("notes_connection_all") }, ...(["any", "personal", "public", "none"] as const).filter((c) => !library?.guest || c !== "personal").map((c) => ({ value: c, label: t(`notes_connection_${c}`) }))],
         },
         {
           key: "verification",
@@ -517,7 +518,7 @@ function SourceView({ route, name }: { route: Route; name: string }) {
           label: t("sort"),
           options: [
             { value: "order", label: t("notes_experience_order") },
-            { value: "asked", label: t("asked_sort") },
+            ...(!library?.guest ? [{ value: "asked", label: t("asked_sort") }] : []),
           ],
         },
       ]
@@ -531,7 +532,7 @@ function SourceView({ route, name }: { route: Route; name: string }) {
   return (
     <div
       className={cn(
-        "wide:grid wide:h-[calc(100dvh-3.25rem)]",
+        "wide:grid wide:h-[calc(100dvh-var(--ib-header-height,3.25rem))]",
         focused && "wide:h-dvh",
         listHidden ? "wide:grid-cols-1" : "wide:grid-cols-[minmax(340px,400px)_1fr] roomy:grid-cols-[240px_minmax(340px,380px)_1fr]",
       )}
@@ -575,7 +576,7 @@ function SourceView({ route, name }: { route: Route; name: string }) {
             options={[
               { value: "all", label: t("all") },
               { value: "marked", label: t("marked_only") },
-              { value: "asked", label: t("asked_only") },
+              ...(!library?.guest ? [{ value: "asked" as const, label: t("asked_only") }] : []),
               { value: "unread", label: t("notes_learning_unread") },
             ]}
           />

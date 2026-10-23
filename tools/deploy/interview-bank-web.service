@@ -2,6 +2,8 @@
 # Install as /etc/systemd/system/interview-bank-web.service; replace https://example.com with your site's origin.
 # --allow-personal lets the person keep their own answers, notes, favourites and learning state (personal/);
 # --allow-practice also saves practice ratings into a V2 bank (drop it to keep data/ untouched by the reader).
+# Optional: append --public-bank /srv/interview-bank/banks/<reviewed-bank> to publish its collections to guests.
+# Personal interviews, notes and state still require login. No public content is inferred by default.
 [Unit]
 Description=Interview Bank Web reader (loopback, behind a reverse proxy)
 After=network.target

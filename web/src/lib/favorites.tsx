@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { api } from "./api";
+import { useBank } from "./bank";
 
 export type FavoriteItem = {
   id: string;
@@ -33,6 +34,7 @@ const Favorites = createContext<State>({ folders: null, canWrite: false, change:
 export const useFavorites = () => useContext(Favorites);
 
 export function FavoritesProvider({ children }: { children: React.ReactNode }) {
+  const { library } = useBank();
   const [state, setState] = useState<Response | null>(null);
   const reload = useCallback(async () => {
     try {
@@ -42,8 +44,10 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
   useEffect(() => {
-    reload();
-  }, [reload]);
+    if (!library) return;
+    if (library.guest) setState({ folders: [], can_write: false });
+    else reload();
+  }, [reload, library?.guest, library?.account]);
   const change = useCallback(async (payload: FavoriteChange) => {
     const next = await api<Response>("/api/favorites", payload);
     setState(next);

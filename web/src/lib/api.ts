@@ -1,4 +1,5 @@
 // Talks only to the server that served this page: loopback, or the user's own proxy under a path such as /ibank/.
+import { signIn } from "./access";
 
 const launch = new URLSearchParams(location.hash.slice(1));
 let token = launch.get("token");
@@ -37,7 +38,7 @@ export async function api<T>(path: string, body?: unknown): Promise<T> {
   }
   // A hosted reader whose session ended shows its login page again.
   if (response.status === 401 && result?.login) {
-    location.reload();
+    signIn();
     return new Promise(() => {});
   }
   if (!response.ok) throw new ApiError(result?.error || "failed", response.status);
@@ -59,6 +60,8 @@ export type QuestionRow = {
 export type MyAnswer = { text: string; updated_at: string };
 
 export type Library = {
+  guest?: boolean;
+  can_login?: boolean;
   name: string;
   account?: string;
   version: string;

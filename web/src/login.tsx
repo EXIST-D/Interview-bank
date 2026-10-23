@@ -7,12 +7,14 @@ import "./lib/theme";
 import "./styles.css";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { publicBrowseHref } from "@/lib/access";
 
 const TEXT = {
   zh: {
     tagline: "每一次积累，都算数。",
     title: "登录你的题库",
-    lead: "题目、参考答案和练习进度，只对你本人可见。",
+    lead: "登录后使用个人面经、笔记、收藏和练习记录。",
+    browse: "先浏览公开资料",
     username: "用户名",
     password: "密码",
     show: "显示",
@@ -27,7 +29,8 @@ const TEXT = {
   en: {
     tagline: "Every question counts.",
     title: "Sign in to your bank",
-    lead: "Questions, answers and practice are visible to you only.",
+    lead: "Sign in for your interviews, notes, favourites and practice history.",
+    browse: "Browse public resources first",
     username: "Username",
     password: "Password",
     show: "Show",
@@ -78,7 +81,7 @@ function Login() {
         body: JSON.stringify({ username: username.trim(), password }),
       });
       const result = await response.json().catch(() => ({}));
-      if (response.ok) return location.reload();
+      if (response.ok) return location.replace(location.pathname + location.hash);
       setPassword("");
       fail(result.error || say("offline"));
     } catch {
@@ -150,6 +153,7 @@ function Login() {
             {say("foot")}
           </p>
         </form>
+        {document.querySelector('meta[name="public-reading"]') && <a href={publicBrowseHref()} className="text-subhead font-medium text-primary hover:underline">{say("browse")}</a>}
         <a href="https://github.com/EXIST-D/Interview-bank" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-footnote text-muted-foreground hover:text-foreground">
           {say("repo")}
           <ExternalLink className="size-3.5" />

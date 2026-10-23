@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { store, stored } from "./storage";
+import { readingScope, store, stored } from "./storage";
 import { queueRead } from "./sync";
 
 // Browser-local preferences shared by components that are open at the same time (menu and reader).
@@ -29,8 +29,10 @@ export function usePref<T>(key: string, fallback: T) {
 // Questions and notes opened in this browser (and, when the server keeps them, on other devices too).
 const READ_LIMIT = 5000;
 let readSet: Set<string> | null = null;
+let scope = "";
 
 export function readIds() {
+  if (scope !== readingScope()) { scope = readingScope(); readSet = null; }
   readSet ??= new Set(stored<string[]>("ibank-read", []));
   return readSet;
 }

@@ -27,6 +27,7 @@ const violations = [];
 const errors = [];
 const check = (name, ok, detail = "") => results.push(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? "  — " + detail : ""}`);
 let server;
+let guestServer;
 let browser;
 try {
   ibank("demo", "--v2");
@@ -360,6 +361,69 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   await settle(page);
   check("a grouped bookmark saves to its actual reading item", (await api(page, "/api/note?id=" + readingIds.head)).my_answer?.text === "这条笔记属于完整阅读条目。");
 
+  // A separate, cookie-authenticated hosted fixture. No account state or interview content is public.
+  const fixture = fileURLToPath(new URL("../../tools/web_guest_fixture.py", import.meta.url));
+  guestServer = spawn(python, ["-B", "-X", "utf8", fixture, "--bank", bank]);
+  const guestStart = await new Promise((resolve, reject) => {
+    createInterface({ input: guestServer.stdout }).once("line", resolve);
+    guestServer.once("exit", (code) => reject(new Error(`guest fixture exited ${code}`)));
+  });
+  const guestBase = JSON.parse(guestStart).url;
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: "zh-CN" });
+  const guest = await context.newPage();
+  guest.on("pageerror", (e) => errors.push(e.message));
+  guest.on("console", (m) => /Content Security Policy|Refused to/.test(m.text()) && violations.push(m.text()));
+  let trackingGuest = true;
+  const privateRequests = [];
+  guest.on("request", (request) => {
+    if (trackingGuest && ["/api/learning", "/api/favorites", "/api/my-notes", "/api/question", "/api/practice"].includes(new URL(request.url()).pathname)) privateRequests.push(request.url());
+  });
+  await guest.goto(guestBase);
+  await guest.getByRole("heading", { name: "公开资料，随时开始阅读", exact: true }).waitFor();
+  await settle(guest);
+  check("guests land on public reading with GitHub beside the account", await guest.locator(".ib-topbar").getByRole("link", { name: "GitHub 开源仓库", exact: true }).isVisible());
+  const publicLibrary = await (await context.request.get(guestBase + "api/library")).json();
+  const publicNotes = await (await context.request.get(guestBase + "api/notes?section=knowledge&limit=100")).json();
+  check("guest bootstrap contains no personal interview IDs or counts", publicLibrary.guest && publicLibrary.questions.length === 0 && publicLibrary.summary.questions === 0 && !publicLibrary.account);
+  const noteId = publicNotes.notes.find((n) => n.collection === "demo").id;
+  const publicDetail = await (await context.request.get(guestBase + "api/note?id=" + noteId)).json();
+  check("guest articles omit private notes and personal interview associations", publicDetail.my_answer === null && publicDetail.questions.length === 0 && publicDetail.asked === 0 && publicNotes.notes.every((n) => !n.has_my_answer && !n.asked));
+  const protectedGet = await context.request.get(guestBase + "api/question?id=" + otherId);
+  const protectedPost = await context.request.post(guestBase + "api/my-answer", { data: { item_id: noteId, text: "must not save", expected_updated_at: "" } });
+  check("anonymous interview guesses and writes require sign-in", protectedGet.status() === 401 && protectedPost.status() === 401);
+  await guest.goto(guestBase + "#/bank");
+  await guest.getByRole("heading", { name: "登录后，继续你的个人积累", exact: true }).waitFor();
+  check("the private board offers login without requesting private data", privateRequests.length === 0, privateRequests.join(" | "));
+  const readingHash = "#/knowledge/demo?open=" + noteId;
+  const noteLoginHash = readingHash + "&panel=notes";
+  await guest.goto(guestBase + readingHash);
+  await guest.locator("article .reading-title").waitFor();
+  await guest.getByRole("link", { name: "笔记", exact: true }).click();
+  await guest.locator("#login-username").waitFor();
+  check("a guest note action opens login while preserving the reading route", new URL(guest.url()).searchParams.get("login") === "1" && new URL(guest.url()).hash === noteLoginHash);
+  await guest.getByRole("link", { name: "先浏览公开资料", exact: true }).click();
+  await guest.locator("article .reading-title").waitFor();
+  check("sign-in page returns to the same public article", new URL(guest.url()).hash === noteLoginHash && !new URL(guest.url()).search);
+  await guest.getByRole("link", { name: "笔记", exact: true }).click();
+  await guest.locator("#login-username").fill("demo");
+  await guest.locator("#login-password").fill("synthetic browser password");
+  trackingGuest = false;
+  await guest.getByRole("button", { name: "登录", exact: true }).click();
+  await guest.locator("article .reading-title").waitFor();
+  const signedIn = await (await context.request.get(guestBase + "api/library")).json();
+  check("sign-in restores account permissions and the original article", !signedIn.guest && signedIn.can_write_personal && signedIn.summary.questions > 0 && new URL(guest.url()).hash === noteLoginHash && !new URL(guest.url()).search && await guest.getByRole("dialog", { name: "笔记", exact: true }).isVisible());
+  await guest.locator(".ib-topbar").getByRole("button", { name: "设置", exact: true }).click();
+  await guest.getByRole("menuitem", { name: "退出登录", exact: true }).click();
+  await guest.getByRole("link", { name: "登录", exact: true }).waitFor();
+  await guest.locator("article .reading-title").waitFor();
+  check("logout restores public reading without a login loop", (await (await context.request.get(guestBase + "api/library")).json()).guest && await guest.locator("article .reading-title").isVisible());
+  await guest.setViewportSize({ width: 390, height: 844 });
+  await guest.goto(guestBase);
+  await guest.getByRole("heading", { name: "公开资料，随时开始阅读", exact: true }).waitFor();
+  const fits = await guest.evaluate(() => document.documentElement.scrollWidth <= innerWidth);
+  check("phone guest header fits with GitHub and login visible", fits && await guest.locator(".ib-topbar").getByRole("link", { name: "GitHub 开源仓库", exact: true }).isVisible() && await guest.locator(".ib-topbar").getByRole("link", { name: "登录", exact: true }).isVisible());
+  await context.close();
+
   check("no page errors", errors.length === 0, errors.join(" | "));
   check("no Content-Security-Policy violations", violations.length === 0, violations.join(" | "));
 } catch (error) {
@@ -369,6 +433,7 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
 } finally {
   await browser?.close();
   server?.kill();
+  guestServer?.kill();
   rmSync(root, { recursive: true, force: true });
 }
 console.log(results.join("\n"));

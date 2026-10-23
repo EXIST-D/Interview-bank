@@ -1,7 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import { api, clearDetails, type Library, type NotesOverview } from "./api";
 import { clearNotes, setLearningAccount, sourceCards } from "./notes";
-import { startSync } from "./sync";
+import { startSync, stopSync } from "./sync";
+import { setGuestStorage } from "./storage";
 
 // Counts for the top bar, the overview and the settings menu. Each board loads its own lists.
 type BankState = {
@@ -28,8 +29,10 @@ export function BankProvider({ children }: { children: React.ReactNode }) {
     }
     try {
       const next = await api<Library>("/api/library?limit=5&sort=frequency");
-      setLearningAccount(next.account || next.name);
-      startSync(next.account || next.name);
+      setGuestStorage(Boolean(next.guest));
+      setLearningAccount(next.guest ? "guest" : next.account || next.name);
+      if (next.guest) stopSync();
+      else startSync(next.account || next.name);
       setLibrary(next);
       // The public-interview section carries every section's counts with the smallest response.
       if (next.notes?.total) setNotes((await sourceCards("experiences")) as unknown as NotesOverview);

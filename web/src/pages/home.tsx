@@ -146,8 +146,8 @@ function Skeleton({ className }: { className?: string }) {
 export function HomePage() {
   const { t, lang } = useI18n();
   const { library, notes, error, refresh } = useBank();
-  const lastQuestion = stored<LastRead | null>(keys.lastQuestion, null);
-  const lastNote = stored<LastRead | null>(keys.lastNote, null);
+  const lastQuestion = library && !library.guest ? stored<LastRead | null>(keys.lastQuestion, null) : null;
+  const lastNote = library && !library.guest ? stored<LastRead | null>(keys.lastNote, null) : null;
   const read = stored<string[]>(keys.read, []).length;
   const today = new Date().toLocaleDateString(lang, { month: "long", day: "numeric", weekday: "long" });
 
@@ -165,10 +165,11 @@ export function HomePage() {
   return (
     <div className="mx-auto max-w-[1120px] px-4 pt-8 pb-28 sm:px-6 md:pt-10 md:pb-16">
       <p className="text-caption font-semibold tracking-wide text-primary">{t("today", { d: today })}</p>
-      <h1 className="mt-1 text-large-title font-bold">{t("home_title")}</h1>
+      <h1 className="mt-1 text-large-title font-bold">{t(library?.guest ? "public_home_title" : "home_title")}</h1>
+      {library?.guest && <p className="mt-3 max-w-2xl text-callout leading-relaxed text-muted-foreground">{t("public_home_lead")}</p>}
       <p className="mt-1.5 text-callout text-muted-foreground tabular-nums">
         {library
-          ? t("home_summary", { q: library.summary.questions, k: notes?.section_counts.knowledge ?? 0, r: read })
+          ? library.guest ? t("public_home_summary", { k: notes?.section_counts.knowledge ?? 0, e: notes?.section_counts.experiences ?? 0, l: notes?.section_counts.learning ?? 0 }) : t("home_summary", { q: library.summary.questions, k: notes?.section_counts.knowledge ?? 0, r: read })
           : t("loading")}
       </p>
 
@@ -191,7 +192,7 @@ export function HomePage() {
               icon={MessagesSquare}
               tone="bg-blue/10 text-blue"
               hint={t("board_bank_hint")}
-              stat={t("bank_stat", { n: library.summary.questions, g: library.facets.group.length })}
+              stat={library.guest ? t("private_stat") : t("bank_stat", { n: library.summary.questions, g: library.facets.group.length })}
             />
             {notes && (
               <>
@@ -222,7 +223,7 @@ export function HomePage() {
         )}
       </div>
 
-      <div className="mt-10 flex items-end justify-between">
+      {!library?.guest && <><div className="mt-10 flex items-end justify-between">
         <h2 className="text-title-2 font-bold">{t("top_questions")}</h2>
         <Button variant="outline" size="sm" asChild>
           <a href={href("bank")}>{t("see_all")}</a>
@@ -233,6 +234,7 @@ export function HomePage() {
           ? library.questions.map((question, index) => <QuestionLine key={question.id} question={question} rank={index + 1} />)
           : Array.from({ length: 5 }, (_, i) => <Skeleton key={i} className="m-4 h-10" />)}
       </div>
+      </>}
     </div>
   );
 }

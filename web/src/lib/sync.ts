@@ -43,16 +43,19 @@ window.addEventListener("pagehide", () => {
 });
 
 export function queueRead(id: string) {
+  if (!writable) return;
   pending.read[id] ??= new Date().toISOString();
   schedule();
 }
 
 export function queueState(id: string, record: StateRecord) {
+  if (!writable) return;
   pending.states[id] = record;
   schedule();
 }
 
 export function queueShelf(order: string[]) {
+  if (!writable) return;
   pending.shelf = { order, at: new Date().toISOString() };
   schedule();
 }
@@ -97,4 +100,11 @@ export async function startSync(name: string) {
     pending.shelf = { order: shelf.order, at: shelf.at };
   }
   schedule(300);
+}
+
+export function stopSync() {
+  writable = false;
+  clearTimeout(timer);
+  account = "guest";
+  pending = { read: {}, states: {} };
 }

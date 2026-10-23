@@ -175,6 +175,28 @@ Validate changes in a separate fixture or a permitted copy.
 Verify filtering, answer reveal, saved self-ratings, refresh/restart persistence, empty/V1/read-only banks, mobile layout, and rejected unauthorized writes.
 A browser demo against a copy must be labelled as a copy; do not imply those practice records are the user's real learning history.
 
+### Hosted public reading (1.30+)
+
+Keep the existing HTTPS proxy, token file, login file and account banks. Add
+`--public-bank /absolute/path/to/the/explicitly-published-bank` to `web`. Only the collections in this selected
+bank are published. Review them for private material before enabling; never infer publication from a folder name
+or publish another person's bank. Personal question tables, reference answers attached to them and `personal/`
+remain protected. With no `--public-bank`, the original local/private-hosted behaviour stays unchanged.
+
+Guests receive GET-only `/api/library` (empty personal summary), `/api/notes` and `/api/note`. Collection views
+omit personal interview links, frequency counts, personal note flags/content and organization audit history;
+non-public source origins are hidden. Public-to-public study links and citations remain readable. All other
+account endpoints and mutations require login, including guessed interview IDs. Host/origin and proxy-token
+checks still apply. The reverse proxy must overwrite, never trust, the incoming `X-Interview-Token` header.
+The allowlist follows the [OWASP authorization guidance](https://cheatsheetseries.owasp.org/cheatsheets/Authorization_Cheat_Sheet.html)
+to deny access by default and check each request.
+
+The main URL opens public reading; `?login=1` opens sign-in. The browser retains its hash route across sign-in
+and back-to-public links without accepting third-party return URLs. Personal interviews and My Space show
+a login gate; notes/favourites/learning controls offer sign-in. Guest local read marks are separate from the
+account's existing browser marks and are never queued for server synchronization. Signing in restores normal
+per-account permissions; this release does not add registration or grant access to somebody else's bank.
+
 ### Live Markdown notes (1.29+)
 
 Notes use a single editing surface. The active line reveals Markdown syntax; other lines render in place.

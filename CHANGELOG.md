@@ -2,6 +2,18 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.30.0] - 2026-10-24
+
+### Added
+- Opt-in hosted guest reading via `web --public-bank <bank>`: GET-only public bootstrap, collection search and articles; knowledge, public interviews and learning resources are accessible without an account.
+- Login gates for personal interviews, notes, favourites and practice; same-page login returns to the original hash route. Public reading can resume from the login page.
+- Visible GitHub entry beside account controls, with responsive navigation and reader height tracking.
+- Authorization regression tests for anonymous private-ID guesses, write attempts, private association counts, account isolation, invalid cookies and unchanged personal data.
+
+### Security
+- Public projections never load personal notes and omit interview questions, private links/counts and organization audit history; local source origins are hidden. Guest browser reading state is separate and never synced to an account.
+- Publishing is explicit and requires hosted login configuration. Existing local readers and private hosted instances retain their defaults; proxy token, origin validation and secure session cookies are preserved.
+
 ## [1.29.0] - 2026-10-23
 
 ### Added
