@@ -23,6 +23,8 @@ const LONG = [
 ].join("\n");
 
 const results = [];
+const violations = [];
+const errors = [];
 const check = (name, ok, detail = "") => results.push(`${ok ? "PASS" : "FAIL"}  ${name}${detail ? "  — " + detail : ""}`);
 let server;
 let browser;
@@ -75,8 +77,6 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   const base = start.split("#")[0];
 
   browser = await chromium.launch(process.env.CHROMIUM ? { executablePath: process.env.CHROMIUM } : {});
-  const violations = [];
-  const errors = [];
   const open = async (viewport) => {
     const page = await browser.newPage({ viewport, acceptDownloads: true });
     page.on("console", (m) => /Content Security Policy|Refused to/.test(m.text()) && violations.push(JSON.stringify({ text: m.text(), location: m.location() })));
