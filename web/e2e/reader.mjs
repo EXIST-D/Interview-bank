@@ -79,7 +79,7 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   const errors = [];
   const open = async (viewport) => {
     const page = await browser.newPage({ viewport, acceptDownloads: true });
-    page.on("console", (m) => /Content Security Policy|Refused to/.test(m.text()) && violations.push(m.text().slice(0, 160)));
+    page.on("console", (m) => /Content Security Policy|Refused to/.test(m.text()) && violations.push(JSON.stringify({ text: m.text(), location: m.location() })));
     page.on("pageerror", (e) => errors.push(e.message));
     page.on("dialog", (d) => d.accept(d.type() === "prompt" ? "冲刺" : undefined));
     await page.goto(start);
@@ -99,6 +99,7 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
     await target.focus();
     await p.keyboard.press("ControlOrMeta+a");
     await p.keyboard.insertText(text);
+    await p.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   };
 
   const draftText = (p, id) => p.evaluate((item) => {
@@ -297,7 +298,8 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   await settle(page);
   releaseSave();
   await settle(page);
-  check("a late save cannot replace the newly opened item's title or editor", (await page.locator("article .reading-title").innerText()) === "HTTP 长连接是什么？" && (await area.innerText()).trim() === "" && (await api(page, "/api/note?id=" + note)).my_answer.text.includes("延迟保存"));
+  const late = { title: await page.locator("article .reading-title").innerText(), draft: await draftText(page, otherId), placeholder: await area.locator(".cm-placeholder").isVisible(), saved: (await api(page, "/api/note?id=" + note)).my_answer.text.includes("延迟保存") };
+  check("a late save cannot replace the newly opened item's title or editor", late.title === "HTTP 长连接是什么？" && late.draft === null && late.placeholder && late.saved, JSON.stringify(late));
   await page.unroute("**/api/my-answer");
 
   // The single-surface editor preserves Markdown while rendering it; no editor-to-HTML round trip.
@@ -308,7 +310,7 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   await area.press("ControlOrMeta+z");
   check("native undo restores the text before a formatting action", await draftText(page, otherId) === "重点");
   await area.press("ControlOrMeta+Shift+z");
-  check("native redo restores Markdown formatting", await draftText(page, otherId) === "**重点**");
+  check("native redo restores Markdown formatting", await draftText(page, otherId) === "**重点**", JSON.stringify(await draftText(page, otherId)));
 
   const liveText = "## 边写边看\n\n**加粗** 与 *斜体*、~~删除~~ 和 `cache.get()`\n\n> 引用不会改变原文\n\n- [ ] 待复习\n- [x] 已复习\n\n| 概念 | 结论 |\n| --- | --- |\n| **缓存** | 保留原文 |\n\n```js\nconst x = '<script>test</script>';\n```\n\n[安全链接](https://example.org/docs)\n\n最后一段";
   await writeNote(page, area, liveText);
@@ -324,7 +326,8 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   const hostile = '<img src=x onerror="alert(1)">\n\n[bad](javascript:alert(1))\n\n![remote](https://example.org/image.png)\n\n尾段';
   await writeNote(page, area, hostile);
   await mine.getByText("边写边呈现格式，光标所在处可编辑 Markdown 标记。", { exact: true }).click();
-  check("Markdown HTML, dangerous links and images stay inert", await mine.locator(".ib-live-markdown img, .ib-live-markdown script, .ib-live-markdown a[href^='javascript:']").count() === 0 && (await area.innerText()).includes("onerror"));
+  const safe = { elements: await mine.locator(".ib-live-markdown img, .ib-live-markdown script, .ib-live-markdown a[href^='javascript:']").count(), text: await area.innerText(), source: await draftText(page, otherId) };
+  check("Markdown HTML, dangerous links and images stay inert", safe.elements === 0 && safe.source === hostile, JSON.stringify(safe));
   await writeNote(page, area, "中文输入：");
   await area.press("ControlOrMeta+End");
   const cdp = await page.context().newCDPSession(page);

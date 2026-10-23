@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Compartment, EditorSelection, EditorState, StateEffect, StateField, Transaction, type Range } from "@codemirror/state";
 import { Decoration, EditorView, keymap, placeholder, WidgetType, type DecorationSet } from "@codemirror/view";
-import { defaultKeymap, history, historyKeymap, isolateHistory } from "@codemirror/commands";
+import { defaultKeymap, history, historyKeymap, isolateHistory, redo } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 import { GFM, parser } from "@lezer/markdown";
 import { Bold, Code2, Heading2, Italic, Link2, List, Quote } from "lucide-react";
@@ -211,16 +211,27 @@ export function LiveMarkdownEditor({ value, readOnly, onChange, onSave }: { valu
       config.current.of(settings(readOnly)), EditorView.cspNonce.of(nonce && nonce !== "__CSP_NONCE__" ? nonce : ""),
       history(), markdown({ extensions: GFM, completeHTMLTags: false, pasteURLAsLink: false }), livePreview, EditorView.lineWrapping, placeholder(hint),
       keymap.of([{ key: "Mod-Enter", run: (v) => { if (v.composing) return false; latest.current.onSave(); return true; } },
+        { key: "Mod-Shift-z", run: redo, preventDefault: true },
         { key: "Mod-b", run: (v) => format(v, "bold") }, { key: "Mod-i", run: (v) => format(v, "italic") }, { key: "Mod-e", run: (v) => format(v, "code") },
         ...defaultKeymap, ...historyKeymap]),
       EditorState.transactionFilter.of((tr) => {
-        if (tr.docChanged && tr.newDoc.length > LIMIT) { queueMicrotask(() => { if (alive) setLimited(true); }); return []; }
+        if (tr.docChanged && tr.annotation(Transaction.addToHistory) !== false && tr.newDoc.length > LIMIT && tr.newDoc.length > tr.startState.doc.length) { queueMicrotask(() => { if (alive) setLimited(true); }); return []; }
         return tr;
       }),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) { setLimited(false); latest.current.onChange(update.state.doc.toString()); }
       }),
       EditorView.domEventHandlers({
+        beforeinput: (event, v) => {
+          // Chromium may insert styled <span> nodes for multiline insertText. Keep this path plain-text,
+          // just as CodeMirror's paste handler does, without allowing inline styles or touching IME.
+          if (event.inputType === "insertText" && event.data?.includes("\n") && !event.isComposing && !v.composing && !v.state.readOnly) {
+            event.preventDefault();
+            v.dispatch({ ...v.state.replaceSelection(event.data), userEvent: "input.type", scrollIntoView: true });
+            return true;
+          }
+          return false;
+        },
         focus: (_event, v) => { v.dispatch({ effects: focus.of(true) }); },
         blur: (_event, v) => { v.dispatch({ effects: focus.of(false) }); },
         compositionstart: (_event, v) => { v.dispatch({ effects: composing.of(true) }); },

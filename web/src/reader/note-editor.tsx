@@ -157,7 +157,7 @@ export function NoteEditor({ itemId, note, onToast }: { itemId: string; note: Pe
           {busy ? t("note_saving") : dirty ? t(restored ? "my_answer_draft" : "note_draft") : saved ? t("my_answer_updated", { d: new Date(saved.updated_at).toLocaleString(lang, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) }) : t("my_note_hint")}
         </p>
         <div className="mb-3 flex items-center gap-2">
-          {note.canWrite && <><Button size="sm" disabled={busy || !dirty || conflict} onClick={save} aria-keyshortcuts="Control+Enter Meta+Enter">{t("my_answer_save")}</Button>
+          {note.canWrite && <><Button size="sm" disabled={busy || !dirty || conflict || text.length > 20000} onClick={save} aria-keyshortcuts="Control+Enter Meta+Enter">{t("my_answer_save")}</Button>
             <button type="button" className="ib-note-reset" title={t("note_discard")} aria-label={t("note_discard")} disabled={busy || !dirty} onClick={() => {
               if (!window.confirm(t("note_discard_confirm"))) return;
               keepDraft(key, null); setText(saved?.text ?? ""); setBase(saved?.updated_at ?? ""); setConflict(false); setRestored(false); setError("");
