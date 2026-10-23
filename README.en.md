@@ -4,19 +4,18 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.28.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.29.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.28 right-side Markdown notes
+## This update: 1.29 live Markdown notes
 
-- Select **Notes** in the reader toolbar to open an independent writing panel beside the original on desktop. Phones use a slide-in panel that returns to the same item when closed.
-- Edit and preview Markdown headings, lists, code and links; save with `Ctrl/⌘ + Enter`. Opening or closing notes preserves your reading position.
-- Each note belongs to its question or source entry. List badges and **My notes** cards open the linked item and its note together; direct links can be copied. Unsaved drafts stay separate by account and item in this browser.
-- Existing saved notes, version history and storage remain compatible. A newer save on another device is protected; the local draft is retained for comparison. No bank migration is needed.
-
+- Write directly in the right-side note panel while headings, emphasis, lists, quotes, code, task lists and tables render in place. Markdown syntax is editable at the cursor; click a table to edit its source. No edit/preview switching.
+- A compact formatting toolbar, keyboard formatting, undo/redo, Chinese composition support and the existing mobile slide-in panel keep writing close to the original.
+- Existing Markdown is retained as source, with no rich-text conversion or migration. Account/item-scoped drafts, direct links, conflict protection and `Ctrl/⌘ + Enter` saving remain. Live preview does not automatically save to the server.
+- The prebuilt editor loads only when Notes opens. No CDN, AI calls, extra user dependencies or bank migration.
 
 ## Interface preview
 
-Right-side Markdown notes, shown with synthetic demonstration material:
+Live Markdown notes beside the original, shown with synthetic demonstration material:
 
 ![Interview Bank right-side Markdown note editor](assets/readme/web-note-panel.png)
 

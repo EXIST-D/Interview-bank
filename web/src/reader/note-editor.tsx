@@ -1,10 +1,11 @@
-import { Check, Eye, PencilLine, RotateCcw } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Check, RotateCcw } from "lucide-react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { api, ApiError, type MyAnswer } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Markdown } from "./markdown";
+
+const LiveMarkdownEditor = lazy(() => import("./live-markdown").then((module) => ({ default: module.LiveMarkdownEditor })));
 
 type Draft = { text: string; base: string };
 const memory = new Map<string, Draft>();
@@ -46,7 +47,6 @@ export function NoteEditor({ itemId, note, onToast }: { itemId: string; note: Pe
   const [saved, setSaved] = useState(note.saved);
   const [text, setText] = useState(() => draft?.text ?? note.saved?.text ?? "");
   const [base, setBase] = useState(() => draft?.base ?? note.saved?.updated_at ?? "");
-  const [preview, setPreview] = useState(() => !note.canWrite || (!draft && Boolean(note.saved)));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [conflict, setConflict] = useState(Boolean(draft && draft.base !== (note.saved?.updated_at ?? "")));
@@ -143,27 +143,13 @@ export function NoteEditor({ itemId, note, onToast }: { itemId: string; note: Pe
 
   return (
     <div className="ib-note-editor">
-      <div className="flex shrink-0 items-center gap-2 px-4 py-3">
-        <div role="group" aria-label={t("note_mode")} className="inline-flex rounded-lg bg-fill p-0.5">
-          {note.canWrite && <button type="button" aria-pressed={!preview} onClick={() => setPreview(false)} className={cn("ib-note-tab", !preview && "bg-card text-foreground shadow-soft-sm")}><PencilLine className="size-3.5" />{t("my_answer_edit")}</button>}
-          <button type="button" aria-pressed={preview} onClick={() => setPreview(true)} className={cn("ib-note-tab", preview && "bg-card text-foreground shadow-soft-sm")}><Eye className="size-3.5" />{t("note_preview")}</button>
-        </div>
-        <span className="ml-auto text-caption text-tertiary-foreground">Markdown</span>
-      </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-3">
+      <div className="ib-note-content">
         {conflict && <div role="alert" className="mb-3 rounded-xl bg-orange/12 px-3 py-2.5 text-footnote text-warning"><p>{t("note_conflict")}</p><button type="button" disabled={busy} onClick={reload} className="mt-1 font-medium underline">{t("note_reload")}</button></div>}
         {error && <p role="alert" className="mb-3 rounded-xl bg-destructive/10 p-3 text-footnote text-destructive">{error}</p>}
-        {preview ? (
-          <div className="ib-reading ib-note-preview" aria-label={t("note_preview")}>
-            {text.trim() ? <Markdown text={text} /> : <p className="text-footnote text-tertiary-foreground">{t("note_empty_preview")}</p>}
-          </div>
-        ) : (
-          <textarea className="ib-note-input" aria-label={t("my_note")} value={text} maxLength={20000} readOnly={busy || !note.canWrite}
-            placeholder={t("my_answer_placeholder")} spellCheck={false}
-            onChange={(event) => change(event.target.value)}
-            onKeyDown={(event) => { if ((event.metaKey || event.ctrlKey) && event.key === "Enter") { event.preventDefault(); save(); } }} />
-        )}
-        {saved && dirty && <details className="mt-3 rounded-xl border border-border px-3 py-2 text-footnote"><summary className="cursor-pointer text-muted-foreground">{t("my_answer_saved_version")}</summary><div className="ib-reading ib-note-preview mt-2"><Markdown text={saved.text} /></div></details>}
+        <Suspense fallback={<p role="status" className="p-4 text-footnote text-muted-foreground">{t("loading")}</p>}>
+          <LiveMarkdownEditor value={text} readOnly={busy || !note.canWrite} onChange={change} onSave={save} />
+        </Suspense>
+        {saved && dirty && <details className="ib-note-comparison rounded-xl border border-border px-3 py-2 text-footnote"><summary className="cursor-pointer text-muted-foreground">{t("my_answer_saved_version")}</summary><div className="ib-reading ib-note-preview mt-2"><Markdown text={saved.text} /></div></details>}
       </div>
       <footer className="pb-safe shrink-0 border-t border-border px-4 pt-3">
         <p aria-live="polite" className="mb-2 flex min-h-4 items-center gap-1.5 text-caption text-muted-foreground">

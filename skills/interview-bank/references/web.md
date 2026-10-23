@@ -43,7 +43,7 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
 - Personal notes: **笔记 / Notes** in the reader toolbar opens a right-side Markdown panel, independent of
   the original content and its answer visibility. On desktop the original remains interactive with an independent
   scrollbar; on phones it is a modal panel with a close/return-to-item control. The bottom editor is removed.
-  Markdown edit/preview supports the reader's headings, lists, code and safe links; Ctrl/⌘ + Enter saves. Opening
+  Markdown renders in place as you write (headings, emphasis, lists, quotes, code, task lists and tables); Ctrl/⌘ + Enter saves. Opening
   or closing notes preserves the visible paragraph. Each note is bound to the open question or collection entry;
   saved-note badges, My notes cards and `panel=notes` deep links open the correct item and note together.
   Unsaved drafts are local to this browser, scoped by account, bank path and item, and survive closing, item
@@ -174,3 +174,13 @@ Unknown IDs, invalid requests, concurrent modification and locked banks report e
 Validate changes in a separate fixture or a permitted copy.
 Verify filtering, answer reveal, saved self-ratings, refresh/restart persistence, empty/V1/read-only banks, mobile layout, and rejected unauthorized writes.
 A browser demo against a copy must be labelled as a copy; do not imply those practice records are the user's real learning history.
+
+### Live Markdown notes (1.29+)
+
+Notes use a single editing surface. The active line reveals Markdown syntax; other lines render in place.
+Clicking a rendered table reveals its source for editing. Formatting tools and Ctrl/Command+B, I, E are
+available; undo/redo uses the editor history. HTML stays literal and images are not fetched automatically.
+Stored text is the Markdown source, including syntax the preview does not recognize. No rich-text conversion
+or personal-data migration is performed. Ctrl/Command+Enter or Save still explicitly saves to the server;
+live rendering is local and does not mean autosave. The account/item-scoped draft and stale-save protections
+continue to apply. CodeMirror is prebuilt and lazily loaded; the server requires no Node installation.

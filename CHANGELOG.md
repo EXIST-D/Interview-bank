@@ -2,6 +2,17 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.29.0] - 2026-10-23
+
+### Added
+- Live Markdown notes using CodeMirror 6: in-place headings, emphasis, lists, quotes, code, task checkboxes and table widgets; reveal source at the cursor without switching modes. Click a table to edit its Markdown.
+- Formatting tools and shortcuts with undo/redo; native composition handling, soft wrapping, a visible 20,000-character limit, and independently scrolling notes on desktop and phone.
+- Browser checks for live rendering, exact Markdown round trips, format undo/redo, table editing, inert HTML/links/images, Chinese composition and keyboard saving.
+
+### Changed
+- Replace the note edit/preview tabs with a single editor surface. Existing Markdown/API, scoped drafts, optimistic concurrency and version history remain compatible; no bank migration or automatic server saving.
+- Lazy-load the prebuilt editor only when the note panel opens. Retain nonce-bound styles and the existing CSP; no CDN, remote image loading or AI calls.
+
 ## [1.28.0] - 2026-10-21
 
 ### Added

@@ -93,6 +93,19 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   const api = (page, path) =>
     page.evaluate(async (p) => (await fetch(p.slice(1), { headers: { "X-Interview-Token": sessionStorage.getItem("ibank-token") } })).json(), path);
 
+  // Select through the editor's native keymap before inserting plain text, just like select-all + paste.
+  // DOM-only fill() can bypass a decorated editor's logical selection.
+  const writeNote = async (p, target, text) => {
+    await target.focus();
+    await p.keyboard.press("ControlOrMeta+a");
+    await p.keyboard.insertText(text);
+  };
+
+  const draftText = (p, id) => p.evaluate((item) => {
+    const key = Object.keys(localStorage).find((k) => k.startsWith("ibank-note-draft:") && JSON.parse(k.slice("ibank-note-draft:".length))[2] === item);
+    return key ? JSON.parse(localStorage.getItem(key)).text : null;
+  }, id);
+
   const page = await open({ width: 1440, height: 900 });
   const question = (await api(page, "/api/library")).ids[0];
   const note = (await api(page, "/api/notes?section=knowledge&query=" + encodeURIComponent("合集"))).ids[0];
@@ -103,7 +116,7 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   await settle(page);
   const mine = page.getByRole("dialog", { name: "我的笔记", exact: true });
   await page.getByRole("button", { name: "笔记", exact: true }).click();
-  await mine.getByRole("textbox", { name: "我的笔记", exact: true }).fill("先讲结论，再举项目里的例子。");
+  await writeNote(page, mine.getByRole("textbox", { name: "我的笔记", exact: true }), "先讲结论，再举项目里的例子。");
   await mine.getByRole("button", { name: "保存" }).click();
   await settle(page);
   check("question note saves through the compatible personal API", (await api(page, "/api/question?id=" + question)).my_answer?.text.includes("项目里的例子"));
@@ -132,19 +145,20 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   check("opening notes keeps the long article away from its top", (await page.locator("article.ib-reading").evaluate((n) => n.scrollTop)) > 200);
   const noteText = "# 缓存复习\n\n穿透、击穿、雪崩三者要分清。\n\n- **穿透**：查询不存在的数据\n\n```python\ncache.get(key)\n```\n\n[文档](https://redis.io/docs/)";
   const area = mine.getByRole("textbox", { name: "我的笔记", exact: true });
-  await area.fill(noteText);
-  await mine.getByRole("button", { name: "预览", exact: true }).click();
-  check("Markdown notes preview headings, code and safe links", await mine.getByRole("heading", { name: "缓存复习", exact: true }).isVisible() && (await mine.locator("pre").innerText()).includes("cache.get") && (await mine.getByRole("link", { name: "文档" }).getAttribute("rel")) === "noopener noreferrer");
+  await writeNote(page, area, noteText);
+  await mine.getByText("边写边呈现格式，光标所在处可编辑 Markdown 标记。", { exact: true }).click();
+  check("Markdown notes render headings, code and safe links without switching preview", await mine.getByRole("heading", { name: "缓存复习", exact: true }).isVisible() && (await mine.locator(".cm-md-codeblock").allTextContents()).join("\n").includes("cache.get") && (await mine.getByRole("link", { name: "文档" }).getAttribute("rel")) === "noopener noreferrer");
+  check("the note is directly editable without mode tabs", await area.isVisible() && await mine.getByRole("button", { name: "预览", exact: true }).count() === 0 && await mine.getByRole("button", { name: "编辑", exact: true }).count() === 0);
   await mine.getByRole("button", { name: "收起笔记", exact: true }).click();
   await page.getByRole("button", { name: "笔记", exact: true }).click();
-  check("closing and reopening restores this item's Markdown draft", await area.inputValue() === noteText);
+  check("closing and reopening restores this item's Markdown draft", await draftText(page, note) === noteText && (await area.innerText()).includes("雪崩"));
   await page.reload();
   await settle(page);
-  check("reload restores the account-scoped draft and note deep link", await area.inputValue() === noteText && page.url().includes("panel=notes"));
+  check("reload restores the account-scoped draft and note deep link", await draftText(page, note) === noteText && (await area.innerText()).includes("雪崩") && page.url().includes("panel=notes"));
   await mine.getByRole("button", { name: "保存" }).click();
   await settle(page);
   const storedNote = (await api(page, "/api/note?id=" + note)).my_answer;
-  await area.fill(noteText + "\n\n本地修订");
+  await writeNote(page, area, noteText + "\n\n本地修订");
   // A real second-device save, followed by a stale UI save: the server must refuse overwriting.
   await page.evaluate(async ({ note, updated }) => {
     const response = await fetch("api/my-answer", { method: "POST", headers: { "X-Interview-Token": sessionStorage.getItem("ibank-token"), "Content-Type": "application/json" }, body: JSON.stringify({ item_id: note, text: "另一台设备写的笔记", expected_updated_at: updated }) });
@@ -152,20 +166,20 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   }, { note, updated: storedNote.updated_at });
   await mine.getByRole("button", { name: "保存", exact: true }).click();
   await settle(page);
-  check("a stale save keeps the draft and the other device's note", (await mine.getByRole("alert").innerText()).includes("另一处已更新") && (await area.inputValue()).includes("本地修订") && (await api(page, "/api/note?id=" + note)).my_answer.text === "另一台设备写的笔记");
+  check("a stale save keeps the draft and the other device's note", (await mine.getByRole("alert").innerText()).includes("另一处已更新") && (await area.innerText()).includes("本地修订") && (await api(page, "/api/note?id=" + note)).my_answer.text === "另一台设备写的笔记");
   await mine.getByRole("button", { name: "读取最新版本并保留草稿" }).click();
   await settle(page);
-  check("reload for conflict comparison retains the local draft", (await area.inputValue()).includes("本地修订"));
+  check("reload for conflict comparison retains the local draft", (await area.innerText()).includes("本地修订"));
   await mine.getByRole("button", { name: "保存", exact: true }).click();
   await settle(page);
   check("an explicitly reconciled note can be saved", (await api(page, "/api/note?id=" + note)).my_answer.text.includes("本地修订"));
   await page.route("**/api/my-answer", (route) => route.abort("failed"));
-  await area.fill(noteText + "\n\n网络失败时的草稿");
+  await writeNote(page, area, noteText + "\n\n网络失败时的草稿");
   await mine.getByRole("button", { name: "保存", exact: true }).click();
   await settle(page);
-  check("a failed save retains the draft and enables retry", (await area.inputValue()).includes("网络失败时") && await mine.getByRole("alert").isVisible() && await mine.getByRole("button", { name: "保存", exact: true }).isEnabled());
+  check("a failed save retains the draft and enables retry", (await area.innerText()).includes("网络失败时") && await mine.getByRole("alert").isVisible() && await mine.getByRole("button", { name: "保存", exact: true }).isEnabled());
   await page.unroute("**/api/my-answer");
-  await area.fill(noteText + "\n\n本地修订");
+  await writeNote(page, area, noteText + "\n\n本地修订");
   await mine.getByRole("button", { name: "收起笔记", exact: true }).click();
   await page.getByRole("button", { name: "收藏", exact: true }).click();
   await page.locator("[data-radix-popper-content-wrapper] button", { hasText: "我的收藏" }).click();
@@ -187,7 +201,7 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   check("export is Markdown", readFileSync(await (await download).path(), "utf8").includes("三者要分清"));
   await page.locator("main a.surface").click();
   await settle(page);
-  check("a note card opens both its original item and side panel", page.url().includes("panel=notes") && await mine.isVisible() && (await mine.locator(".md").innerText()).includes("三者要分清"));
+  check("a note card opens both its original item and side panel", page.url().includes("panel=notes") && await mine.isVisible() && (await area.innerText()).includes("三者要分清"));
   await mine.getByRole("button", { name: "收起笔记", exact: true }).click();
   check("closing notes removes the panel from the link", !page.url().includes("panel=notes") && !await mine.isVisible());
   await page.goto(base + "#/mine?tab=favorites");
@@ -252,26 +266,24 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   await phoneNote.getByRole("button", { name: "收起笔记", exact: true }).focus();
   for (let i = 0; i < 12; i++) await phone.keyboard.press("Tab");
   check("phone note keyboard focus stays inside its modal", await phoneNote.evaluate((n) => n.contains(document.activeElement)));
-  await phoneNote.getByRole("button", { name: "编辑", exact: true }).click();
   const phoneArea = phoneNote.getByRole("textbox", { name: "我的笔记", exact: true });
-  await phoneArea.fill("手机草稿，只属于这道题。");
+  await writeNote(phone, phoneArea, "手机草稿，只属于这道题。");
   await phoneNote.getByRole("button", { name: "收起笔记", exact: true }).click();
   check("phone closing notes returns to the same article", !await phoneNote.isVisible() && await phone.locator("article .reading-title").isVisible());
   await phone.getByRole("button", { name: "下一题", exact: true }).click();
   await settle(phone);
   await phone.getByRole("button", { name: "笔记", exact: true }).click();
-  check("switching items does not leak the previous note draft", await phoneArea.inputValue() !== "手机草稿，只属于这道题。");
+  check("switching items does not leak the previous note draft", await phoneArea.innerText() !== "手机草稿，只属于这道题。");
   await phoneNote.getByRole("button", { name: "收起笔记", exact: true }).click();
   await phone.getByRole("button", { name: "上一题", exact: true }).click();
   await settle(phone);
   await phone.getByRole("button", { name: "笔记", exact: true }).click();
-  check("returning to an item restores its own draft", await phoneArea.inputValue() === "手机草稿，只属于这道题。");
+  check("returning to an item restores its own draft", await phoneArea.innerText() === "手机草稿，只属于这道题。");
 
   // A slow save finishes after switching between two entries in the same source reader.
   await page.goto(base + "#/knowledge/demo?open=" + note + "&panel=notes");
   await settle(page);
-  if (!await area.isVisible()) await mine.getByRole("button", { name: "编辑", exact: true }).click();
-  await area.fill(noteText + "\n\n延迟保存");
+  await writeNote(page, area, noteText + "\n\n延迟保存");
   let releaseSave;
   let seeSave;
   const blocked = new Promise((resolve) => { releaseSave = resolve; });
@@ -285,13 +297,53 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   await settle(page);
   releaseSave();
   await settle(page);
-  check("a late save cannot replace the newly opened item's title or editor", (await page.locator("article .reading-title").innerText()) === "HTTP 长连接是什么？" && await area.inputValue() === "" && (await api(page, "/api/note?id=" + note)).my_answer.text.includes("延迟保存"));
+  check("a late save cannot replace the newly opened item's title or editor", (await page.locator("article .reading-title").innerText()) === "HTTP 长连接是什么？" && (await area.innerText()).trim() === "" && (await api(page, "/api/note?id=" + note)).my_answer.text.includes("延迟保存"));
   await page.unroute("**/api/my-answer");
+
+  // The single-surface editor preserves Markdown while rendering it; no editor-to-HTML round trip.
+  await writeNote(page, area, "重点");
+  await area.press("ControlOrMeta+a");
+  await mine.getByRole("button", { name: "粗体（Ctrl/⌘+B）", exact: true }).click();
+  check("the formatting toolbar inserts Markdown around the selection", await draftText(page, otherId) === "**重点**");
+  await area.press("ControlOrMeta+z");
+  check("native undo restores the text before a formatting action", await draftText(page, otherId) === "重点");
+  await area.press("ControlOrMeta+Shift+z");
+  check("native redo restores Markdown formatting", await draftText(page, otherId) === "**重点**");
+
+  const liveText = "## 边写边看\n\n**加粗** 与 *斜体*、~~删除~~ 和 `cache.get()`\n\n> 引用不会改变原文\n\n- [ ] 待复习\n- [x] 已复习\n\n| 概念 | 结论 |\n| --- | --- |\n| **缓存** | 保留原文 |\n\n```js\nconst x = '<script>test</script>';\n```\n\n[安全链接](https://example.org/docs)\n\n最后一段";
+  await writeNote(page, area, liveText);
+  await area.press("ControlOrMeta+End");
+  await mine.getByText("边写边呈现格式，光标所在处可编辑 Markdown 标记。", { exact: true }).click();
+  check("live Markdown renders emphasis, strike, quotes, tasks and tables", await mine.locator(".cm-md-strong").count() > 0 && await mine.locator(".cm-md-emphasis").count() > 0 && await mine.locator(".cm-md-strike").count() > 0 && await mine.locator(".cm-md-quote").count() > 0 && await mine.locator(".cm-md-task").count() === 2 && await mine.locator(".cm-md-table table").count() === 1);
+  await mine.getByRole("cell", { name: "保留原文", exact: true }).click();
+  check("clicking a rendered table reveals its editable Markdown source", await mine.locator(".cm-md-table").count() === 0 && (await area.innerText()).includes("| 概念 | 结论 |"));
+  await mine.getByText("边写边呈现格式，光标所在处可编辑 Markdown 标记。", { exact: true }).click();
+  await mine.getByRole("button", { name: "保存", exact: true }).click();
+  await settle(page);
+  check("saving live Markdown retains its exact source including tables and code", (await api(page, "/api/note?id=" + otherId)).my_answer.text === liveText);
+  const hostile = '<img src=x onerror="alert(1)">\n\n[bad](javascript:alert(1))\n\n![remote](https://example.org/image.png)\n\n尾段';
+  await writeNote(page, area, hostile);
+  await mine.getByText("边写边呈现格式，光标所在处可编辑 Markdown 标记。", { exact: true }).click();
+  check("Markdown HTML, dangerous links and images stay inert", await mine.locator(".ib-live-markdown img, .ib-live-markdown script, .ib-live-markdown a[href^='javascript:']").count() === 0 && (await area.innerText()).includes("onerror"));
+  await writeNote(page, area, "中文输入：");
+  await area.press("ControlOrMeta+End");
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Input.imeSetComposition", { text: "连续", selectionStart: 2, selectionEnd: 2 });
+  await cdp.send("Input.insertText", { text: "连续输入" });
+  await cdp.detach();
+  check("Chinese composition commits once without losing or repeating text", await draftText(page, otherId) === "中文输入：连续输入");
+  await writeNote(page, area, "x".repeat(20001));
+  await settle(page);
+  check("oversize input is rejected visibly without truncating the existing draft", await draftText(page, otherId) === "中文输入：连续输入" && (await mine.getByRole("alert").innerText()).includes("20,000"));
+  await writeNote(page, area, "末尾快捷保存");
+  await area.press("ControlOrMeta+Enter");
+  await settle(page);
+  check("the live editor saves with the existing keyboard shortcut", (await api(page, "/api/note?id=" + otherId)).my_answer.text === "末尾快捷保存");
 
   await page.goto(base + "#/knowledge/reading-book?open=" + readingIds.alias + "&panel=notes");
   await settle(page);
   check("an earlier reading-group bookmark opens its article and note panel", (await page.locator("article .reading-title").innerText()) === "连续阅读条目" && await mine.isVisible());
-  await area.fill("这条笔记属于完整阅读条目。");
+  await writeNote(page, area, "这条笔记属于完整阅读条目。");
   await mine.getByRole("button", { name: "保存", exact: true }).click();
   await settle(page);
   check("a grouped bookmark saves to its actual reading item", (await api(page, "/api/note?id=" + readingIds.head)).my_answer?.text === "这条笔记属于完整阅读条目。");
