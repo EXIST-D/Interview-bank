@@ -411,7 +411,8 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   await guest.getByRole("button", { name: "登录", exact: true }).click();
   await guest.locator("article .reading-title").waitFor();
   const signedIn = await (await context.request.get(guestBase + "api/library")).json();
-  check("sign-in restores account permissions and the original article", !signedIn.guest && signedIn.can_write_personal && signedIn.summary.questions > 0 && new URL(guest.url()).hash === noteLoginHash && !new URL(guest.url()).search && await guest.getByRole("dialog", { name: "笔记", exact: true }).isVisible());
+  await guest.getByRole("dialog", { name: "我的笔记", exact: true }).waitFor();
+  check("sign-in restores account permissions and the original article", !signedIn.guest && signedIn.can_write_personal && signedIn.summary.questions > 0 && new URL(guest.url()).hash === noteLoginHash && !new URL(guest.url()).search);
   await guest.locator(".ib-topbar").getByRole("button", { name: "设置", exact: true }).click();
   await guest.getByRole("menuitem", { name: "退出登录", exact: true }).click();
   await guest.getByRole("link", { name: "登录", exact: true }).waitFor();
