@@ -308,8 +308,10 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   await mine.getByRole("button", { name: "粗体（Ctrl/⌘+B）", exact: true }).click();
   check("the formatting toolbar inserts Markdown around the selection", await draftText(page, otherId) === "**重点**");
   await area.press("ControlOrMeta+z");
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   check("native undo restores the text before a formatting action", await draftText(page, otherId) === "重点");
   await area.press("ControlOrMeta+Shift+z");
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   check("native redo restores Markdown formatting", await draftText(page, otherId) === "**重点**", JSON.stringify(await draftText(page, otherId)));
 
   const liveText = "## 边写边看\n\n**加粗** 与 *斜体*、~~删除~~ 和 `cache.get()`\n\n> 引用不会改变原文\n\n- [ ] 待复习\n- [x] 已复习\n\n| 概念 | 结论 |\n| --- | --- |\n| **缓存** | 保留原文 |\n\n```js\nconst x = '<script>test</script>';\n```\n\n[安全链接](https://example.org/docs)\n\n最后一段";
@@ -326,8 +328,11 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   const hostile = '<img src=x onerror="alert(1)">\n\n[bad](javascript:alert(1))\n\n![remote](https://example.org/image.png)\n\n尾段';
   await writeNote(page, area, hostile);
   await mine.getByText("边写边呈现格式，光标所在处可编辑 Markdown 标记。", { exact: true }).click();
-  const safe = { elements: await mine.locator(".ib-live-markdown img, .ib-live-markdown script, .ib-live-markdown a[href^='javascript:']").count(), text: await area.innerText(), source: await draftText(page, otherId) };
-  check("Markdown HTML, dangerous links and images stay inert", safe.elements === 0 && safe.source === hostile, JSON.stringify(safe));
+  const safe = { elements: await mine.locator(".ib-live-markdown").evaluate((element) => Array.from(element.querySelectorAll('img, script, a[href^="javascript:"]')).map((node) => node.outerHTML)), text: await area.innerText(), source: await draftText(page, otherId) };
+  check("Markdown HTML, dangerous links and images stay inert", safe.elements.length === 0 && safe.source === hostile, JSON.stringify(safe));
+  await mine.getByRole("button", { name: "放弃本次草稿", exact: true }).click();
+  await settle(page);
+  check("discard restores the saved Markdown and clears its draft", await draftText(page, otherId) === null && await mine.getByRole("heading", { name: "边写边看", exact: true }).isVisible() && await mine.locator(".cm-md-table").count() === 1);
   await writeNote(page, area, "中文输入：");
   await area.press("ControlOrMeta+End");
   const cdp = await page.context().newCDPSession(page);

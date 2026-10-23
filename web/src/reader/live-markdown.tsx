@@ -196,7 +196,7 @@ function format(view: EditorView, kind: Format) {
   view.focus(); return true;
 }
 
-export function LiveMarkdownEditor({ value, readOnly, onChange, onSave }: { value: string; readOnly: boolean; onChange: (value: string) => void; onSave: () => void }) {
+export function LiveMarkdownEditor({ value, resetRevision, readOnly, onChange, onSave }: { value: string; resetRevision: number; readOnly: boolean; onChange: (value: string) => void; onSave: () => void }) {
   const { t } = useI18n();
   const host = useRef<HTMLDivElement>(null), view = useRef<EditorView | null>(null);
   const config = useRef(new Compartment());
@@ -251,10 +251,12 @@ export function LiveMarkdownEditor({ value, readOnly, onChange, onSave }: { valu
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => { view.current?.dispatch({ effects: config.current.reconfigure(settings(readOnly)) }); }, [readOnly, label]);
+  // Only an explicit external reset may replace the document. Echoing React's asynchronous text
+  // updates into CodeMirror can map stale text through undo/redo and invalidate the redo branch.
   useEffect(() => {
     const editor = view.current;
     if (editor && editor.state.doc.toString() !== value) editor.dispatch({ changes: { from: 0, to: editor.state.doc.length, insert: value }, annotations: Transaction.addToHistory.of(false) });
-  }, [value]);
+  }, [resetRevision]);
   const tools = [
     ["heading", Heading2, "note_format_heading"], ["bold", Bold, "note_format_bold"], ["italic", Italic, "note_format_italic"],
     ["list", List, "note_format_list"], ["quote", Quote, "note_format_quote"], ["code", Code2, "note_format_code"], ["link", Link2, "note_format_link"],

@@ -46,6 +46,7 @@ export function NoteEditor({ itemId, note, onToast }: { itemId: string; note: Pe
   const [draft] = useState(() => readDraft(key));
   const [saved, setSaved] = useState(note.saved);
   const [text, setText] = useState(() => draft?.text ?? note.saved?.text ?? "");
+  const [resetRevision, setResetRevision] = useState(0);
   const [base, setBase] = useState(() => draft?.base ?? note.saved?.updated_at ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -55,6 +56,7 @@ export function NoteEditor({ itemId, note, onToast }: { itemId: string; note: Pe
   const inFlight = useRef(false);
   const previousSaved = useRef(note.saved);
   const dirty = text !== (saved?.text ?? "");
+  const resetText = (value: string) => { setText(value); setResetRevision((revision) => revision + 1); };
 
   useEffect(() => {
     alive.current = true;
@@ -68,7 +70,7 @@ export function NoteEditor({ itemId, note, onToast }: { itemId: string; note: Pe
     previousSaved.current = note.saved;
     setSaved(note.saved);
     if (text === (prior?.text ?? "") || text === (note.saved?.text ?? "")) {
-      setText(note.saved?.text ?? "");
+      resetText(note.saved?.text ?? "");
       setBase(note.saved?.updated_at ?? "");
       setConflict(false);
       keepDraft(key, null);
@@ -103,7 +105,7 @@ export function NoteEditor({ itemId, note, onToast }: { itemId: string; note: Pe
       note.onSaved(result.my_answer);
       if (alive.current) {
         setSaved(result.my_answer);
-        setText(result.my_answer?.text ?? "");
+        resetText(result.my_answer?.text ?? "");
         setBase(result.my_answer?.updated_at ?? "");
         setRestored(false);
         setConflict(false);
@@ -147,7 +149,7 @@ export function NoteEditor({ itemId, note, onToast }: { itemId: string; note: Pe
         {conflict && <div role="alert" className="mb-3 rounded-xl bg-orange/12 px-3 py-2.5 text-footnote text-warning"><p>{t("note_conflict")}</p><button type="button" disabled={busy} onClick={reload} className="mt-1 font-medium underline">{t("note_reload")}</button></div>}
         {error && <p role="alert" className="mb-3 rounded-xl bg-destructive/10 p-3 text-footnote text-destructive">{error}</p>}
         <Suspense fallback={<p role="status" className="p-4 text-footnote text-muted-foreground">{t("loading")}</p>}>
-          <LiveMarkdownEditor value={text} readOnly={busy || !note.canWrite} onChange={change} onSave={save} />
+          <LiveMarkdownEditor value={text} resetRevision={resetRevision} readOnly={busy || !note.canWrite} onChange={change} onSave={save} />
         </Suspense>
         {saved && dirty && <details className="ib-note-comparison rounded-xl border border-border px-3 py-2 text-footnote"><summary className="cursor-pointer text-muted-foreground">{t("my_answer_saved_version")}</summary><div className="ib-reading ib-note-preview mt-2"><Markdown text={saved.text} /></div></details>}
       </div>
@@ -160,7 +162,7 @@ export function NoteEditor({ itemId, note, onToast }: { itemId: string; note: Pe
           {note.canWrite && <><Button size="sm" disabled={busy || !dirty || conflict || text.length > 20000} onClick={save} aria-keyshortcuts="Control+Enter Meta+Enter">{t("my_answer_save")}</Button>
             <button type="button" className="ib-note-reset" title={t("note_discard")} aria-label={t("note_discard")} disabled={busy || !dirty} onClick={() => {
               if (!window.confirm(t("note_discard_confirm"))) return;
-              keepDraft(key, null); setText(saved?.text ?? ""); setBase(saved?.updated_at ?? ""); setConflict(false); setRestored(false); setError("");
+              keepDraft(key, null); resetText(saved?.text ?? ""); setBase(saved?.updated_at ?? ""); setConflict(false); setRestored(false); setError("");
             }}><RotateCcw className="size-3.5" /></button></>}
           <span className="ml-auto text-caption text-tertiary-foreground tabular-nums">{text.length.toLocaleString(lang)} / 20,000</span>
         </div>

@@ -184,3 +184,5 @@ Stored text is the Markdown source, including syntax the preview does not recogn
 or personal-data migration is performed. Ctrl/Command+Enter or Save still explicitly saves to the server;
 live rendering is local and does not mean autosave. The account/item-scoped draft and stale-save protections
 continue to apply. CodeMirror is prebuilt and lazily loaded; the server requires no Node installation.
+
+Bundled editor library notices: [web-editor-licenses.md](web-editor-licenses.md).
