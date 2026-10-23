@@ -47,7 +47,7 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
     if (!library) return;
     if (library.guest) setState({ folders: [], can_write: false });
     else reload();
-  }, [reload, library?.guest, library?.account]);
+  }, [reload, library]);
   const change = useCallback(async (payload: FavoriteChange) => {
     const next = await api<Response>("/api/favorites", payload);
     setState(next);
