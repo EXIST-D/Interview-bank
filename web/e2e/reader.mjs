@@ -98,7 +98,9 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   const writeNote = async (p, target, text) => {
     await target.focus();
     await p.keyboard.press("ControlOrMeta+a");
-    await p.keyboard.insertText(text);
+    await p.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+    await p.evaluate((value) => navigator.clipboard.writeText(value), text);
+    await p.keyboard.press("ControlOrMeta+v");
     await p.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
   };
 
@@ -148,7 +150,7 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   const area = mine.getByRole("textbox", { name: "我的笔记", exact: true });
   await writeNote(page, area, noteText);
   await mine.getByText("边写边呈现格式，光标所在处可编辑 Markdown 标记。", { exact: true }).click();
-  check("Markdown notes render headings, code and safe links without switching preview", await mine.getByRole("heading", { name: "缓存复习", exact: true }).isVisible() && (await mine.locator(".cm-md-codeblock").allTextContents()).join("\n").includes("cache.get") && (await mine.getByRole("link", { name: "文档" }).getAttribute("rel")) === "noopener noreferrer");
+  check("Markdown notes render headings, code and safe links without switching preview", await mine.getByRole("heading", { name: "缓存复习", exact: true }).isVisible() && (await mine.locator(".cm-md-codeblock").allTextContents()).join("\n").includes("cache.get") && (await mine.getByRole("link", { name: "文档" }).getAttribute("rel")) === "noopener noreferrer", JSON.stringify({ source: await draftText(page, note), editor: await area.innerText(), errors }));
   check("the note is directly editable without mode tabs", await area.isVisible() && await mine.getByRole("button", { name: "预览", exact: true }).count() === 0 && await mine.getByRole("button", { name: "编辑", exact: true }).count() === 0);
   await mine.getByRole("button", { name: "收起笔记", exact: true }).click();
   await page.getByRole("button", { name: "笔记", exact: true }).click();
@@ -361,7 +363,9 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   check("no page errors", errors.length === 0, errors.join(" | "));
   check("no Content-Security-Policy violations", violations.length === 0, violations.join(" | "));
 } catch (error) {
-  check("script finished", false, String(error).split("\n")[0]);
+  check("script finished", false, String(error));
+  console.log("BROWSER_ERRORS", JSON.stringify(errors));
+  console.log("CSP_ERRORS", JSON.stringify(violations));
 } finally {
   await browser?.close();
   server?.kill();
