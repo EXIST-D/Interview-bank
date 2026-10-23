@@ -328,7 +328,9 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   const hostile = '<img src=x onerror="alert(1)">\n\n[bad](javascript:alert(1))\n\n![remote](https://example.org/image.png)\n\n尾段';
   await writeNote(page, area, hostile);
   await mine.getByText("边写边呈现格式，光标所在处可编辑 Markdown 标记。", { exact: true }).click();
-  const safe = { elements: await mine.locator(".ib-live-markdown").evaluate((element) => Array.from(element.querySelectorAll('img, script, a[href^="javascript:"]')).map((node) => node.outerHTML)), text: await area.innerText(), source: await draftText(page, otherId) };
+  // CodeMirror uses src-less, aria-hidden img.cm-widgetBuffer nodes for caret navigation. Those
+  // neither display nor fetch images; actual image sources, handlers and executable nodes are forbidden.
+  const safe = { elements: await mine.locator(".ib-live-markdown").evaluate((element) => Array.from(element.querySelectorAll('img[src], img[onerror], script, iframe, object, embed, a[href^="javascript:"]')).map((node) => node.outerHTML)), text: await area.innerText(), source: await draftText(page, otherId) };
   check("Markdown HTML, dangerous links and images stay inert", safe.elements.length === 0 && safe.source === hostile, JSON.stringify(safe));
   await mine.getByRole("button", { name: "放弃本次草稿", exact: true }).click();
   await settle(page);

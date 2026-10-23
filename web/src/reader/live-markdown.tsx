@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { Compartment, EditorSelection, EditorState, StateEffect, StateField, Transaction, type Range } from "@codemirror/state";
+import { Compartment, EditorSelection, EditorState, Prec, StateEffect, StateField, Transaction, type Range } from "@codemirror/state";
 import { Decoration, EditorView, keymap, placeholder, WidgetType, type DecorationSet } from "@codemirror/view";
-import { defaultKeymap, history, historyKeymap, isolateHistory, redo } from "@codemirror/commands";
+import { defaultKeymap, history, historyKeymap, isolateHistory, redo, undo } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
 import { GFM, parser } from "@lezer/markdown";
 import { Bold, Code2, Heading2, Italic, Link2, List, Quote } from "lucide-react";
@@ -210,6 +210,14 @@ export function LiveMarkdownEditor({ value, resetRevision, readOnly, onChange, o
     const editor = new EditorView({ parent: host.current!, state: EditorState.create({ doc: value, extensions: [
       config.current.of(settings(readOnly)), EditorView.cspNonce.of(nonce && nonce !== "__CSP_NONCE__" ? nonce : ""),
       history(), markdown({ extensions: GFM, completeHTMLTags: false, pasteURLAsLink: false }), livePreview, EditorView.lineWrapping, placeholder(hint),
+      Prec.highest(EditorView.domEventHandlers({ keydown: (event, v) => {
+        if (v.composing || event.isComposing || event.altKey || !(event.ctrlKey || event.metaKey)) return false;
+        const key = event.key.toLowerCase();
+        if (key !== "z" && key !== "y") return false;
+        event.preventDefault();
+        if (!v.state.readOnly) (key === "y" || event.shiftKey ? redo : undo)(v);
+        return true; // Never let browser DOM history modify decorated Markdown.
+      } })),
       keymap.of([{ key: "Mod-Enter", run: (v) => { if (v.composing) return false; latest.current.onSave(); return true; } },
         { key: "Mod-Shift-z", run: redo, preventDefault: true },
         { key: "Mod-b", run: (v) => format(v, "bold") }, { key: "Mod-i", run: (v) => format(v, "italic") }, { key: "Mod-e", run: (v) => format(v, "code") },
@@ -223,6 +231,11 @@ export function LiveMarkdownEditor({ value, resetRevision, readOnly, onChange, o
       }),
       EditorView.domEventHandlers({
         beforeinput: (event, v) => {
+          if (event.inputType === "historyUndo" || event.inputType === "historyRedo") {
+            event.preventDefault();
+            if (!v.state.readOnly) (event.inputType === "historyUndo" ? undo : redo)(v);
+            return true;
+          }
           // Chromium may insert styled <span> nodes for multiline insertText. Keep this path plain-text,
           // just as CodeMirror's paste handler does, without allowing inline styles or touching IME.
           if (event.inputType === "insertText" && event.data?.includes("\n") && !event.isComposing && !v.composing && !v.state.readOnly) {
