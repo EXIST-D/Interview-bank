@@ -189,7 +189,8 @@ known bytes are not read again), extraction, the person's check, `ingest submit`
   `api_key_env` (default `INTERVIEW_BANK_AI_KEY`), never the command line; plain http only for a model on loopback.
   `extra_body` adds provider switches to each request (DeepSeek and Zhipu default to thinking: turn it off for reading);
   `image_encoding: "base64"` sends bare base64 where a provider rejects data URLs. `ai-check --ai-config <file>`
-  sends one tiny request per model. Example (DeepSeek `deepseek-flash` reads, `deepseek-v4-pro` answers):
+  sends one tiny request per model. Example (DeepSeek `deepseek-flash` with thinking off for all steps; `deepseek-v4-pro`
+  answers more tightly but takes minutes per batch):
   `tools/deploy/ai.example.json`.
 - Model instructions are cut at run time from this Skill's references (extraction, report policy, dedupe,
   answer policy), so the Web and an agent follow one protocol. Model output is reduced to the extraction schema:

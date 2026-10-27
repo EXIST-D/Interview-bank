@@ -489,7 +489,8 @@ class ModelClientCase(unittest.TestCase):
         config = self.config(example)
         self.assertEqual((config["vision"]["model"], config["vision"]["extra_body"]), ("deepseek-flash", {"thinking": {"type": "disabled"}}))
         self.assertEqual((config["text"]["model"], config["text"]["base_url"], config["text"]["extra_body"], config["text"]["_key"]),
-                         ("deepseek-v4-pro", "https://api.deepseek.com", {}, "sk-secret-value"))
+                         ("deepseek-flash", "https://api.deepseek.com", {"thinking": {"type": "disabled"}}, "sk-secret-value"))
+        self.assertTrue(config["vision"]["json_mode"] and config["text"]["json_mode"])
         config = self.config({"vision": {"base_url": self.base + "/api/paas/v4", "model": "glm-4.6v-flash", "api_key_file": "key",
                                          "image_encoding": "base64", "extra_body": {"thinking": {"type": "enabled"}}}})
         StandIn.replies = [(200, {"choices": [{"message": {"reasoning_content": "想一想", "content": "{\"ok\": true}"}}]})]

@@ -2,6 +2,17 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [Unreleased]
+
+### Fixed
+- nginx templates: nginx refuses `client_max_body_size` twice in one location, so the shared proxy snippet no longer
+  sets it and each location does (64k; 11m for import). `location /ibank/api/intake` has no trailing slash, so
+  `GET …/api/intake` reaches the reader instead of an nginx redirect.
+
+### Changed
+- `ai.example.json` uses `deepseek-flash` with thinking off for dedupe and answers too: on the same screenshot a batch
+  took 42 s against 276 s with `deepseek-v4-pro`, with the same dedupe decisions and comparable answers.
+
 ## [1.31.1] - 2026-10-27
 
 Fixes from the first import with a real model (DeepSeek `deepseek-flash` / `deepseek-v4-pro`).

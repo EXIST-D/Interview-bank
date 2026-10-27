@@ -12,7 +12,7 @@ Suitable for internships, campus recruitment, autumn recruitment and experienced
 - Check each screenshot before saving: untick, reword, set company, round and date; unsure readings and possible contact details are highlighted.
 - The Skill's own pipeline runs underneath: intake, dedupe candidates and review sheet, staging, commit and audit as for an agent, with instructions cut from the Skill's references. Exact duplicates merge; merges the model is unsure of are yours to decide on the page.
 - New questions get reference answers marked *AI draft* (the model does not browse or cite); an agent can research and cite them later.
-- Works with OpenAI-compatible APIs (DeepSeek, Qwen, GLM, Doubao and others) and Anthropic; the example configuration uses DeepSeek (`deepseek-flash` reads, `deepseek-v4-pro` answers); keys only from a file or an environment variable. Off by default: `web --ai-config` (plus `--allow-intake` on a read-only server).
+- Works with OpenAI-compatible APIs (DeepSeek, Qwen, GLM, Doubao and others) and Anthropic; the example configuration uses DeepSeek `deepseek-flash` with thinking off throughout (about 40 s a batch; `deepseek-v4-pro` answers more tightly but takes minutes); keys only from a file or an environment variable. Off by default: `web --ai-config` (plus `--allow-intake` on a read-only server).
 
 Try the [online test site](https://exist.qd.je/) without an account for public reading. Contact the maintainer on QQ **1939123241** for full-feature testing and suggestions.
 

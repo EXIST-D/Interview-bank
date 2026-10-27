@@ -14,7 +14,7 @@
 - 保存前逐张确认：可以取消勾选、改写题目、补公司 / 轮次 / 时间；AI 不确定的题和疑似联系方式会标出来。
 - 复用 Skill 自己的流程：入库、去重候选与审查表、暂存提交和审计都与 Agent 相同，提示词直接取自 Skill 的 references。完全相同的题自动合并，AI 拿不准的合并由你在页面上判断。
 - 新题自动生成参考答案，标为「AI 草稿」（模型不联网，不附来源），之后可以让 Agent 查证补出处。
-- 支持 OpenAI 兼容接口（DeepSeek、通义千问、智谱、豆包等）和 Anthropic，示例配置用 DeepSeek（`deepseek-flash` 识别、`deepseek-v4-pro` 写答案）；密钥只从文件或环境变量读取。默认关闭，需要 `web --ai-config`（只读服务再加 `--allow-intake`）。
+- 支持 OpenAI 兼容接口（DeepSeek、通义千问、智谱、豆包等）和 Anthropic，示例配置全部用 DeepSeek `deepseek-flash`（关闭思考，一批约 40 秒；`deepseek-v4-pro` 答案更精炼但每批要几分钟）；密钥只从文件或环境变量读取。默认关闭，需要 `web --ai-config`（只读服务再加 `--allow-intake`）。
 
 ## 界面示例
 

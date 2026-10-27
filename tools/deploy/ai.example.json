@@ -11,11 +11,11 @@
     "extra_body": {"thinking": {"type": "disabled"}}
   },
   "text": {
-    "model": "deepseek-v4-pro",
-    "timeout": 300,
-    "max_tokens": 16384,
+    "model": "deepseek-flash",
+    "timeout": 180,
+    "max_tokens": 12000,
     "json_mode": true,
-    "extra_body": {}
+    "extra_body": {"thinking": {"type": "disabled"}}
   },
   "limits": {
     "max_images_per_job": 12,
