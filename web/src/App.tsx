@@ -10,6 +10,7 @@ import { PublicPage } from "@/pages/public";
 import { BankPage } from "@/pages/bank";
 import { KnowledgePage } from "@/pages/knowledge";
 import { MinePage } from "@/pages/mine";
+import { ImportPage } from "@/pages/import";
 import { FavoritesProvider } from "@/lib/favorites";
 import { ToastContext } from "@/lib/hooks";
 import { LoginRequired } from "@/components/login-required";
@@ -49,6 +50,8 @@ function Shell() {
       <PublicPage route={route} />
     ) : route.board === "mine" ? (
       <MinePage route={route} />
+    ) : route.board === "import" ? (
+      <ImportPage />
     ) : (
       <LearningPage route={route} />
     );
@@ -57,7 +60,7 @@ function Shell() {
     <I18n.Provider value={i18n}>
       <ToastContext.Provider value={showToast}>
         <TopBar board={route.board} theme={theme} onTheme={setTheme} onToast={showToast} />
-        <main>{!library ? <HomePage /> : library.guest && (route.board === "bank" || route.board === "mine") ? <LoginRequired /> : page}</main>
+        <main>{!library ? <HomePage /> : library.guest && (route.board === "bank" || route.board === "mine" || route.board === "import") ? <LoginRequired /> : page}</main>
         <TabBar board={route.board} />
         <Toast text={toast} />
       </ToastContext.Provider>

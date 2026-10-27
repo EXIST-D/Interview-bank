@@ -45,6 +45,28 @@ export async function api<T>(path: string, body?: unknown): Promise<T> {
   return result as T;
 }
 
+/** One image as the request body (screenshot import); the server checks its bytes. */
+export async function upload<T>(path: string, image: Blob): Promise<T> {
+  const response = await fetch(path.replace(/^\//, ""), {
+    method: "POST",
+    headers: { "X-Interview-Token": token ?? "", "Content-Type": image.type },
+    body: image,
+    cache: "no-store",
+  });
+  let result: (T & { error?: string; login?: boolean }) | undefined;
+  try {
+    result = await response.json();
+  } catch {
+    throw new ApiError(response.status === 413 ? "too_large" : "unreachable", response.status);
+  }
+  if (response.status === 401 && result?.login) {
+    signIn();
+    return new Promise(() => {});
+  }
+  if (!response.ok) throw new ApiError(result?.error || "failed", response.status);
+  return result as T;
+}
+
 export type Facet = { value: string; label: string; count: number };
 
 export type QuestionRow = {
@@ -73,6 +95,7 @@ export type Library = {
   can_review: boolean;
   can_write_answer?: boolean;
   can_write_personal?: boolean;
+  can_intake?: boolean;
   summary: { questions: number; answered: number; due: number; weak: number; unseen: number; stale: number };
   notes?: { total: number; collections: number };
   total: number;

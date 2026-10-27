@@ -1,4 +1,4 @@
-import { Check, ChevronDown, ChevronRight, GitMerge, PenLine, Play, Search, SlidersHorizontal, StickyNote } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, GitMerge, ImagePlus, PenLine, Play, Search, SlidersHorizontal, StickyNote } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { api, clearDetails, questionDetail, type Library, type QuestionDetail, type QuestionRow } from "@/lib/api";
 import { useBank } from "@/lib/bank";
@@ -265,10 +265,20 @@ export function BankPage({ route }: { route: Route }) {
               <p className="text-caption font-semibold tracking-wide text-primary">{t("board_bank")}</p>
               <h1 className="mt-0.5 text-title-1 font-bold tabular-nums">{t("bank_count", { n: data?.total ?? summary?.questions ?? "—" })}</h1>
             </div>
-            <Button variant="tinted" size="sm" className="mb-1" disabled={!data?.total} onClick={() => setPractice({ kind: "setup" })}>
-              <Play />
-              {t("practice")}
-            </Button>
+            <div className="mb-1 flex gap-2">
+              {data?.can_intake && (
+                <Button variant="outline" size="sm" asChild>
+                  <a href={href("import")}>
+                    <ImagePlus />
+                    {t("imp_short")}
+                  </a>
+                </Button>
+              )}
+              <Button variant="tinted" size="sm" disabled={!data?.total} onClick={() => setPractice({ kind: "setup" })}>
+                <Play />
+                {t("practice")}
+              </Button>
+            </div>
           </div>
           <label className="flex h-9 items-center gap-2 rounded-[10px] bg-fill px-3 text-muted-foreground focus-within:ring-2 focus-within:ring-ring/30">
             <Search className="size-4 shrink-0" />

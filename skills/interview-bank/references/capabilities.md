@@ -13,6 +13,7 @@ Who does what. Version history lives in the repository CHANGELOG, not here.
 | Transcribe audio/video | Optional host tool, or local faster-whisper | `media-transcribe` runs the optional local model; supplied SRT/VTT/TXT/JSON need nothing |
 | Store, query, export, recover | — | Transactions, change-set runs, audit, undo, search, statistics, reports, `gc`, `backup` |
 | Local Web reader and practice | User's browser | Loopback-only server; self-ratings saved only in V2 banks |
+| Screenshot import in the Web reader (opt-in) | The person confirms what was read and decides unsure merges | `web --ai-config` lets a configured model read, judge duplicates and draft answers through the same intake, dedupe and answer validation |
 | Human decisions (review, merges, ratings) | Relays the user's words only | Web buttons and an interactive-terminal confirmation; agents cannot mark answers reviewed |
 
 When the host lacks a capability, report the specific limitation and use selected text, a supplied transcript or an explicitly labelled draft where appropriate.
@@ -20,7 +21,8 @@ See [portability](portability.md) to check a new host.
 
 ## Runtime
 
-- Python 3.10+ standard library; the CLI refuses older interpreters. No model SDK, embeddings, API key, database server or OCR installation.
+- Python 3.10+ standard library; the CLI refuses older interpreters. No model SDK, embeddings, database server or OCR installation;
+  an API key only for the optional Web screenshot import, read from a file or environment variable.
 - A writable bank outside the installed skill. Queries read the JSONL tables directly; cache/ only holds spilled outputs.
 - Optional: `faster-whisper==1.2.1` in a workspace virtual environment for raw audio/video.
 

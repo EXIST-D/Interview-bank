@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 
 // Hash routes keep the reader working under any path prefix (/, /ibank/) without server rewrites.
-export type Board = "home" | "bank" | "knowledge" | "public" | "learning" | "mine";
+export type Board = "home" | "bank" | "knowledge" | "public" | "learning" | "mine" | "import";
 export type Route = { board: Board; rest: string[]; params: URLSearchParams };
 
-const BOARDS: Board[] = ["home", "bank", "knowledge", "public", "learning", "mine"];
+const BOARDS: Board[] = ["home", "bank", "knowledge", "public", "learning", "mine", "import"];
 const LEGACY_SECTIONS: Record<string, Board> = { bank: "bank", knowledge: "knowledge", experiences: "public", learning: "learning" };
 
 export function parse(hash: string): Route {

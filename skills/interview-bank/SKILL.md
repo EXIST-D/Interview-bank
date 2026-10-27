@@ -4,14 +4,14 @@ description: Build and maintain a personal interview question bank (面试题库
 license: MIT
 metadata:
   author: EXIST-D
-  version: "1.30.0"
+  version: "1.31.0"
   repository: https://github.com/EXIST-D/Interview-bank
 ---
 
 # Interview Bank
 
 Read sources, judge meaning and research answers; Python validates, stores and exports.
-Only optional `media-transcribe` runs a model. Prepare task JSON yourself.
+Only `media-transcribe` and Web import (`--ai-config`) run a model. Prepare task JSON yourself.
 
 ## Core rules
 
@@ -54,7 +54,7 @@ Only optional `media-transcribe` runs a model. Prepare task JSON yourself.
 | review weak questions or run a mock interview | [practice](references/practice.md) | `study`, `interview turn`, `interview review` |
 | organise 八股资料, learning or public interviews | [notes](references/notes.md) | `notes` |
 | clean mixed sources or fragmented articles | [cleanup](references/knowledge-cleanup.md) | `notes` |
-| browse, practise or review in a browser | [local Web](references/web.md) | `web` |
+| browse, practise, review or import screenshots in a browser | [local Web](references/web.md) | `web`, `ai-check` |
 | set up a new host or check its tools | [portability](references/portability.md) | `capabilities`, `media-plan` |
 
 ## Default end-to-end flow

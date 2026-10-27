@@ -69,6 +69,11 @@ def parser():
     web.add_argument("--login-file", help="Hosting: show a login page; the file is written by tools/deploy/set-login.py")
     web.add_argument("--banks-dir", help="Hosting several people: each account reads <dir>/<its bank>; needs --login-file")
     web.add_argument("--public-bank", help="Hosting: explicitly publish this bank's collections for guest reading; personal interviews and state stay private")
+    web.add_argument("--ai-config", help="Screenshot import in the page: a JSON file naming the models (keys come from a file or environment variable)")
+    web.add_argument("--allow-intake", action="store_true",
+                     help="With --read-only: still let the signed-in person import screenshots (questions and AI-draft answers)")
+    ai_check = sub.add_parser("ai-check", parents=[common], help="Send one tiny request to each model of an --ai-config file")
+    ai_check.add_argument("--ai-config", required=True)
     demo = sub.add_parser("demo", parents=[common], help="Create a sample bank (20 synthetic questions, 8 sourced answers) in a new directory")
     demo.add_argument("--v2", action="store_true", help="Also migrate it to V2 so Web practice can be saved")
     for name in ("init", "doctor", "validate", "rebuild-index"):
@@ -233,11 +238,14 @@ def dispatch(args):
         return portability_dispatch(None, args)
     if args.command == "taxonomy" and not getattr(args, "bank", None):
         return catalog_view(args.dimension, args.query, args.limit, args.offset)
+    if args.command == "ai-check":
+        from ibank_core import ai
+        return ai.check(ai.load_config(args.ai_config))
     bank = resolve_bank(getattr(args, "bank", None))
     if args.command == "web":
         from ibank_core.web import serve
         return serve(bank, args.port, args.read_only, args.open, args.token_file, args.public_origin, args.login_file, args.banks_dir,
-                     args.allow_my_answers, args.allow_practice, args.public_bank)
+                     args.allow_my_answers, args.allow_practice, args.public_bank, args.ai_config, args.allow_intake)
     if args.command in ("media-plan", "media-provider-task", "media-provider-import"):
         from ibank_core.portability import dispatch as portability_dispatch
         return portability_dispatch(bank, args)

@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "vision": {
+    "protocol": "openai",
+    "base_url": "https://api.deepseek.com",
+    "model": "deepseek-flash",
+    "api_key_file": "/etc/interview-bank/ai-key",
+    "timeout": 180,
+    "max_tokens": 8192,
+    "extra_body": {"thinking": {"type": "disabled"}}
+  },
+  "text": {
+    "model": "deepseek-v4-pro",
+    "timeout": 300,
+    "max_tokens": 16384,
+    "json_mode": true,
+    "extra_body": {}
+  },
+  "limits": {
+    "max_images_per_job": 12,
+    "daily_images": 60,
+    "max_answers_per_job": 40,
+    "answer_batch": 4
+  }
+}

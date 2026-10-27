@@ -9,6 +9,7 @@ import type { ThemeChoice } from "@/lib/theme";
 import { api } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { loginHref, onSignIn } from "@/lib/access";
+import { navigate } from "@/lib/router";
 import { AgentDialog, type AgentAction } from "./agent-dialog";
 
 const item =
@@ -99,7 +100,7 @@ export function SettingsMenu({
 
             <DropdownMenu.Separator className="my-1 h-px bg-border" />
             <DropdownMenu.Label className={label}>{t("agent_actions")}</DropdownMenu.Label>
-            <DropdownMenu.Item className={item} onSelect={() => setAction("import")}>
+            <DropdownMenu.Item className={item} onSelect={() => (library?.can_intake ? navigate("import") : setAction("import"))}>
               <Download />
               {t("import")}
             </DropdownMenu.Item>

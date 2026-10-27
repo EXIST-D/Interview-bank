@@ -2,6 +2,21 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.31.0] - 2026-10-27
+
+### Added
+- Screenshot import in the Web reader (`#/import`, opt-in with `web --ai-config <file>`; a read-only reader also needs `--allow-intake`): upload, paste or drop screenshots; a configured vision model reads them; the person checks every question (untick, reword, company/round/date) before anything is saved; new questions get `ai_draft` reference answers.
+- The model plays the host's part in the Skill's own pipeline: `ingest images` (copy retention; known bytes are not read again), extraction, `ingest submit` with dedupe candidates and the review sheet, dedupe decisions, commit, `research` task and answer staging. Instructions are cut at run time from `references/` (extraction, report policy, dedupe, answer policy); model output is reduced to the extraction schema.
+- Exact duplicates merge; merges below 0.90 confidence are asked on the page before the commit. Low-confidence readings and possible contact details are highlighted, unreadable screenshots are skipped on confirmation or read again.
+- Long screenshots are cut in the browser into up to eight overlapping parts read in one request; HEIC (Safari) and oversized files are re-encoded as JPEG. Thumbnails are data URLs, so the content policy is unchanged.
+- `ai.py`: OpenAI-compatible `/chat/completions` and Anthropic Messages via the standard library, retries for 429/5xx/timeouts, keys only from `api_key_file` (refused when world-readable) or an environment variable, plain HTTP only on loopback; `extra_body` for provider switches such as DeepSeek's thinking mode, `image_encoding` for providers that want bare base64. `ai-check --ai-config <file>` sends one tiny request per model.
+- Per-bank limits (screenshots per import and per day, answers per import and per request), one import at a time, recovery of interrupted jobs after a restart, cancel that abandons the stage and removes the screenshot copies.
+- Tests for the whole pipeline with a stand-in model (merges, retries, bank changes during judging, cancel, limits, restart, both protocols) and a browser journey (`e2e/import.mjs`) against a loopback stand-in model.
+
+### Changed
+- `tools/deploy/`: `ai.example.json` (DeepSeek: `deepseek-flash` reads with thinking off, `deepseek-v4-pro` answers); nginx location for `/api/intake/` with an 11 MiB body limit; service notes for `--allow-intake` and `MemoryMax=512M`.
+- The settings menu's 导入题目 opens the import page when the server allows it; 个人面经 shows 上传截图.
+
 ## [1.30.0] - 2026-10-24
 
 ### Added

@@ -1,7 +1,7 @@
 # Optional local Web reader and practice
 
 Use this mode when the user requests a local visual question library, browsing, or browser-based practice. The default intake and two-report workflow stays unchanged.
-No npm, build step, CDN, model key or extra Python package is required to use it: the page ships prebuilt in `assets/web`
+No npm, build step, CDN or extra Python package is required to use it, and a model key only for the optional screenshot import: the page ships prebuilt in `assets/web`
 (built from the repository's `web/` with React and Tailwind; only people changing the page need Node), and Python 3.10+
 serves it and the existing bank engine.
 
@@ -134,7 +134,8 @@ The server accepts both `http://127.0.0.1:<port>` and `http://localhost:<port>`;
 Bind exclusively to `127.0.0.1`; no LAN/public binding option.
 The custom handler serves only explicitly allowlisted bundled assets and a small authenticated API,
 with Host/Origin checks, per-process token, bounded JSON bodies, no CORS grants and a restrictive content policy.
-Question/answer HTML is rendered as text, source links accept only HTTP(S), and no remote scripts/fonts or file-upload endpoints are used.
+Question/answer HTML is rendered as text, source links accept only HTTP(S), and no remote scripts/fonts are used. The only upload
+endpoint belongs to the opt-in screenshot import below; it accepts PNG, JPEG, WebP or GIF bytes and nothing else.
 It is a personal helper, not a multi-user service. Never tunnel or expose the port itself; reading on a phone goes
 through your own server as below, only when the user asks for it.
 
@@ -167,13 +168,47 @@ read-only, with the bank copied there. Templates are in the repository's `tools/
 - Personal data leaves the machine: deploy only when the user asks, to a server they control, with HTTPS and login.
 
 Protocol endpoints for diagnostics: GET `/api/library`, `/api/question?id=...`, `/api/practice`, `/api/my-notes`,
-`/api/favorites`, `/api/learning`; POST `/api/practice`, `/api/my-answer`, `/api/favorites`, `/api/learning`. All require `X-Interview-Token` from the launch URL;
+`/api/favorites`, `/api/learning`, `/api/intake`; POST `/api/practice`, `/api/my-answer`, `/api/favorites`, `/api/learning`. All require `X-Interview-Token` from the launch URL;
 keep it out of public logs. Use the browser for normal practice instead of submitting synthetic user ratings into a real bank.
 Unknown IDs, invalid requests, concurrent modification and locked banks report errors rather than overwrite data.
 
 Validate changes in a separate fixture or a permitted copy.
 Verify filtering, answer reveal, saved self-ratings, refresh/restart persistence, empty/V1/read-only banks, mobile layout, and rejected unauthorized writes.
 A browser demo against a copy must be labelled as a copy; do not imply those practice records are the user's real learning history.
+
+### Screenshot import with a model (1.31+)
+
+Opt-in. `web --ai-config <file>` adds 截图导入 (`#/import`): the signed-in person uploads screenshots and a configured
+model plays the host's part in the usual pipeline, through the same CLI code: `ingest images` (copy retention,
+known bytes are not read again), extraction, the person's check, `ingest submit`, dedupe decisions, commit,
+`research` task, `ai_draft` answers, commit. A read-only hosted reader also needs `--allow-intake`.
+
+- The configuration names a `vision` model (reads images) and optionally a `text` model (dedupe and answers), each
+  `openai` (any OpenAI-compatible `/chat/completions`) or `anthropic`, plus `limits` (screenshots per import and
+  per day, answers per import, answers per request). Keys come from `api_key_file` (not world-readable) or
+  `api_key_env` (default `INTERVIEW_BANK_AI_KEY`), never the command line; plain http only for a model on loopback.
+  `extra_body` adds provider switches to each request (DeepSeek and Zhipu default to thinking: turn it off for reading);
+  `image_encoding: "base64"` sends bare base64 where a provider rejects data URLs. `ai-check --ai-config <file>`
+  sends one tiny request per model. Example (DeepSeek `deepseek-flash` reads, `deepseek-v4-pro` answers):
+  `tools/deploy/ai.example.json`.
+- Model instructions are cut at run time from this Skill's references (extraction, report policy, dedupe,
+  answer policy), so the Web and an agent follow one protocol. Model output is reduced to the extraction schema:
+  unknown labels are dropped, self-introductions removed, confidence and follow-up links checked.
+- The person sees every screenshot's questions before anything is saved: untick, edit wording, set company, round
+  and date. Unsure readings (confidence < 0.80) and possible contact details are highlighted; keeping them is the
+  person's review. Unreadable or failed screenshots are skipped (`skip`, reviewed) when confirmed, or read again.
+- Exact matches merge; the model judges the rest from the candidates and the review sheet. Merges below 0.90 are
+  asked on the page (same / related / different) before the commit. If the bank changed meanwhile (practice on
+  another device), the same confirmation is staged again; question IDs do not change.
+- New questions without an answer get `ai_draft` answers with no sources: the model cannot browse and may not
+  cite. The reader labels them AI 草稿. Research them later as usual (`research --answer-status ai_draft`).
+- Long phone screenshots are cut in the browser into up to eight overlapping parts that are read together; the
+  original bytes stay the source. Jobs live in `cache/web-intake/` (not backed up); one import at a time per bank.
+  A restart leaves interrupted jobs to confirm again or to retry their answers. Cancel abandons the stage and the
+  screenshot copies. Endpoints: GET `/api/intake`, `/api/intake/job`; POST `/api/intake/jobs`, `upload`, `start`,
+  `confirm`, `merge`, `answers`, `retry`, `cancel`. Behind nginx the upload path needs a larger body limit
+  (`tools/deploy/nginx-location.conf`).
+- Screenshots leave the server for the model provider the person configured. Enable it only when they ask.
 
 ### Hosted public reading (1.30+)
 

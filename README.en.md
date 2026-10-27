@@ -4,14 +4,15 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.30.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.31.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.30 public reading and personal accounts
+## This update: 1.31 screenshot import in the Web reader
 
-- Guests can browse, search and read knowledge, public interviews and learning resources. Personal interviews, notes, favourites and practice history require sign-in.
-- Personal actions lead to sign-in and return to the original reading route afterward. The sign-in page also links back to public browsing.
-- Public responses omit personal interview associations/counts, private notes and account state. Guest reading never syncs to an account.
-- GitHub is visible beside the account controls on desktop and phone. Self-hosted publishing requires explicit `--public-bank` configuration; existing readers keep their defaults.
+- Signed in, open *Import* and add interview screenshots (photo library, drop or paste); a vision model you configure reads the questions. Long screenshots are cut into parts in the browser and read together.
+- Check each screenshot before saving: untick, reword, set company, round and date; unsure readings and possible contact details are highlighted.
+- The Skill's own pipeline runs underneath: intake, dedupe candidates and review sheet, staging, commit and audit as for an agent, with instructions cut from the Skill's references. Exact duplicates merge; merges the model is unsure of are yours to decide on the page.
+- New questions get reference answers marked *AI draft* (the model does not browse or cite); an agent can research and cite them later.
+- Works with OpenAI-compatible APIs (DeepSeek, Qwen, GLM, Doubao and others) and Anthropic; the example configuration uses DeepSeek (`deepseek-flash` reads, `deepseek-v4-pro` answers); keys only from a file or an environment variable. Off by default: `web --ai-config` (plus `--allow-intake` on a read-only server).
 
 Try the [online test site](https://exist.qd.je/) without an account for public reading. Contact the maintainer on QQ **1939123241** for full-feature testing and suggestions.
 
@@ -150,7 +151,7 @@ Open the local Web reader; I want to review answers myself and settle the uncert
 
 ## The Web reader: study on a computer or a phone
 
-The agent organises the bank; the Web page is for reading it. The page runs no AI and searches nothing online; it only reads your bank.
+The agent organises the bank; the Web page is for reading it. By default the page runs no AI and searches nothing online; it only reads your bank. With screenshot import enabled on the server, screenshots you upload go to the model you configured.
 
 - **Overview and four sections:** a top bar (a bottom tab bar on phones) switches the overview and the sections. *Personal* holds your collected questions. *Notes* keeps Q&A, explanations, coding solutions and cases by source. *Public* groups interviews across sources by topic or year, with company/year filters. *Learning* offers five category cards for roadmaps, tutorials, resource indexes, career material and industry news. Every entry retains its text and provenance, and interviews and notes link both ways.
 - **My answer and my notes:** write your own answer or note below the reference or the original; it may stay empty, is independent of it and syncs across devices. The 我的 (Me) page lists, searches and exports them all and holds your favourite folders (practise from a folder).
@@ -159,6 +160,7 @@ The agent organises the bank; the Web page is for reading it. The page runs no A
 - **Made for spare minutes:** on a phone, a list and a full-screen reader with previous/next at the bottom, a swipe, or the system back gesture to close; a peek at any answer from the list; read marks and group progress; a random pick that prefers unread questions; Think first hides answers by default.
 - **Side by side on a computer:** list and reader together, plus a contents column for a notes source. The list folds away, and Focus also hides the top bar so the reader fills the window at a comfortable line length.
 - **Easy on the eyes:** three text sizes, a reading progress bar, light / dark / system themes, highlighted search words; tables, code, quotes and nested lists in long answers render properly. Read marks, folds, text size, source order and theme stay in the browser.
+- **Screenshot import** (when the server enables it): upload → AI reads → you confirm → deduplicated into the bank → AI-draft answers, all in the page; setup in [Web usage](skills/interview-bank/references/web.md).
 - **Practice and your own decisions** (on a writable reader): practise a round or one question with a self-rating (V2 banks save progress and schedule reviews), **human review** of answers and **merge decisions** on pairs the agent was unsure about; only you can do these.
 
 | Shortcut (computer) | Action |
@@ -175,8 +177,8 @@ The agent organises the bank; the Web page is for reading it. The page runs no A
 | Way | For | How |
 |---|---|---|
 | **On your computer** | Reading on the machine where your bank is | `python -B <skill dir>/scripts/ibank.py web --bank <bank> --open`. Loopback only (127.0.0.1), no login; Ctrl+C stops it and `--read-only` disables writes. Or ask the agent to open your bank's Web reader. |
-| **On your own server** | Reading on a phone anywhere | The read-only reader sits behind your own HTTPS reverse proxy: its own login page (hashed passwords, lockout after failures), one bank per account, daily verified backups; with `--allow-personal` you can write answers and notes, keep favourites and sync learning state on the phone, and `--allow-practice` also saves practice ratings (V2 banks). `tools/deploy/sync.sh` copies the bank text and notes from your computer, never screenshots; `tools/deploy/pull-backups.sh` brings the server's backups back to your computer. Steps: [Web usage](skills/interview-bank/references/web.md) and `tools/deploy/`. |
-| **Test it with the author** | Trying the hosted reader first, or when you cannot deploy one yet | Contact the author through [GitHub Issues](https://github.com/EXIST-D/Interview-bank/issues) for an account to test with. Each account sees only its own bank; the server keeps only the bank text (no screenshots), deleted on request. |
+| **On your own server** | Reading on a phone anywhere | The read-only reader sits behind your own HTTPS reverse proxy: its own login page (hashed passwords, lockout after failures), one bank per account, daily verified backups; with `--allow-personal` you can write answers and notes, keep favourites and sync learning state on the phone, and `--allow-practice` also saves practice ratings (V2 banks); `--allow-intake --ai-config` imports screenshots from the phone (example `tools/deploy/ai.example.json`; check it with `ai-check`). `tools/deploy/sync.sh` copies the bank text and notes from your computer, never screenshots; `tools/deploy/pull-backups.sh` brings the server's backups back to your computer. Steps: [Web usage](skills/interview-bank/references/web.md) and `tools/deploy/`. |
+| **Test it with the author** | Trying the hosted reader first, or when you cannot deploy one yet | Contact the author through [GitHub Issues](https://github.com/EXIST-D/Interview-bank/issues) for an account to test with. Each account sees only its own bank; the server keeps the bank text, plus screenshots you import in the page, inside your own bank; deleted on request. |
 
 ## Processing policy
 
@@ -219,7 +221,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 |---|---|
 | On-screen text in videos | Only speech is processed; capture silent on-screen questions as screenshots |
 | Speaker separation, resuming inside long recordings | Speaker labels from the tool are kept; resume is per file |
-| Editing in the Web reader | Question edits and intake stay with the agent; the Web reader reads, practises, reviews and decides merges |
+| Editing in the Web reader | Screenshots can be imported in the page (when enabled); question edits and other intake stay with the agent |
 | Real-time sync and offline merging | Read marks, learning states and source order already merge through the server; folds and text size remain partly browser-local, without real-time sync |
 | MCP server | Planned as a separate optional package; the core stays dependency-free |
 

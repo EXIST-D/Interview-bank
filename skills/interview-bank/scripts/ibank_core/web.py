@@ -1,4 +1,6 @@
-"""Optional loopback-only reader. No server framework, external assets or model calls; the page ships prebuilt."""
+"""Optional loopback-only reader. No server framework or external assets; the page ships prebuilt.
+
+The only model calls are the opt-in screenshot import (--ai-config), in web_intake."""
 import copy
 import hmac
 import json
@@ -108,7 +110,7 @@ def filtered(rows, companies, states, params):
 
 
 class WebApp:
-    def __init__(self, bank, read_only=False, allow_my_answers=False, allow_practice=False):
+    def __init__(self, bank, read_only=False, allow_my_answers=False, allow_practice=False, ai_config=None, allow_intake=False):
         self.bank = guard_bank_path(bank)
         self.read_only = read_only
         # A hosted reader stays read-only for the bank but may let the person keep their own layer (notes, favourites,
@@ -119,6 +121,15 @@ class WebApp:
         self.notes_cache_lock = threading.Lock()
         with open_bank(self.bank, shared=True):
             pass
+        # Screenshot import writes interview questions and draft answers, so a read-only reader needs --allow-intake.
+        self.intake = None
+        if ai_config and (not read_only or allow_intake):
+            from .web_intake import IntakeJobs
+            self.intake = IntakeJobs(self.bank, ai_config, self.mutation_lock)
+
+    def intake_jobs(self):
+        require(self.intake is not None, 'Screenshot import is not enabled on this server')
+        return self.intake
 
     @property
     def can_write_answer(self):
@@ -179,7 +190,7 @@ class WebApp:
                 'name': self.bank.name, 'version': __version__, 'schema_version': manifest['schema_version'],
                 'can_record': manifest['schema_version'] == 2 and self.can_practise, 'can_review': not self.read_only,
                 'can_write_answer': self.can_write_answer, 'can_write_personal': self.can_write_answer,
-                'language': language(config),
+                'can_intake': self.intake is not None, 'language': language(config),
                 'read_only': self.read_only, 'updated_at': manifest.get('last_updated_at'),
                 'summary': {'questions': len(rows), 'answered': sum(q['answer_status'] in ('source_backed', 'reviewed') for q in rows),
                             'answer_count': sum(q['answer'] is not None for q in rows), 'stale': sum(q['answer_status'] == 'stale' for q in rows),
@@ -205,7 +216,7 @@ class WebApp:
             'name': 'Public library', 'version': __version__, 'schema_version': manifest['schema_version'],
             'language': language(config), 'guest': True, 'can_login': True, 'can_logout': False,
             'read_only': True, 'can_record': False, 'can_review': False,
-            'can_write_answer': False, 'can_write_personal': False,
+            'can_write_answer': False, 'can_write_personal': False, 'can_intake': False,
             'summary': dict.fromkeys(('questions', 'answered', 'answer_count', 'stale', 'due', 'weak', 'unseen', 'domains'), 0),
             'notes': {'total': len(bundle['notes']), 'collections': len(bundle['collections'])},
             'total': 0, 'total_answered': 0, 'offset': offset, 'limit': limit,
@@ -513,17 +524,19 @@ class LocalServer(ThreadingHTTPServer):
     allow_reuse_address = False
 
     def __init__(self, app, port=0, token=None, public_origins=(), login=None, banks_dir=None, read_only=True, allow_my_answers=False,
-                 allow_practice=False, public_bank=None):
+                 allow_practice=False, public_bank=None, ai_config=None, allow_intake=False):
         # One bank for everyone (app), or one bank per account under banks_dir (hosting several people).
         self.app = app
         self.banks_dir, self.read_only, self.apps, self.apps_lock = banks_dir, read_only, {}, threading.Lock()
         self.allow_my_answers, self.allow_practice = allow_my_answers, allow_practice
+        self.ai_config, self.allow_intake = ai_config, allow_intake
         require(not public_bank or login and public_origins, 'Public reading needs a hosted login and public origin')
         self.public_app = None
         if public_bank:
             from .public_reader import ReadBudget
             path = guard_bank_path(public_bank)
-            self.public_app = app if app and app.bank == path else WebApp(path, read_only, allow_my_answers, allow_practice)
+            self.public_app = app if app and app.bank == path else WebApp(path, read_only, allow_my_answers, allow_practice,
+                                                                          ai_config, allow_intake)
             self.public_budget, self.public_active = ReadBudget(), threading.BoundedSemaphore(4)
         self.token = token or secrets.token_urlsafe(32)
         # Optional login page (hosting only): one account, signed session cookie, limited failed attempts.
@@ -610,7 +623,21 @@ class Handler(BaseHTTPRequestHandler):
         query = parse_qs(urlsplit(self.path).query, keep_blank_values=True)
         require(all(len(v) == 1 for v in query.values()), 'Duplicate query parameters')
         params = {k: v[0] for k, v in query.items()}
-        if post:
+        if post and path == '/api/intake/upload':
+            require(set(params) <= {'job', 'image', 'view'} and {'job', 'image'} <= set(params), 'Expected job and image')
+            require(all(params.get(k, '0').isdigit() for k in ('image', 'view')), 'image and view are numbers')
+            from .web_intake import MAX_IMAGE
+            result = app.intake_jobs().upload(params['job'], int(params['image']),
+                                              int(params['view']) if 'view' in params else None, self.raw_body(MAX_IMAGE))
+        elif post and path.startswith('/api/intake/'):
+            jobs = app.intake_jobs()
+            handlers = {'/api/intake/jobs': jobs.create, '/api/intake/start': jobs.start, '/api/intake/confirm': jobs.confirm,
+                        '/api/intake/merge': jobs.merge, '/api/intake/answers': jobs.retry_answers,
+                        '/api/intake/retry': jobs.retry_extract, '/api/intake/cancel': jobs.cancel}
+            if path not in handlers:
+                return self.send(404, {'error': 'Unknown endpoint'})
+            result = handlers[path](self.json_body(512 * 1024))
+        elif post:
             handlers = {'/api/practice': app.record, '/api/review': app.review, '/api/dedupe-decision': app.dedupe_decision,
                         '/api/my-answer': app.my_answer, '/api/favorites': app.change_favorites, '/api/learning': app.change_learning}
             if path not in handlers:
@@ -618,6 +645,12 @@ class Handler(BaseHTTPRequestHandler):
             body = self.json_body()
             handler = handlers[path]
             result = handler(body)
+        elif path == '/api/intake':
+            require(not params, 'No parameters expected')
+            result = app.intake_jobs().overview() if app.intake else {'enabled': False}
+        elif path == '/api/intake/job':
+            require(set(params) == {'id'}, 'Expected job ID')
+            result = app.intake_jobs().job(params['id'])
         elif path == '/api/library':
             result = app.library(params)
             if self.server.login:
@@ -675,14 +708,23 @@ class Handler(BaseHTTPRequestHandler):
             result = app.note(params['id'], public=True)
         self.send(200, result)
 
-    def json_body(self):
+    def json_body(self, limit=65536):
         require(self.headers.get('Content-Type', '').split(';')[0] == 'application/json', 'Expected JSON')
+        return json.loads(self.body(limit))
+
+    def body(self, limit):
         require(not self.headers.get('Transfer-Encoding'), 'Transfer encoding not supported')
         sizes = self.headers.get_all('Content-Length', [])
-        require(len(sizes) == 1 and sizes[0].isdigit() and 0 < int(sizes[0]) <= 65536, 'Invalid content length')
+        require(len(sizes) == 1 and sizes[0].isdigit() and 0 < int(sizes[0]) <= limit, 'Invalid content length')
         body = self.rfile.read(int(sizes[0]))
         require(len(body) == int(sizes[0]), 'Incomplete request')
-        return json.loads(body)
+        return body
+
+    def raw_body(self, limit):
+        """One screenshot as the request body; its bytes, not this header, decide the type."""
+        from .web_intake import MIMES
+        require(self.headers.get('Content-Type', '').split(';')[0] in MIMES, 'Expected a PNG, JPEG, WebP or GIF image')
+        return self.body(limit)
 
     def cookie(self):
         from http.cookies import CookieError, SimpleCookie
@@ -708,7 +750,8 @@ class Handler(BaseHTTPRequestHandler):
                 require((bank / 'manifest.json').is_file(), '这个账号的题库还没有同步到服务器。')
                 shared = self.server.public_app
                 self.server.apps[name] = shared if shared and shared.bank == bank.resolve() else WebApp(
-                    bank, self.server.read_only, self.server.allow_my_answers, self.server.allow_practice)
+                    bank, self.server.read_only, self.server.allow_my_answers, self.server.allow_practice,
+                    self.server.ai_config, self.server.allow_intake)
                 self.server.apps[name].warm()
             return self.server.apps[name]
 
@@ -767,8 +810,15 @@ def _read_token(path):
 
 
 def serve(bank, port=0, read_only=False, open_browser=False, token_file=None, public_origins=(), login_file=None, banks_dir=None,
-          allow_my_answers=False, allow_practice=False, public_bank=None):
+          allow_my_answers=False, allow_practice=False, public_bank=None, ai_config_file=None, allow_intake=False):
     require(0 <= port <= 65535, 'Port must be 0..65535')
+    require(not allow_intake or ai_config_file, '--allow-intake needs --ai-config (the model that reads screenshots)')
+    require(not ai_config_file or not read_only or allow_intake,
+            'A read-only reader imports screenshots only with --allow-intake; drop --ai-config or add it')
+    ai_config = None
+    if ai_config_file:
+        from .ai import load_config
+        ai_config = load_config(ai_config_file)
     for origin in public_origins:
         parsed = urlsplit(origin)
         require(parsed.scheme == 'https' and parsed.netloc and not parsed.path.strip('/') and not parsed.query,
@@ -784,13 +834,15 @@ def serve(bank, port=0, read_only=False, open_browser=False, token_file=None, pu
     if banks_dir:
         banks_dir = Path(banks_dir).expanduser().resolve()
         require(banks_dir.is_dir(), f'Not a directory: {banks_dir}')
-    server = LocalServer(None if banks_dir else WebApp(bank, read_only, allow_my_answers, allow_practice), port,
+    server = LocalServer(None if banks_dir else WebApp(bank, read_only, allow_my_answers, allow_practice, ai_config, allow_intake), port,
                          _read_token(token_file) if token_file else None, [o.rstrip('/') for o in public_origins], login, banks_dir,
-                         read_only, allow_my_answers, allow_practice, public_bank)
+                         read_only, allow_my_answers, allow_practice, public_bank, ai_config, allow_intake)
     # A fixed token lives in a file the proxy also reads; never print it into service logs.
     url = server.origin + '/' if token_file else server.url
+    from .ai import describe
     print(json.dumps({'ok': True, 'command': 'web', 'result': {'url': url, 'pid': __import__('os').getpid(), 'read_only': read_only,
                       'my_answers': not read_only or allow_my_answers, 'practice': not read_only or allow_practice,
+                      'intake': describe(ai_config) if ai_config else None,
                       'public_origins': list(server.public_origins), 'public_reading': bool(server.public_app),
                       'version': __version__}}, ensure_ascii=False), flush=True)
     if server.app:
