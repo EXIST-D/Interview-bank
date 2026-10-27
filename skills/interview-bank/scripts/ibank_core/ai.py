@@ -19,8 +19,12 @@ from .schema import require
 
 PROTOCOLS = ("openai", "anthropic")
 DEFAULT_KEY_ENV = "INTERVIEW_BANK_AI_KEY"
-LIMIT_DEFAULTS = {"max_images_per_job": 12, "max_answers_per_job": 40, "daily_images": 60, "answer_batch": 4}
-LIMIT_RANGES = {"max_images_per_job": (1, 30), "max_answers_per_job": (0, 200), "daily_images": (1, 1000), "answer_batch": (1, 10)}
+SEARCH_KEY_ENV = "INTERVIEW_BANK_SEARCH_KEY"
+SEARCH_PROVIDERS = {"bocha": "https://api.bochaai.com/v1/web-search", "tavily": "https://api.tavily.com/search"}
+SEARCH_FIELDS = {"provider", "base_url", "api_key_file", "api_key_env", "count", "pages", "timeout"}
+LIMIT_DEFAULTS = {"max_images_per_job": 12, "max_answers_per_job": 40, "daily_images": 60, "answer_batch": 4, "daily_research": 100}
+LIMIT_RANGES = {"max_images_per_job": (1, 30), "max_answers_per_job": (0, 200), "daily_images": (1, 1000), "answer_batch": (1, 10),
+                "daily_research": (1, 2000)}
 ENDPOINT_FIELDS = {"protocol", "base_url", "model", "api_key_file", "api_key_env", "timeout", "max_tokens", "json_mode", "temperature",
                    "extra_body", "image_encoding"}
 # extra_body carries provider switches (DeepSeek/Zhipu "thinking", Qwen "enable_thinking"); it cannot replace the request itself.
@@ -30,6 +34,40 @@ LOOPBACK = {"127.0.0.1", "localhost", "::1"}
 
 class AIError(BankError):
     """A model call failed; the message is safe to show the person (no key, no request body)."""
+
+
+def _key(raw, label, base_dir, default_env):
+    """A key from api_key_file (not world-readable) or the named environment variable; never from the command line."""
+    key_file, key_env = raw.get("api_key_file"), raw.get("api_key_env", default_env)
+    require(key_file is None or isinstance(key_file, str), f"ai.{label}.api_key_file must be a path")
+    require(isinstance(key_env, str) and re.fullmatch(r"[A-Z_][A-Z0-9_]*", key_env), f"ai.{label}.api_key_env must be an environment variable name")
+    if not key_file:
+        return os.environ.get(key_env, "").strip() or None
+    path = Path(key_file).expanduser()
+    path = path if path.is_absolute() else base_dir / path
+    require(path.is_file(), f"ai.{label}.api_key_file not found")
+    require(os.name == "nt" or not path.stat().st_mode & stat.S_IROTH,
+            f"ai.{label}.api_key_file is readable by everyone; chmod 600 or 640 it")
+    key = path.read_text(encoding="utf-8").strip()
+    require(bool(key) and key.isascii() and key.isprintable() and " " not in key, f"ai.{label}.api_key_file must hold one key")
+    return key
+
+
+def _search(raw, base_dir):
+    require(isinstance(raw, dict) and set(raw) <= SEARCH_FIELDS, f"ai.search: known fields are {sorted(SEARCH_FIELDS)}")
+    provider = raw.get("provider", "bocha")
+    require(provider in SEARCH_PROVIDERS, "ai.search.provider must be bocha or tavily")
+    key = _key(raw, "search", base_dir, SEARCH_KEY_ENV)
+    require(key is not None, f"ai.search: no API key (set api_key_file, or the {SEARCH_KEY_ENV} environment variable)")
+    count, pages, timeout = raw.get("count", 8), raw.get("pages", 4), raw.get("timeout", 30)
+    require(type(count) is int and 1 <= count <= 20, "ai.search.count must be 1..20")
+    require(type(pages) is int and 1 <= pages <= 6, "ai.search.pages must be 1..6 (pages read per question)")
+    require(type(timeout) in (int, float) and 5 <= timeout <= 120, "ai.search.timeout must be 5..120 seconds")
+    url = raw.get("base_url", SEARCH_PROVIDERS[provider])
+    parsed = urlsplit(url) if isinstance(url, str) else None
+    require(parsed is not None and (parsed.scheme == "https" or parsed.scheme == "http" and parsed.hostname in LOOPBACK)
+            and not parsed.username, "ai.search.base_url must be https (plain http only on this machine)")
+    return {"provider": provider, "url": url, "count": count, "pages": pages, "timeout": timeout, "_key": key}
 
 
 def _endpoint(raw, label, base_dir, inherited=None):
@@ -58,22 +96,9 @@ def _endpoint(raw, label, base_dir, inherited=None):
             f"ai.{label}.extra_body: an object of provider options, without {sorted(RESERVED_BODY)}")
     encoding = merged.get("image_encoding", "data_url")
     require(encoding in ("data_url", "base64"), f"ai.{label}.image_encoding must be data_url or base64")
-    key_file, key_env = merged.get("api_key_file"), merged.get("api_key_env", DEFAULT_KEY_ENV)
-    require(key_file is None or isinstance(key_file, str), f"ai.{label}.api_key_file must be a path")
-    require(isinstance(key_env, str) and re.fullmatch(r"[A-Z_][A-Z0-9_]*", key_env), f"ai.{label}.api_key_env must be an environment variable name")
-    key = None
-    if key_file:
-        path = Path(key_file).expanduser()
-        path = path if path.is_absolute() else base_dir / path
-        require(path.is_file(), f"ai.{label}.api_key_file not found")
-        require(os.name == "nt" or not path.stat().st_mode & stat.S_IROTH,
-                f"ai.{label}.api_key_file is readable by everyone; chmod 600 or 640 it")
-        key = path.read_text(encoding="utf-8").strip()
-        require(bool(key) and key.isascii() and key.isprintable() and " " not in key, f"ai.{label}.api_key_file must hold one key")
-    else:
-        key = os.environ.get(key_env, "").strip() or None
+    key = _key(merged, label, base_dir, DEFAULT_KEY_ENV)
     require(key is not None or parsed.hostname in LOOPBACK,
-            f"ai.{label}: no API key (set api_key_file, or the {key_env} environment variable)")
+            f"ai.{label}: no API key (set api_key_file, or the {merged.get('api_key_env', DEFAULT_KEY_ENV)} environment variable)")
     return {"protocol": protocol, "base_url": base.rstrip("/"), "model": model.strip(), "timeout": timeout,
             "max_tokens": max_tokens, "temperature": temperature, "json_mode": merged.get("json_mode", False),
             "extra_body": extra, "image_encoding": encoding, "_key": key}
@@ -87,7 +112,8 @@ def load_config(path):
         raw = json.loads(path.read_text(encoding="utf-8"))
     except ValueError as exc:
         raise BankError(f"AI configuration is not valid JSON: {exc}") from None
-    require(isinstance(raw, dict) and set(raw) <= {"schema_version", "vision", "text", "limits"}, "AI configuration: vision, text and limits only")
+    require(isinstance(raw, dict) and set(raw) <= {"schema_version", "vision", "text", "search", "limits"},
+            "AI configuration: vision, text, search and limits only")
     require(raw.get("schema_version", 1) == 1, "AI configuration: unsupported schema_version")
     require("vision" in raw, "AI configuration needs a vision endpoint (a model that reads images)")
     vision = _endpoint(raw["vision"], "vision", path.parent)
@@ -97,13 +123,43 @@ def load_config(path):
     require(set(limits) == set(LIMIT_DEFAULTS), f"ai.limits: known fields are {sorted(LIMIT_DEFAULTS)}")
     for name, (low, high) in LIMIT_RANGES.items():
         require(type(limits[name]) is int and low <= limits[name] <= high, f"ai.limits.{name} must be {low}..{high}")
-    return {"vision": vision, "text": text, "limits": limits}
+    search = _search(raw["search"], path.parent) if raw.get("search") is not None else None
+    return {"vision": vision, "text": text, "search": search, "limits": limits}
 
 
 def describe(config):
     """What the page and the startup line may show: providers and models, never keys or file paths."""
-    return {role: {"protocol": config[role]["protocol"], "host": urlsplit(config[role]["base_url"]).hostname,
-                   "model": config[role]["model"]} for role in ("vision", "text")}
+    result = {role: {"protocol": config[role]["protocol"], "host": urlsplit(config[role]["base_url"]).hostname,
+                     "model": config[role]["model"]} for role in ("vision", "text")}
+    if config.get("search"):
+        result["search"] = {"provider": config["search"]["provider"], "pages": config["search"]["pages"]}
+    return result
+
+
+def search(settings, query, post=None):
+    """Web results for a query: [{title, url, site, snippet, date}]. The pages themselves are read with page-text."""
+    post = post or _post
+    if settings["provider"] == "tavily":
+        body, headers = {"query": query, "max_results": settings["count"]}, {"Authorization": f"Bearer {settings['_key']}"}
+    else:
+        body = {"query": query, "summary": True, "freshness": "noLimit", "count": settings["count"]}
+        headers = {"Authorization": f"Bearer {settings['_key']}"}
+    try:
+        reply = post(settings["url"], body, headers, settings["timeout"])
+    except urllib.error.HTTPError as exc:
+        hint = {401: "认证失败：请检查搜索服务的 API Key", 403: "没有权限或额度不足", 429: "搜索调用太频繁或额度不足"}.get(exc.code, "服务暂时不可用")
+        raise AIError(f"搜索服务返回 HTTP {exc.code}：{hint}。") from None
+    except (urllib.error.URLError, TimeoutError, ConnectionError, ValueError):
+        raise AIError("连不上搜索服务，请检查网络。") from None
+    if settings["provider"] == "tavily":
+        rows = [{"title": r.get("title"), "url": r.get("url"), "site": None, "snippet": r.get("content"), "date": None}
+                for r in reply.get("results", []) if isinstance(r, dict)]
+    else:
+        data = reply.get("data") if isinstance(reply.get("data"), dict) else reply
+        pages = (data.get("webPages") or {}).get("value", []) if isinstance(data, dict) else []
+        rows = [{"title": r.get("name"), "url": r.get("url"), "site": r.get("siteName"), "snippet": r.get("summary") or r.get("snippet"),
+                 "date": r.get("datePublished")} for r in pages if isinstance(r, dict)]
+    return [r for r in rows if isinstance(r["url"], str) and urlsplit(r["url"]).scheme in ("http", "https")]
 
 
 def _openai_body(endpoint, system, parts):
@@ -223,4 +279,9 @@ def check(config, sleep=time.sleep):
                      [{"text": "ping"}], attempts=1, sleep=sleep)
         results[role] = {**describe(config)[role], "ok": reply.get("ok") is True,
                          "seconds": round(time.monotonic() - started, 2)}
+    if config.get("search"):
+        started = time.monotonic()
+        found = search(config["search"], "Redis 持久化 RDB AOF")
+        results["search"] = {**describe(config)["search"], "ok": bool(found), "results": len(found),
+                             "seconds": round(time.monotonic() - started, 2)}
     return results

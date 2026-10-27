@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, CornerDownRight, ImagePlus, Loader2, RotateCcw, Sparkles, X } from "lucide-react";
+import { AlertTriangle, Check, CornerDownRight, ImagePlus, Loader2, RotateCcw, Search, Sparkles, X } from "lucide-react";
 import { Dialog } from "radix-ui";
 import { useCallback, useEffect, useRef, useState, type ClipboardEvent, type DragEvent } from "react";
 import { ApiError } from "@/lib/api";
@@ -22,12 +22,13 @@ function message(cause: unknown, fallback: string) {
 function Progress({ job }: { job: Job }) {
   const { t } = useI18n();
   const p = job.progress;
+  const step = { i: Math.min((p?.done ?? 0) + 1, p?.total ?? 1), n: p?.total ?? 1 };
   const text =
     job.status === "extracting"
-      ? t("imp_reading", { i: Math.min((p?.done ?? 0) + 1, p?.total ?? 1), n: p?.total ?? 1 })
+      ? t("imp_reading", step)
       : job.status === "saving"
         ? t("imp_saving")
-        : t("imp_answering", { i: Math.min((p?.done ?? 0) + 1, p?.total ?? 1), n: p?.total ?? 1 });
+        : t(job.kind === "research" ? "research_progress" : "imp_answering", step);
   const share = p && p.total ? Math.round((p.done / p.total) * 100) : 8;
   return (
     <section className="surface p-6" aria-live="polite">
@@ -39,7 +40,9 @@ function Progress({ job }: { job: Job }) {
         <div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${Math.max(8, share)}%` }} />
       </div>
       {job.status !== "extracting" && (
-        <p className="mt-3 text-footnote text-muted-foreground">{t(job.status === "saving" ? "imp_saving_hint" : "imp_answering_hint")}</p>
+        <p className="mt-3 text-footnote text-muted-foreground">
+          {t(job.status === "saving" ? "imp_saving_hint" : job.kind === "research" ? "research_hint" : "imp_answering_hint")}
+        </p>
       )}
     </section>
   );
@@ -194,6 +197,37 @@ function Picker({ overview, onStarted }: { overview: Overview; onStarted: (job: 
         </Button>
       </div>
     </div>
+  );
+}
+
+function ResearchCard({ research, onStarted }: { research: NonNullable<Overview["research"]>; onStarted: (job: Job) => void }) {
+  const { t } = useI18n();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const count = Math.min(research.candidates, research.per_job, research.left_today);
+  if (!research.candidates) return null;
+  const start = async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      onStarted(await intake.research());
+    } catch (cause) {
+      setError(message(cause, t("failed")));
+      setBusy(false);
+    }
+  };
+  return (
+    <section className="surface mb-5 flex flex-col gap-3 p-4 sm:flex-row sm:items-center">
+      <div className="min-w-0 flex-1">
+        <h2 className="text-callout font-semibold">{t("research_title")}</h2>
+        <p className="mt-1 text-footnote leading-relaxed text-muted-foreground">{t("research_lead", { n: research.candidates })}</p>
+        {error && <p className="mt-1 text-footnote text-destructive">{error}</p>}
+      </div>
+      <Button variant="tinted" size="sm" disabled={busy || count < 1} onClick={start}>
+        {busy ? <Loader2 className="animate-spin" /> : <Search />}
+        {count < 1 ? t("research_none_left") : t("research_start", { n: count })}
+      </Button>
+    </section>
   );
 }
 
@@ -489,6 +523,8 @@ function Done({ job, onChange, onAgain }: { job: Job; onChange: (job: Job) => vo
   const result = job.result;
   const answers = job.answers;
   const failed = Object.entries(answers?.failed ?? {});
+  const sourced = new Set(answers?.sourced ?? []);
+  const research = job.kind === "research";
   const retry = async () => {
     setBusy(true);
     setError(null);
@@ -511,11 +547,27 @@ function Done({ job, onChange, onAgain }: { job: Job; onChange: (job: Job) => vo
         <span className="grid size-7 place-items-center rounded-full bg-accent text-primary">
           <Check className="size-4" />
         </span>
-        {t("imp_done_title")}
+        {t(research ? "research_done_title" : "imp_done_title")}
       </h2>
       {job.error && <p className="text-footnote text-destructive">{job.error}</p>}
       {result?.nothing_new && <p className="text-subhead text-muted-foreground">{t("imp_nothing_new")}</p>}
-      {result && !result.nothing_new && (
+      {research && result?.questions && (
+        <div>
+          <h3 className="text-callout font-semibold">{t("research_sourced", { k: sourced.size, n: result.questions.length })}</h3>
+          <div className="mt-2 flex flex-col gap-1.5">
+            {result.questions.map((q) => (
+              <div key={q.id} className="flex items-center gap-2">
+                <div className="min-w-0 flex-1">{link(q.id, q.canonical)}</div>
+                <span className={cn("shrink-0 text-caption", sourced.has(q.id) ? "text-primary" : "text-muted-foreground")}>
+                  {sourced.has(q.id) ? t("status_source_backed") : t("research_unsupported")}
+                </span>
+              </div>
+            ))}
+          </div>
+          {Boolean(result.more) && <p className="mt-2 text-caption text-muted-foreground">{t("research_more", { n: result.more! })}</p>}
+        </div>
+      )}
+      {result && !result.nothing_new && !research && (
         <>
           <div>
             <h3 className="text-callout font-semibold">{t("imp_added", { n: result.added.length })}</h3>
@@ -536,13 +588,13 @@ function Done({ job, onChange, onAgain }: { job: Job; onChange: (job: Job) => vo
       )}
       {answers && (answers.done.length > 0 || failed.length > 0) && (
         <div className="rounded-xl bg-accent/60 px-3 py-2.5 text-footnote">
-          <p>{t("imp_answers", { n: answers.done.length })}</p>
+          {!research && <p>{t(sourced.size ? "imp_answers_sourced" : "imp_answers", { n: answers.done.length, k: sourced.size })}</p>}
           {failed.length > 0 && (
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <span className="text-warning">{t("imp_answers_failed", { n: failed.length, r: failed[0][1] })}</span>
+              <span className="text-warning">{t(research ? "research_failed" : "imp_answers_failed", { n: failed.length, r: failed[0][1] })}</span>
               <Button size="xs" variant="outline" disabled={busy} onClick={retry}>
                 <RotateCcw />
-                {t("imp_retry_answers")}
+                {t(research ? "retry" : "imp_retry_answers")}
               </Button>
             </div>
           )}
@@ -639,7 +691,13 @@ export function ImportPage() {
   if (error) body = <p className="text-footnote text-destructive">{error}</p>;
   else if (!overview) body = <p className="text-footnote text-muted-foreground">{t("loading")}</p>;
   else if (!overview.enabled) body = <p className="surface p-5 text-subhead text-muted-foreground">{t("imp_disabled")}</p>;
-  else if (!job) body = <Picker overview={overview} onStarted={setJob} />;
+  else if (!job)
+    body = (
+      <>
+        {overview.research && <ResearchCard research={overview.research} onStarted={setJob} />}
+        <Picker overview={overview} onStarted={setJob} />
+      </>
+    );
   else if (RUNNING.includes(job.status)) body = <Progress job={job} />;
   else if (job.status === "collecting") body = <Pending job={job} onChange={update} />;
   else if (job.status === "review") body = <Review key={job.id + job.updated_at} job={job} onChange={update} />;
@@ -658,6 +716,7 @@ export function ImportPage() {
       <p className="mt-1.5 mb-5 text-footnote leading-relaxed text-muted-foreground">
         {t("imp_lead")}
         {overview?.models && ` ${t("imp_models", { v: overview.models.vision.model, a: overview.models.text.model })}`}
+        {overview?.models?.search && ` ${t("imp_models_search", { s: overview.models.search.provider })}`}
       </p>
       {body}
       {!job && recent.length > 0 && (
@@ -668,9 +727,11 @@ export function ImportPage() {
               <li key={entry.id} className="flex items-center justify-between gap-3 rounded-xl bg-fill px-3 py-2 text-footnote">
                 <span>{date(entry.created_at)}</span>
                 <span className="text-muted-foreground">
-                  {entry.result
-                    ? t("imp_recent_line", { i: entry.images, a: entry.result.added.length, m: entry.result.merged.length, d: entry.answers?.done.length ?? 0 })
-                    : t(`imp_status_${entry.status}` as TextKey)}
+                  {entry.kind === "research" && entry.status === "done"
+                    ? t("research_recent_line", { n: entry.result?.questions?.length ?? 0, k: entry.answers?.sourced?.length ?? 0 })
+                    : entry.result?.added
+                      ? t("imp_recent_line", { i: entry.images, a: entry.result.added.length, m: entry.result.merged.length, d: entry.answers?.done.length ?? 0 })
+                      : t(`imp_status_${entry.status}` as TextKey)}
                 </span>
               </li>
             ))}

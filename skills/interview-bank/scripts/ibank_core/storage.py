@@ -107,9 +107,6 @@ def write_jsonl_atomic(path, rows):
     atomic_write(path, jsonl_text(rows))
 
 
-replace_jsonl_atomic = write_jsonl_atomic
-
-
 def append_jsonl(path, rows):
     """Atomic append by replacement. Caller must hold the enclosing bank lock."""
     write_jsonl_atomic(path, (read_jsonl(path) if path.exists() else []) + list(rows))

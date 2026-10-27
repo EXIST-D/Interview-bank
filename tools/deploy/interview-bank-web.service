@@ -5,7 +5,8 @@
 # Optional: append --public-bank /srv/interview-bank/banks/<reviewed-bank> to publish its collections to guests.
 # Personal interviews, notes and state still require login. No public content is inferred by default.
 # Optional screenshot import: append --allow-intake --ai-config /etc/interview-bank/ai.json (see ai.example.json;
-# the key file is root:ibank 640). Check it first with `ibank.py ai-check --ai-config …`, and raise MemoryMax to 512M.
+# the key files are root:ibank 640; drop the "search" section to import without web sources). Check it first with
+# `ibank.py ai-check --ai-config …`, and raise MemoryMax to 512M.
 [Unit]
 Description=Interview Bank Web reader (loopback, behind a reverse proxy)
 After=network.target

@@ -17,10 +17,16 @@
     "json_mode": true,
     "extra_body": {"thinking": {"type": "disabled"}}
   },
+  "search": {
+    "provider": "bocha",
+    "api_key_file": "/etc/interview-bank/search-key",
+    "pages": 4
+  },
   "limits": {
     "max_images_per_job": 12,
     "daily_images": 60,
     "max_answers_per_job": 40,
-    "answer_batch": 4
+    "answer_batch": 4,
+    "daily_research": 100
   }
 }

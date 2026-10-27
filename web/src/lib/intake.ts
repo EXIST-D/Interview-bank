@@ -28,6 +28,7 @@ export type Saved = { id: string; canonical: string; from?: string };
 export type JobStatus = "collecting" | "extracting" | "review" | "saving" | "merge_review" | "answering" | "done" | "cancelled";
 export type Job = {
   id: string;
+  kind: "import" | "research";
   status: JobStatus;
   created_at: string;
   updated_at: string;
@@ -38,16 +39,26 @@ export type Job = {
   error: string | null;
   notice: string | null;
   merge_review: MergeAsk[] | null;
-  result: { added: Saved[]; merged: Saved[]; related: number; nothing_new?: boolean; answers_skipped_for_limit?: number } | null;
-  answers: { pending: string[]; done: string[]; failed: Record<string, string> } | null;
+  result: {
+    added: Saved[];
+    merged: Saved[];
+    related: number;
+    nothing_new?: boolean;
+    answers_skipped_for_limit?: number;
+    research?: boolean;
+    questions?: Saved[];
+    more?: number;
+  } | null;
+  answers: { pending: string[]; done: string[]; failed: Record<string, string>; sourced?: string[]; searched?: number } | null;
 };
 export type Hints = { company?: string; position?: string; round?: string; interview_type?: string; event_date?: string };
 export type Overview = {
   enabled: boolean;
-  models?: Record<"vision" | "text", { model: string; host: string }>;
+  models?: Record<"vision" | "text", { model: string; host: string }> & { search?: { provider: string; pages: number } };
   limits?: { max_images_per_job: number; images_left_today: number; max_image_bytes: number; max_view_bytes: number; max_views: number };
+  research?: { candidates: number; per_job: number; left_today: number } | null;
   active?: Job | null;
-  recent?: { id: string; status: JobStatus; created_at: string; images: number; result: Job["result"]; answers: Job["answers"] }[];
+  recent?: { id: string; kind?: Job["kind"]; status: JobStatus; created_at: string; images: number; result: Job["result"]; answers: Job["answers"] }[];
 };
 
 export const RUNNING: JobStatus[] = ["extracting", "saving", "answering"];
@@ -63,6 +74,7 @@ export const intake = {
   retryAnswers: (job: string) => api<Job>("/api/intake/answers", { job }),
   retryRead: (job: string) => api<Job>("/api/intake/retry", { job }),
   cancel: (job: string) => api<Job>("/api/intake/cancel", { job }),
+  research: (questionIds?: string[]) => api<Job>("/api/intake/research", questionIds ? { question_ids: questionIds } : {}),
   upload: (job: string, image: number, blob: Blob, view?: number) =>
     upload<Job>(`/api/intake/upload?job=${encodeURIComponent(job)}&image=${image}${view === undefined ? "" : `&view=${view}`}`, blob),
 };

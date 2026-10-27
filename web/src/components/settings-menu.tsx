@@ -104,7 +104,7 @@ export function SettingsMenu({
               <Download />
               {t("import")}
             </DropdownMenu.Item>
-            <DropdownMenu.Item className={item} onSelect={() => setAction("research")}>
+            <DropdownMenu.Item className={item} onSelect={() => (library?.can_research ? navigate("import") : setAction("research"))}>
               <Sparkles />
               {t("research")}
             </DropdownMenu.Item>

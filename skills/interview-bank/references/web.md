@@ -114,7 +114,8 @@ Opening a browser alone does not keep a terminated executor alive. If the host c
 - Page security: only the bundled scripts and styles are served (`/`, `/assets/<hashed>.js|css`); each page response
   carries a fresh style nonce for the dialogs' scroll lock, and no inline script is allowed.
 
-The page fetches bank data on navigation, refresh and after practice; it does not automatically poll, research answers or watch directories.
+The page fetches bank data on navigation, refresh and after practice and does not watch directories. Only the optional
+import page polls its own job while a screenshot import or web research runs on the server (below).
 The overview distinguishes stored answers (including draft/stale) from currently valid source-backed/reviewed coverage in its tooltip.
 Old migrated answers can be stale until coverage is rechecked. Frequencies count matching collected occurrences.
 Domain facet counts may overlap because a question can have multiple labels.
@@ -136,8 +137,8 @@ The custom handler serves only explicitly allowlisted bundled assets and a small
 with Host/Origin checks, per-process token, bounded JSON bodies, no CORS grants and a restrictive content policy.
 Question/answer HTML is rendered as text, source links accept only HTTP(S), and no remote scripts/fonts are used. The only upload
 endpoint belongs to the opt-in screenshot import below; it accepts PNG, JPEG, WebP or GIF bytes and nothing else.
-It is a personal helper, not a multi-user service. Never tunnel or expose the port itself; reading on a phone goes
-through your own server as below, only when the user asks for it.
+Locally it is a personal helper. Never tunnel or expose the port itself; reading on a phone, and several accounts
+with one bank each, go through your own HTTPS server as below, only when the user asks for it.
 
 ## Reading on your own server (optional)
 
@@ -212,6 +213,20 @@ known bytes are not read again), extraction, the person's check, `ingest submit`
   `confirm`, `merge`, `answers`, `retry`, `cancel`. Behind nginx the upload path needs a larger body limit
   (`tools/deploy/nginx-location.conf`).
 - Screenshots leave the server for the model provider the person configured. Enable it only when they ask.
+
+### Web research for sourced answers (1.32+)
+
+Optional `search` in the same configuration (`provider` `bocha` or `tavily`, `api_key_file` or `api_key_env`,
+`pages` read per question, default 4). The reader then researches new imported questions before writing anything,
+and 补充出处 (import page, or 联网补充出处 below an answer) does the same for AI drafts, stale and unanswered
+questions, most-asked first. For each question: the `research` task's query goes to the search provider; up to
+`pages` results are read with `page-text` (public addresses only, also after redirects; a site that refuses is
+replaced by the next result; menus and sidebars are left out); the model answers only from those texts, following
+this policy's research rules; then the server keeps only citations of pages it read, drops quotes not found verbatim,
+drops key points without a supporting page, records its checks and stages the answer as `source_backed` with the page
+texts, so quotes are verified as for `answer --page-texts`. Unsupported questions keep their answer (a new import
+falls back to an `ai_draft`). `limits.daily_research` caps searches per day. This is machine research from a few
+pages: the person's 人工审阅 and an agent's deeper research remain the stronger checks.
 
 ### Hosted public reading (1.30+)
 

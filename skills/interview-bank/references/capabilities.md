@@ -9,7 +9,7 @@ Who does what. Version history lives in the repository CHANGELOG, not here.
 | See screenshots (M1) | Required: actual image viewing | Hashes, deduplicates and stores sources; never reads pixels |
 | Understand meaning (M2/M3, JD mapping, feedback) | Required: reasoning | Validates labels, decisions and confidence gates; no semantic inference |
 | Research answers (M5) | Required: actual search and page reading | Validates citations, key-point evidence and quotes against supplied page text; never browses |
-| Check cited links, save cited pages | — | `verify-citations` (only on request) and `page-text` (pages the host cites, for quote checks): the two CLI commands that make network requests |
+| Check cited links, save cited pages | — | `verify-citations` (only on request) and `page-text` (pages the host cites, for quote checks); with `web --ai-config` also the configured model, search provider and the pages research reads, and `ai-check` |
 | Transcribe audio/video | Optional host tool, or local faster-whisper | `media-transcribe` runs the optional local model; supplied SRT/VTT/TXT/JSON need nothing |
 | Store, query, export, recover | — | Transactions, change-set runs, audit, undo, search, statistics, reports, `gc`, `backup` |
 | Local Web reader and practice | User's browser | Loopback-only server; self-ratings saved only in V2 banks |
@@ -22,7 +22,7 @@ See [portability](portability.md) to check a new host.
 ## Runtime
 
 - Python 3.10+ standard library; the CLI refuses older interpreters. No model SDK, embeddings, database server or OCR installation;
-  an API key only for the optional Web screenshot import, read from a file or environment variable.
+  API keys only for the optional Web import and web research, read from a file or environment variable.
 - A writable bank outside the installed skill. Queries read the JSONL tables directly; cache/ only holds spilled outputs.
 - Optional: `faster-whisper==1.2.1` in a workspace virtual environment for raw audio/video.
 

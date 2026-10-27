@@ -1,10 +1,37 @@
 import { useState } from "react";
 import { api, type Answer, type QuestionDetail } from "@/lib/api";
+import { useBank } from "@/lib/bank";
 import { useI18n } from "@/lib/i18n";
+import { intake } from "@/lib/intake";
+import { navigate } from "@/lib/router";
 import { Button } from "@/components/ui/button";
 import { RichText, SafeLink } from "./markdown";
 
 const answered = (status: string) => status === "source_backed" || status === "reviewed";
+
+/** Web research for one question: a server job reads pages and writes a sourced answer; progress shows on the import page. */
+function ResearchButton({ question, onToast }: { question: QuestionDetail; onToast: (text: string) => void }) {
+  const { t } = useI18n();
+  const { library } = useBank();
+  const [busy, setBusy] = useState(false);
+  if (!library?.can_research || !["missing", "ai_draft", "stale"].includes(question.answer_status)) return null;
+  const start = async () => {
+    setBusy(true);
+    try {
+      await intake.research([question.id]);
+      onToast(t("research_started"));
+      navigate("import");
+    } catch (cause) {
+      onToast(cause instanceof Error ? cause.message : t("failed"));
+      setBusy(false);
+    }
+  };
+  return (
+    <Button variant="outline" size="sm" disabled={busy} onClick={start}>
+      {t("research_one")}
+    </Button>
+  );
+}
 
 export function AnswerBody({ status, answer }: { status: string; answer: Answer }) {
   const { t } = useI18n();
@@ -238,9 +265,12 @@ export function QuestionView({
           </details>
         )}
         {canReview && q.answer && <ReviewControls key={q.id + q.revision} question={q} onSaved={onReviewed} onToast={onToast} />}
-        <Button variant="link" size="sm" className="px-0" onClick={onPractise}>
-          {t("practise_one")}
-        </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="link" size="sm" className="px-0" onClick={onPractise}>
+            {t("practise_one")}
+          </Button>
+          <ResearchButton question={q} onToast={onToast} />
+        </div>
       </div>
     </>
   );

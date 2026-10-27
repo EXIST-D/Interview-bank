@@ -2,16 +2,35 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
-## [Unreleased]
+## [1.32.0] - 2026-10-27
+
+### Added
+- Web research for sourced answers in the reader (optional `search` in the AI configuration: Bocha or Tavily). New
+  imported questions are researched before anything is written; 补充出处 on the import page (most-asked drafts, stale and
+  unanswered questions first) and 联网补充出处 below an answer do the same for existing questions. For each question the
+  `research` task's query is searched, up to `pages` results are read with `page-text`, the model answers only from
+  those texts (instructions cut from answer-policy), and the server keeps only citations of pages it read, drops
+  quotes not found verbatim and key points without a supporting page, records its checks and stages the answer as
+  `source_backed` with the page texts so quotes are verified. Unsupported questions keep their answer; a new import
+  falls back to an AI draft. `limits.daily_research` caps searches per day; `ai-check` also checks the search service.
+- README screenshot of the import review page; the reader and phone screenshots retaken from the demo bank.
 
 ### Fixed
+- Security: `page-text` and `verify-citations` refused private targets but followed redirects without checking them; a
+  redirect to a loopback, private, link-local or carrier-grade NAT address (cloud metadata) is now refused.
 - nginx templates: nginx refuses `client_max_body_size` twice in one location, so the shared proxy snippet no longer
   sets it and each location does (64k; 11m for import). `location /ibank/api/intake` has no trailing slash, so
   `GET …/api/intake` reaches the reader instead of an nginx redirect.
+- Documentation that no longer matched: SECURITY.md (network paths, hosted mode), web.md (polling, accounts),
+  capabilities, README requirements, status and verification figures, outdated screenshots.
 
 ### Changed
+- `page-text` leaves out `<nav>` and `<aside>` blocks, so menus no longer fill the start of a page's text.
 - `ai.example.json` uses `deepseek-flash` with thinking off for dedupe and answers too: on the same screenshot a batch
   took 42 s against 276 s with `deepseek-v4-pro`, with the same dedupe decisions and comparable answers.
+
+### Removed
+- 21 unused interface strings left from the 1.28/1.29 editor changes and an unused storage alias.
 
 ## [1.31.1] - 2026-10-27
 

@@ -13,10 +13,14 @@ import re
 import secrets
 import threading
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from urllib.parse import unquote, urlsplit
 
 from . import ai
-from .ai_prompts import answer_prompt, dedupe_prompt, extraction_prompt, extraction_request
-from .answers import research_task, stage_answers
+from .ai_prompts import answer_prompt, dedupe_prompt, extraction_prompt, extraction_request, research_prompt, research_request
+from .answers import _quote_text as quote_text, research_task, stage_answers
+from .citations import page_texts as fetch_pages
+from .dates import today
 from .catalog import normalize_labels
 from .dedupe import stage_decisions
 from .editorial import exclusion_reason, is_self_introduction
@@ -214,6 +218,74 @@ def needs_answer(q):
     return q["answer_status"] == "missing" or (q["answer_status"] == "stale" and q["answer"]["status"] == "ai_draft")
 
 
+def needs_research(q):
+    """Worth looking up: no answer, an AI draft, or an answer that went stale (old evidence or changed wording)."""
+    return q["answer_status"] in ("missing", "ai_draft", "stale")
+
+
+SOURCE_TYPES = ("official_doc", "standard", "paper", "blog", "forum", "news", "other")
+
+
+def url_key(url):
+    """Models rewrite URLs slightly (percent-encoding, a trailing slash, host case); compare what they point at."""
+    if not isinstance(url, str):
+        return None
+    parts = urlsplit(unquote(url.strip()))
+    return f"{parts.scheme.lower()}://{(parts.hostname or '').lower()}{parts.path.rstrip('/')}?{parts.query}"
+
+
+def clean_sourced(raw, qid, pages, provider):
+    """A model's answer from the pages the server read, reduced to what stage_answers accepts as source_backed.
+
+    Only URLs that were read can be cited; a quote not found verbatim in its page is dropped; a key point left
+    without a supporting page is dropped. Returns (answer, None) or (None, reason)."""
+    if isinstance(raw, dict) and isinstance(raw.get("answers"), list) and raw["answers"]:
+        raw = raw["answers"][0]  # the policy's response envelope, copied from the shown example
+    if not isinstance(raw, dict) or raw.get("skip") is True:
+        return None, (_text(raw.get("reason"), 300) if isinstance(raw, dict) else None) or "网页不足以支撑完整答案"
+    by_url = {url_key(url): page for page in pages for url in page["urls"]}
+    accessed = today().isoformat()
+    citations, seen = [], {}
+    for row in raw.get("sources", []) if isinstance(raw.get("sources"), list) else []:
+        page = by_url.get(url_key(row.get("url"))) if isinstance(row, dict) else None
+        if page is None or page["url"] in seen.values():
+            continue
+        host = urlsplit(page["url"]).hostname or page["url"]
+        citation = {"title": _text(row.get("title"), 300) or _text(page.get("title"), 300) or host, "url": page["url"],
+                    "publisher": _text(row.get("publisher"), 120) or _text(page.get("site"), 120) or host,
+                    "type": row.get("type") if row.get("type") in SOURCE_TYPES else "other", "accessed_at": accessed,
+                    "evidence_note": _text(row.get("evidence_note"), 2000) or f"服务器于 {accessed} 读取该页面正文，答案要点据此整理"}
+        quote = _text(row.get("evidence_quote"), 300)
+        if quote and quote_text(quote) in quote_text(page["text"]):
+            citation["evidence_quote"] = quote
+        seen[url_key(row["url"])] = page["url"]
+        seen[url_key(page["url"])] = page["url"]
+        citations.append(citation)
+    if not citations:
+        return None, "答案没有引用服务器读到的网页"
+    points = [p for p in (_text(v, 600) for v in raw.get("key_points", []) if isinstance(raw.get("key_points"), list)) if p]
+    support = {}
+    for link in raw.get("evidence", []) if isinstance(raw.get("evidence"), list) else []:
+        if isinstance(link, dict) and type(link.get("key_point")) is int and 0 <= link["key_point"] < len(points):
+            urls = [seen[url_key(u)] for u in link.get("source_urls", []) if url_key(u) in seen] if isinstance(link.get("source_urls"), list) else []
+            if urls:
+                support.setdefault(link["key_point"], []).extend(u for u in urls if u not in support.get(link["key_point"], []))
+    kept = [i for i in range(len(points)) if i in support]
+    if not kept:
+        return None, "每个要点都需要有网页支持，模型没有给出"
+    draft = clean_answer({**raw, "key_points": [points[i] for i in kept]}, qid)
+    if draft.get("skip"):
+        return None, draft["reason"]
+    cited = {u for i in kept for u in support[i]}
+    answer = {**draft, "status": "source_backed", "sources": [c for c in citations if c["url"] in cited],
+              "evidence": [{"key_point": n, "source_urls": support[i]} for n, i in enumerate(kept)],
+              "checks": [f"web search ({provider}) and page text read by the server on {accessed}",
+                         f"{sum('evidence_quote' in c for c in citations if c['url'] in cited)} quotes found verbatim in the page text"]}
+    if len(kept) < len(points):
+        answer["checks"].append(f"{len(points) - len(kept)} key points without a supporting page were dropped")
+    return answer, None
+
+
 def clean_answer(raw, qid):
     if not isinstance(raw, dict):
         return {"question_id": qid, "skip": True, "reason": "模型没有返回这道题的答案"}
@@ -241,8 +313,9 @@ def clean_answer(raw, qid):
 class IntakeJobs:
     """Screenshot imports of one bank. Holds the reader's mutation lock around every bank write."""
 
-    def __init__(self, bank, config, mutation_lock, call=ai.call):
+    def __init__(self, bank, config, mutation_lock, call=ai.call, search=ai.search, fetch=None):
         self.bank, self.config, self.mutation, self.call = bank, config, mutation_lock, call
+        self.search, self.fetch = search, fetch
         self.limits = config["limits"]
         self.lock = threading.RLock()
         self.root = bank_file(bank, "cache/web-intake")
@@ -340,19 +413,25 @@ class IntakeJobs:
 
     # ---- views ---------------------------------------------------------------------------------------------
     def view(self, job):
-        return {key: job.get(key) for key in ("id", "status", "created_at", "updated_at", "hints", "images", "sources", "progress",
-                                               "error", "notice", "merge_review", "result", "answers")}
+        return {"kind": job.get("kind", "import"), **{key: job.get(key) for key in (
+            "id", "status", "created_at", "updated_at", "hints", "images", "sources", "progress", "error", "notice",
+            "merge_review", "result", "answers")}}
 
     def overview(self):
         with self.lock:
             jobs = self._jobs()
             active = next((j for j in jobs if j["status"] in ACTIVE), None)
             used = self._today_images()
+            searched = self._today_research()
+        research = None
+        if self.config.get("search"):
+            research = {"candidates": len(self._research_candidates()), "per_job": self.limits["max_answers_per_job"],
+                        "left_today": max(0, self.limits["daily_research"] - searched)}
         return {"enabled": True, "models": ai.describe(self.config), "limits": {**self.limits, "max_image_bytes": MAX_IMAGE,
                 "max_view_bytes": MAX_VIEW, "max_views": MAX_VIEWS, "images_left_today": max(0, self.limits["daily_images"] - used)},
-                "active": self.view(active) if active else None,
-                "recent": [{"id": j["id"], "status": j["status"], "created_at": j["created_at"], "images": len(j["images"]),
-                            "result": j.get("result"), "answers": j.get("answers")} for j in jobs[:10]]}
+                "research": research, "active": self.view(active) if active else None,
+                "recent": [{"id": j["id"], "kind": j.get("kind", "import"), "status": j["status"], "created_at": j["created_at"],
+                            "images": len(j["images"]), "result": j.get("result"), "answers": j.get("answers")} for j in jobs[:10]]}
 
     def job(self, job_id):
         with self.lock:
@@ -771,33 +850,151 @@ class IntakeJobs:
             pending = job["answers"]["pending"]
             if not pending:
                 break
+            research_only = job.get("kind") == "research"
             batch = pending[:size]
             with self.mutation:
                 with open_bank(self.bank, shared=True) as (_, config, data):
-                    still = {q["id"] for q in select(data, config, self.bank, ids=batch) if needs_answer(q)}
+                    wanted = needs_research if research_only else needs_answer
+                    still = {q["id"] for q in select(data, config, self.bank, ids=batch) if wanted(q)}
                 batch = [qid for qid in batch if qid in still]
                 task = research_task(self.bank, question_ids=batch) if batch else None
-            answered, failed = [], {}
+            answered, sourced, failed, searched = [], [], {}, 0
             if task:
                 try:
-                    answers = self._write_answers(task, config)
+                    answers, pages, searched, reasons = self._sourced_answers(task, config, job_id)
+                    missing = [item for item in task["items"] if item["question"]["id"] not in {a["question_id"] for a in answers}]
+                    if missing and not research_only:
+                        answers += self._write_answers(missing, config)
+                    answers += [{"question_id": item["question"]["id"], "skip": True,
+                                 "reason": reasons.get(item["question"]["id"], "没有找到能支撑答案的网页")}
+                                for item in missing if research_only]
                     with self.mutation:
-                        answered, failed = self._commit_answers(task, answers)
+                        answered, failed = self._commit_answers(task, answers, pages)
+                    sourced = [a["question_id"] for a in answers if a.get("status") == "source_backed" and a["question_id"] in answered]
                 except (ai.AIError, ValidationError) as exc:
                     failed = {qid: str(exc) for qid in batch}
 
-            def store(job, done=pending[:size], answered=answered, failed=failed):
-                job["answers"]["pending"] = [q for q in job["answers"]["pending"] if q not in done]
-                job["answers"]["done"] += answered
-                job["answers"]["failed"].update(failed)
+            def store(job, done=pending[:size], answered=answered, sourced=sourced, failed=failed, searched=searched):
+                answers = job["answers"]
+                answers["pending"] = [q for q in answers["pending"] if q not in done]
+                answers["done"] += [q for q in answered if q not in answers["done"]]
+                answers.setdefault("sourced", [])
+                answers["sourced"] += [q for q in sourced if q not in answers["sourced"]]
+                answers["searched"] = answers.get("searched", 0) + searched
+                answers["failed"].update(failed)
+                for qid in answered:
+                    answers["failed"].pop(qid, None)
                 job["progress"]["done"] += len(done)
             self._update(job_id, store)
         self._update(job_id, lambda job: job.update(status="done", progress=None))
 
-    def _write_answers(self, task, config):
+    def _research_candidates(self):
+        with open_bank(self.bank, shared=True) as (_, config, data):
+            rows = select(data, config, self.bank)
+        order = {"ai_draft": 0, "stale": 1, "missing": 2}
+        rows = sorted((q for q in rows if needs_research(q)), key=lambda q: (order[q["answer_status"]], -q["frequency"], q["id"]))
+        return [(q["id"], q["canonical"]) for q in rows]
+
+    def research(self, payload):
+        """Look up sources for the given questions, or for the most-asked drafts, stale and unanswered ones."""
+        require(self.config.get("search"), "这个服务器没有配置联网搜索（ai.json 的 search）")
+        require(isinstance(payload, dict) and set(payload) <= {"question_ids"}, "Expected question_ids or nothing")
+        ids = payload.get("question_ids")
+        require(ids is None or isinstance(ids, list) and 1 <= len(ids) <= 200 and all(isinstance(i, str) for i in ids), "question_ids: 1..200 IDs")
+        candidates = self._research_candidates()
+        if ids is not None:
+            with open_bank(self.bank, shared=True) as (_, _config, data):
+                targets = {q["id"]: q["merged_into"] or q["id"] for q in data["questions"]}
+            require(set(ids) <= targets.keys(), "Unknown question")
+            wanted = set(targets[i] for i in ids)
+            candidates = [c for c in candidates if c[0] in wanted]
+            require(bool(candidates), "这道题已经有来源或已审阅的答案")
+        require(bool(candidates), "没有需要补充出处的题目")
+        targets = candidates[:max(1, self.limits["max_answers_per_job"])]
+        with self.lock:
+            require(next((j for j in self._jobs() if j["status"] in ACTIVE), None) is None, "还有一个任务没有完成：请先完成或取消它")
+            require(self._today_research() < self.limits["daily_research"], "今天的联网检索额度已用完，请明天再试")
+            job = {"schema_version": 1, "id": "job_" + secrets.token_hex(12), "kind": "research", "status": "answering",
+                   "created_at": utc_now(), "hints": {}, "images": [], "sources": [], "error": None, "notice": None,
+                   "merge_review": None, "result": {"research": True, "more": max(0, len(candidates) - len(targets)),
+                                                    "questions": [{"id": qid, "canonical": text} for qid, text in targets]},
+                   "answers": {"pending": [qid for qid, _ in targets], "done": [], "failed": {}, "sourced": [], "searched": 0},
+                   "progress": {"phase": "research", "done": 0, "total": len(targets)}}
+            self._dir(job["id"]).mkdir()
+            self._prune()
+            self._save(job)
+        self._spawn(job["id"], self._answer)
+        return self.job(job["id"])
+
+    def _sourced_answers(self, task, config, job_id):
+        """Search, read and answer each question from the pages read; (answers, page texts, searches, skip reasons)."""
+        if not self.config.get("search"):
+            return [], {}, 0, {}
+        answers, texts, reasons, searched = [], {}, {}, 0
+        for item in task["items"]:
+            qid = item["question"]["id"]
+            if self._today_research() + searched >= self.limits["daily_research"]:
+                reasons[qid] = "今天的联网检索额度已用完"
+                continue
+            searched += 1
+            try:
+                pages = self._read_pages(item)
+                if not pages:
+                    reasons[qid] = "搜索结果里没有能读取正文的网页"
+                    continue
+                with TEXT_SLOTS:
+                    reply = self.call(self.config["text"], research_prompt(), [{"text": research_request(item["question"], pages)}])
+            except ai.AIError as exc:
+                reasons[qid] = str(exc)
+                continue
+            answer, reason = clean_sourced(reply, qid, pages, self.config["search"]["provider"])
+            if answer:
+                try:
+                    privacy_check(dumps(answer), config)
+                except ValidationError:
+                    answer, reason = None, "答案里出现了疑似联系方式，已跳过"
+            if answer:
+                answers.append(answer)
+                texts.update({url: page["text"] for page in pages for url in page["urls"]})
+            else:
+                reasons[qid] = reason
+        return answers, texts, searched, reasons
+
+    def _read_pages(self, item):
+        """Up to `pages` readable public pages for a question: official domains first, at most two per site."""
+        settings = self.config["search"]
+        found = self.search(settings, item["suggested_queries"][0])
+        preferred = tuple(item.get("preferred_domains") or ())
+        ranked = sorted(found, key=lambda r: not (urlsplit(r["url"]).hostname or "").endswith(preferred) if preferred else False)
+        chosen, per_site = [], {}
+        for row in ranked:
+            host = urlsplit(row["url"]).hostname or ""
+            if per_site.get(host, 0) >= 2 or row["url"] in {c["url"] for c in chosen}:
+                continue
+            per_site[host] = per_site.get(host, 0) + 1
+            chosen.append(row)
+        chosen = chosen[:settings["pages"] + 2]
+        if not chosen:
+            return []
+        report = fetch_pages(self.bank, [c["url"] for c in chosen], opener=self.fetch)
+        saved = {r["url"]: r for r in report["results"] if r["ok"]}
+        pages = []
+        for row in chosen:
+            if row["url"] in saved and len(pages) < settings["pages"]:
+                result = saved[row["url"]]
+                text = Path(result["path"]).read_text(encoding="utf-8")
+                pages.append({"url": row["url"], "urls": list(dict.fromkeys([row["url"], result.get("final_url") or row["url"]])),
+                              "title": row.get("title"), "site": row.get("site"), "text": text})
+        return pages
+
+    def _today_research(self):
+        since = datetime.now(timezone.utc) - timedelta(days=1)
+        return sum((j.get("answers") or {}).get("searched", 0) for j in self._jobs() if parse_timestamp(j["created_at"]) >= since)
+
+    def _write_answers(self, items, config):
         questions = [{"question_id": item["question"]["id"], "question": item["question"]["canonical"],
                       "question_type": item["question"]["question_type"], "domains": item["question"]["domains"],
-                      "technologies": item["question"]["technologies"]} for item in task["items"]]
+                      "technologies": item["question"]["technologies"]} for item in items]
         with TEXT_SLOTS:
             reply = self.call(self.config["text"], answer_prompt(),
                               [{"text": "Write reference answers for these questions:\n" + json.dumps(questions, ensure_ascii=False, indent=1)}])
@@ -814,15 +1011,19 @@ class IntakeJobs:
             answers.append(answer)
         return answers
 
-    def _commit_answers(self, task, answers):
+    def _commit_answers(self, task, answers, pages=None):
+        skipped = {a["question_id"]: a["reason"] for a in answers if a.get("skip")}
+        if len(skipped) == len(answers):
+            return [], skipped
+        response = lambda task_id: {"schema_version": 1, "task_id": task_id, "answers": answers}
         try:
-            staged = stage_answers(self.bank, {"schema_version": 1, "task_id": task["id"], "answers": answers})
+            staged = stage_answers(self.bank, response(task["id"]), pages)
         except ValidationError as exc:
             if "stale" not in str(exc).lower():
                 raise
             # The bank moved on while the model wrote: a fresh task for the same questions takes the same answers.
             task = research_task(self.bank, question_ids=[a["question_id"] for a in answers])
-            staged = stage_answers(self.bank, {"schema_version": 1, "task_id": task["id"], "answers": answers})
+            staged = stage_answers(self.bank, response(task["id"]), pages)
         commit_run(self.bank, staged["run_id"])
         return ([a["question_id"] for a in answers if not a.get("skip")],
                 {a["question_id"]: a["reason"] for a in answers if a.get("skip")})

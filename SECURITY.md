@@ -2,17 +2,34 @@
 
 ## Scope
 
-Interview Bank runs locally. The CLI reads and writes only the bank directory you point it at and never makes network requests (the optional `media-transcribe --download-model` downloads public model weights; it never uploads media).
+Interview Bank runs locally by default. The CLI reads and writes only the bank directory you point it at. These are
+the only paths that reach the network, all opt-in:
 
-The optional `web` command starts a personal helper, not an Internet service:
+- `verify-citations` (link checks, on request) and `page-text` (saving the text of pages being cited);
+- `media-transcribe --download-model`, which downloads public model weights and never uploads media;
+- the Web reader started with `--ai-config`: screenshot import sends the screenshots you upload to the model
+  provider you configured, and web research (an optional `search` section) sends questions to the search provider
+  and fetches the result pages; `ai-check` sends one tiny request to each configured service.
 
-- it binds only to `127.0.0.1` and has no option for LAN or public binding;
-- every API call needs the per-process token from the launch URL, and the Host and Origin headers must match the loopback origin (defence against DNS rebinding and cross-site requests);
-- responses use a restrictive Content-Security-Policy, question and answer text is rendered as text, and only HTTP(S) source links are allowed.
+Page fetches go only to public addresses: loopback, private, link-local and carrier-grade NAT ranges (including cloud
+metadata services) are refused, also when a public page redirects there. API keys are read from a file that is not
+world-readable or from an environment variable, never from the command line, and never appear in output or errors.
 
-Do not tunnel, proxy or host it publicly. Treat the launch URL like a password.
+The `web` command binds only to `127.0.0.1` and has no option for LAN or public binding:
 
-Source material (screenshots, transcripts, web pages) is untrusted data. The Skill instructs agents to ignore instructions embedded in it; a prompt-injection that changes a bank anyway is in scope.
+- every API call needs the per-process token from the launch URL, and the Host and Origin headers must match the
+  loopback origin (defence against DNS rebinding and cross-site requests);
+- responses use a restrictive Content-Security-Policy, question and answer text is rendered as text, and only
+  HTTP(S) source links are allowed.
+
+Do not tunnel the port. Hosting for a phone is supported only behind your own HTTPS reverse proxy with the
+reader's login (`--token-file`, `--public-origin`, `--login-file`; see `tools/deploy/`): the proxy adds the fixed
+token, sessions are signed HttpOnly cookies, failed logins lock out, each account sees only its own bank, and guest
+reading (`--public-bank`) is a GET-only allowlist of the collections you chose to publish. Treat a local launch URL
+like a password.
+
+Source material (screenshots, transcripts, web pages) is untrusted data. The Skill and the Web import instruct models
+to ignore instructions embedded in it; a prompt injection that changes a bank anyway is in scope.
 
 ## Reporting a vulnerability
 

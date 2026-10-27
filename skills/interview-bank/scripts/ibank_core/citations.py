@@ -33,6 +33,19 @@ MAX_URLS = 200
 
 class _Redirects(urllib.request.HTTPRedirectHandler):
     max_redirections = MAX_REDIRECTS
+    allow_private = False
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        # A public page must not bounce the server to a private address (cloud metadata, the reader itself).
+        if not self.allow_private and not _public(newurl):
+            raise urllib.error.HTTPError(newurl, code, "redirect to a non-public address refused", headers, fp)
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+def _opener(allow_private: bool = False):
+    handler = _Redirects()
+    handler.allow_private = allow_private
+    return urllib.request.build_opener(handler).open
 
 
 def _public(url: str) -> bool:
@@ -47,8 +60,8 @@ def _public(url: str) -> bool:
     return all(ipaddress.ip_address(a.split("%")[0]).is_global for a in addresses)
 
 
-def check_url(url: str, opener: Optional[Callable] = None) -> dict:
-    opener = opener or urllib.request.build_opener(_Redirects()).open
+def check_url(url: str, opener: Optional[Callable] = None, allow_private: bool = False) -> dict:
+    opener = opener or _opener(allow_private)
     result = {"url": url, "checked_at": utc_now(), "status": None, "final_url": None, "ok": False, "error": None}
     for method in ("HEAD", "GET"):
         request = urllib.request.Request(url, method=method, headers={"User-Agent": f"interview-bank/{__version__} citation-check"})
@@ -89,7 +102,7 @@ def verify_citations(bank, question_ids: Iterable[str] = (), workflow_id: Option
                 cache[url] = {"url": url, "checked_at": utc_now(), "status": None, "final_url": None, "ok": False,
                               "error": "refused: not a public address"}
             else:
-                cache[url] = check_url(url, opener)
+                cache[url] = check_url(url, opener, allow_private)
         results.append({"question_id": qid, "answer_id": answer_id, **cache[url]})
     broken = [r for r in results if not r["ok"]]
     report = {"checked": len(results), "unique_urls": len(cache), "broken": len(broken), "results": results,
@@ -103,7 +116,7 @@ def verify_citations(bank, question_ids: Iterable[str] = (), workflow_id: Option
 
 
 MAX_PAGE_BYTES = 3_000_000
-SKIPPED_TAGS = {"script", "style", "noscript", "svg", "template", "head"}
+SKIPPED_TAGS = {"script", "style", "noscript", "svg", "template", "head", "nav", "aside"}
 BLOCK_TAGS = {"p", "div", "section", "article", "li", "ul", "ol", "tr", "table", "br", "h1", "h2", "h3", "h4", "h5", "h6",
               "pre", "blockquote", "dd", "dt", "header", "footer", "main", "nav", "aside", "figure", "figcaption"}
 
@@ -138,8 +151,8 @@ def html_text(markup: str) -> str:
     return "\n".join(line for line in lines if line)
 
 
-def fetch_text(url: str, opener: Optional[Callable] = None) -> dict:
-    opener = opener or urllib.request.build_opener(_Redirects()).open
+def fetch_text(url: str, opener: Optional[Callable] = None, allow_private: bool = False) -> dict:
+    opener = opener or _opener(allow_private)
     request = urllib.request.Request(url, headers={"User-Agent": f"interview-bank/{__version__} page-text",
                                                    "Accept": "text/html,text/plain;q=0.9"})
     try:
@@ -175,7 +188,7 @@ def page_texts(bank, urls: Iterable[str], allow_private: bool = False, opener: O
         if not allow_private and not _public(url):
             results.append({"url": url, "ok": False, "error": "refused: not a public address"})
             continue
-        fetched = fetch_text(url, opener)
+        fetched = fetch_text(url, opener, allow_private)
         if fetched["ok"]:
             path = folder / (hashlib.sha256(url.encode("utf-8")).hexdigest()[:20] + ".txt")
             atomic_write(path, fetched["text"] + "\n")

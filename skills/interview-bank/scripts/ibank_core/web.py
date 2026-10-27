@@ -190,7 +190,8 @@ class WebApp:
                 'name': self.bank.name, 'version': __version__, 'schema_version': manifest['schema_version'],
                 'can_record': manifest['schema_version'] == 2 and self.can_practise, 'can_review': not self.read_only,
                 'can_write_answer': self.can_write_answer, 'can_write_personal': self.can_write_answer,
-                'can_intake': self.intake is not None, 'language': language(config),
+                'can_intake': self.intake is not None,
+                'can_research': bool(self.intake and self.intake.config.get('search')), 'language': language(config),
                 'read_only': self.read_only, 'updated_at': manifest.get('last_updated_at'),
                 'summary': {'questions': len(rows), 'answered': sum(q['answer_status'] in ('source_backed', 'reviewed') for q in rows),
                             'answer_count': sum(q['answer'] is not None for q in rows), 'stale': sum(q['answer_status'] == 'stale' for q in rows),
@@ -216,7 +217,7 @@ class WebApp:
             'name': 'Public library', 'version': __version__, 'schema_version': manifest['schema_version'],
             'language': language(config), 'guest': True, 'can_login': True, 'can_logout': False,
             'read_only': True, 'can_record': False, 'can_review': False,
-            'can_write_answer': False, 'can_write_personal': False, 'can_intake': False,
+            'can_write_answer': False, 'can_write_personal': False, 'can_intake': False, 'can_research': False,
             'summary': dict.fromkeys(('questions', 'answered', 'answer_count', 'stale', 'due', 'weak', 'unseen', 'domains'), 0),
             'notes': {'total': len(bundle['notes']), 'collections': len(bundle['collections'])},
             'total': 0, 'total_answered': 0, 'offset': offset, 'limit': limit,
@@ -633,7 +634,8 @@ class Handler(BaseHTTPRequestHandler):
             jobs = app.intake_jobs()
             handlers = {'/api/intake/jobs': jobs.create, '/api/intake/start': jobs.start, '/api/intake/confirm': jobs.confirm,
                         '/api/intake/merge': jobs.merge, '/api/intake/answers': jobs.retry_answers,
-                        '/api/intake/retry': jobs.retry_extract, '/api/intake/cancel': jobs.cancel}
+                        '/api/intake/retry': jobs.retry_extract, '/api/intake/cancel': jobs.cancel,
+                        '/api/intake/research': jobs.research}
             if path not in handlers:
                 return self.send(404, {'error': 'Unknown endpoint'})
             result = handlers[path](self.json_body(512 * 1024))

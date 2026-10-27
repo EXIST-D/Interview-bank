@@ -55,6 +55,11 @@ const model = createServer((request, response) => {
   request.on("data", (part) => (raw += part));
   request.on("end", () => {
     const body = JSON.parse(raw);
+    if (request.url === "/v1/web-search") {
+      seen.push({ system: "search", images: 0, query: body.query });
+      response.writeHead(200, { "Content-Type": "application/json" });
+      return response.end(JSON.stringify({ code: 200, data: { webPages: { value: [] } } }));
+    }
     const system = body.messages[0].content;
     const content = body.messages[1].content;
     const images = content.filter((part) => part.type === "image_url").length;
@@ -90,10 +95,11 @@ let browser;
 try {
   await new Promise((resolve) => model.listen(0, "127.0.0.1", resolve));
   const config = join(root, "ai.json");
-  writeFileSync(config, JSON.stringify({ vision: { base_url: `http://127.0.0.1:${model.address().port}/v1`, model: "stand-in-vl" }, text: { model: "stand-in-chat" } }));
+  writeFileSync(config, JSON.stringify({ vision: { base_url: `http://127.0.0.1:${model.address().port}/v1`, model: "stand-in-vl" }, text: { model: "stand-in-chat" },
+    search: { base_url: `http://127.0.0.1:${model.address().port}/v1/web-search`, api_key_env: "IBANK_E2E_SEARCH_KEY" } }));
   execFileSync(python, ["-B", "-X", "utf8", cli, "--bank", bank, "--json", "demo", "--v2"], { encoding: "utf8" });
   server = spawn(python, ["-B", "-X", "utf8", cli, "--bank", bank, "web", "--port", "0", "--read-only", "--allow-personal", "--allow-practice",
-    "--allow-intake", "--ai-config", config, "--json"]);
+    "--allow-intake", "--ai-config", config, "--json"], { env: { ...process.env, IBANK_E2E_SEARCH_KEY: "stand-in" } });
   const first = await new Promise((resolve, reject) => {
     createInterface({ input: server.stdout }).once("line", resolve);
     server.once("exit", (code) => reject(new Error(`reader exited ${code}`)));
@@ -158,9 +164,22 @@ try {
   await page.getByText("AI 草稿，尚未核验来源。").waitFor();
   check("the reader opens the imported question with the draft warning", true);
 
+  check("new questions were searched before falling back to drafts", seen.filter((s) => s.system === "search").length === 3);
+  check("the reader offers web research for a draft", await page.getByRole("button", { name: "联网补充出处", exact: true }).isVisible());
+
   await page.goto(base + "#/import");
   await page.getByRole("heading", { name: "最近的导入", exact: true }).waitFor();
   check("the finished import is listed", await page.getByText("2 张 · 新增 3 · 合并 1 · 答案 3").isVisible());
+  await page.getByRole("heading", { name: "补充出处", exact: true }).waitFor();
+  await shot(page, "research-card");
+  await page.getByRole("button", { name: /^为其中 \d+ 道补充出处$/ }).click();
+  await page.getByRole("heading", { name: "补充出处完成", exact: true }).waitFor({ timeout: 20000 });
+  await shot(page, "research-done");
+  check("a research job keeps answers it cannot support", await page.getByText(/^0\/\d+ 道题有了来源$/).isVisible() &&
+    await page.getByText("没有找到依据，答案不变").first().isVisible() && await page.getByText(/没有找到足够的依据/).isVisible());
+  await page.getByRole("button", { name: "再导入一批", exact: true }).click();
+  await page.getByText(/^补充出处 · \d+ 道 · 有来源 0$/).waitFor();
+  check("the research job is listed", true);
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(base + "#/import");

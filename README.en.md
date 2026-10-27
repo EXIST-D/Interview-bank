@@ -4,15 +4,15 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.31.1**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.32.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.31 screenshot import in the Web reader
+## This update: 1.32 web sources in the reader
 
-- Signed in, open *Import* and add interview screenshots (photo library, drop or paste); a vision model you configure reads the questions. Long screenshots are cut into parts in the browser and read together.
-- Check each screenshot before saving: untick, reword, set company, round and date; unsure readings and possible contact details are highlighted.
-- The Skill's own pipeline runs underneath: intake, dedupe candidates and review sheet, staging, commit and audit as for an agent, with instructions cut from the Skill's references. Exact duplicates merge; merges the model is unsure of are yours to decide on the page.
-- New questions get reference answers marked *AI draft* (the model does not browse or cite); an agent can research and cite them later.
-- Works with OpenAI-compatible APIs (DeepSeek, Qwen, GLM, Doubao and others) and Anthropic; the example configuration uses DeepSeek `deepseek-flash` with thinking off throughout (about 40 s a batch; `deepseek-v4-pro` answers more tightly but takes minutes); keys only from a file or an environment variable. Off by default: `web --ai-config` (plus `--allow-intake` on a read-only server).
+- With a search service configured (Bocha or Tavily), new imported questions are researched first: the server reads a few web pages and the AI answers only from them, naming the page behind every key point.
+- The server keeps only pages it actually read as sources, checks quotes word for word and drops unsupported key points; only then is an answer *sourced*. Questions without support keep an AI draft.
+- Existing AI drafts, outdated and unanswered questions get *Add sources* on the import page (most-asked first) or *Add sources from the web* below an answer.
+- Hardening: page fetches reach public addresses only, also after redirects (cloud metadata addresses included); menus and sidebars no longer end up in page text.
+- The 1.31 screenshot import is unchanged: upload → AI reads → you confirm → deduplicated into the bank, with the models you configure; the example uses DeepSeek `deepseek-flash` with thinking off (about 40 s a batch). Off by default: `web --ai-config` (plus `--allow-intake` on a read-only server).
 
 Try the [online test site](https://exist.qd.je/) without an account for public reading. Contact the maintainer on QQ **1939123241** for full-feature testing and suggestions.
 
@@ -28,7 +28,11 @@ Overview: continue reading, the four sections and the most-asked questions.
 
 Personal interviews: list, segmented views and topics on the left; reference answer, sources and related material on the right. Notes open from the reader toolbar.
 
-![Interview Bank personal interviews: list and reader (earlier interface)](assets/readme/web-reader.png)
+![Interview Bank personal interviews: list and reader with sources and related notes](assets/readme/web-reader.png)
+
+Screenshot import: check each question the AI read, untick or reword it, and review highlighted ones.
+
+![Interview Bank screenshot import: checking what was read (synthetic screenshot)](assets/readme/web-import.png)
 
 Notes: a source's contents, the list grouped by topic, and the collection's answer with learning state and how interviews asked it.
 
@@ -38,7 +42,7 @@ On a phone: the list with the bottom tab bar (left), the full-screen reader with
 
 <p>
 <img src="assets/readme/web-mobile-list.png" alt="Interview Bank on a phone: personal interview list and tab bar" width="300">
-<img src="assets/readme/web-mobile-reader.png" alt="Interview Bank on a phone: full-screen reader with my answer" width="300">
+<img src="assets/readme/web-mobile-reader.png" alt="Interview Bank on a phone: full-screen reader with the reference answer" width="300">
 </p>
 
 All come from the `demo` sample bank (synthetic questions, fictional companies, notes written for the demo); anyone can reproduce them with `demo --bank <new dir>` and `web`.
@@ -87,13 +91,13 @@ Interview-bank/
 
 ## Agent capabilities and requirements
 
-The Skill uses the agent's vision, reasoning and web tools and is not tied to one model API. The agent understands material and researches answers; the Python CLI validates, stores transactionally, queries and exports.
+The Skill uses the agent's vision, reasoning and web tools; the agent path is not tied to one model API, while the Web import and web sources use the models and search service configured on the server. The agent understands material and researches answers; the Python CLI validates, stores transactionally, queries and exports.
 
 - Python **3.10 or newer**; the core and subtitle parsing use only the standard library. Local transcription of raw audio/video optionally uses `faster-whisper==1.2.1`.
 - The agent must view local images, read and write the files the user allows, and run Python; sourced answers need web search and page reading.
 - Installing with `npx` needs Node.js/npm; the Python core does not.
 - Keep banks and outputs outside the installed Skill directory.
-- The CLI does not go online by default; only `verify-citations` (link checks, on request) and `page-text` (saving cited pages while researching answers) make network requests.
+- The CLI does not go online by default; only `verify-citations` (link checks, on request), `page-text` (saving cited pages while researching answers) and, with `web --ai-config`, the Web import, web sources and `ai-check` make network requests (see [SECURITY.md](SECURITY.md)).
 
 ## Installation
 
@@ -160,7 +164,7 @@ The agent organises the bank; the Web page is for reading it. By default the pag
 - **Made for spare minutes:** on a phone, a list and a full-screen reader with previous/next at the bottom, a swipe, or the system back gesture to close; a peek at any answer from the list; read marks and group progress; a random pick that prefers unread questions; Think first hides answers by default.
 - **Side by side on a computer:** list and reader together, plus a contents column for a notes source. The list folds away, and Focus also hides the top bar so the reader fills the window at a comfortable line length.
 - **Easy on the eyes:** three text sizes, a reading progress bar, light / dark / system themes, highlighted search words; tables, code, quotes and nested lists in long answers render properly. Read marks, folds, text size, source order and theme stay in the browser.
-- **Screenshot import** (when the server enables it): upload → AI reads → you confirm → deduplicated into the bank → AI-draft answers, all in the page; setup in [Web usage](skills/interview-bank/references/web.md).
+- **Screenshot import and web sources** (when the server enables them): upload → AI reads → you confirm → deduplicated into the bank → answers written from web pages with sources (an AI draft when nothing supports one); existing drafts get sources with one click, all in the page; setup in [Web usage](skills/interview-bank/references/web.md).
 - **Practice and your own decisions** (on a writable reader): practise a round or one question with a self-rating (V2 banks save progress and schedule reviews), **human review** of answers and **merge decisions** on pairs the agent was unsure about; only you can do these.
 
 | Shortcut (computer) | Action |
@@ -177,7 +181,7 @@ The agent organises the bank; the Web page is for reading it. By default the pag
 | Way | For | How |
 |---|---|---|
 | **On your computer** | Reading on the machine where your bank is | `python -B <skill dir>/scripts/ibank.py web --bank <bank> --open`. Loopback only (127.0.0.1), no login; Ctrl+C stops it and `--read-only` disables writes. Or ask the agent to open your bank's Web reader. |
-| **On your own server** | Reading on a phone anywhere | The read-only reader sits behind your own HTTPS reverse proxy: its own login page (hashed passwords, lockout after failures), one bank per account, daily verified backups; with `--allow-personal` you can write answers and notes, keep favourites and sync learning state on the phone, and `--allow-practice` also saves practice ratings (V2 banks); `--allow-intake --ai-config` imports screenshots from the phone (example `tools/deploy/ai.example.json`; check it with `ai-check`). `tools/deploy/sync.sh` copies the bank text and notes from your computer, never screenshots; `tools/deploy/pull-backups.sh` brings the server's backups back to your computer. Steps: [Web usage](skills/interview-bank/references/web.md) and `tools/deploy/`. |
+| **On your own server** | Reading on a phone anywhere | The read-only reader sits behind your own HTTPS reverse proxy: its own login page (hashed passwords, lockout after failures), one bank per account, daily verified backups; with `--allow-personal` you can write answers and notes, keep favourites and sync learning state on the phone, and `--allow-practice` also saves practice ratings (V2 banks); `--allow-intake --ai-config` imports screenshots from the phone, and a `search` section adds web sources (example `tools/deploy/ai.example.json`; check it with `ai-check`). `tools/deploy/sync.sh` copies the bank text and notes from your computer, never screenshots; `tools/deploy/pull-backups.sh` brings the server's backups back to your computer. Steps: [Web usage](skills/interview-bank/references/web.md) and `tools/deploy/`. |
 | **Test it with the author** | Trying the hosted reader first, or when you cannot deploy one yet | Contact the author through [GitHub Issues](https://github.com/EXIST-D/Interview-bank/issues) for an account to test with. Each account sees only its own bank; the server keeps the bank text, plus screenshots you import in the page, inside your own bank; deleted on request. |
 
 ## Processing policy
@@ -213,7 +217,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 ## Status and plans
 
-**v1.27.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
+**v1.32.0** implements everything in the capabilities table above. Existing V1 banks keep extraction, classification, deduplication, answer research and export; saved topics, durable research workflows and review state need a backed-up upgrade to V2. Updating the Skill never migrates a personal bank or marks old answers as re-verified.
 
 **Not implemented yet:**
 
@@ -227,7 +231,7 @@ The JSONL files in `data/` are the only source of truth and are queried directly
 
 **Other limits:** review queues are generated on demand with no background reminders; exact token and cost figures depend on the host; splitting an arbitrary historical merge is not supported, only undoing the latest eligible operation.
 
-**Verification:** v1.26.0 passed the full 379-test suite on macOS, lint, the Skill package/install check and the Web bundle rebuild check. The Web reader also passed 90 browser checks (computer and 390px phone) served by the Python reader under its real Content-Security-Policy with no violations, covering the four sections, own answers and notes, favourites, the outline, today's plan, learning-state sync and practice; 17 of them run in CI on a demo bank (`pnpm e2e`). CI covers Windows, macOS and Linux × Python 3.10–3.13, the Web rebuild comparison, the legacy snapshot format and packages on all three systems; run the suite with `python -B -m unittest discover -s tests`. Historical Evaluation results and host checks are in [evals](evals/README.md): dedupe retrieval recall@10 is 1.00; blind dedupe judgments made 0 % false merges and 3.4 % missed merges (Opus and Sonnet); blind answers scored 1.7 / 2 from a separate judge with no unsupported claims; on Claude Code the trigger suite passes with Sonnet, while Haiku's recall (0.73–0.80) is below the gate. Extracted content and reference answers still need checking against the original material, sources and scope.
+**Verification:** v1.32.0 passed the full 416-test suite on macOS, lint, the Skill package/install check and the Web bundle rebuild check. The Web reader also passed 89 browser checks (computer and 390px phone) served by the Python reader under its real Content-Security-Policy with no violations, covering the four sections, notes, favourites, practice, learning-state sync, and screenshot import, merge decisions and web sources (with loopback stand-in models and search); all run in CI (`pnpm e2e`). Screenshot import and web sources were also tested end to end with real DeepSeek models and real web pages. CI covers Windows, macOS and Linux × Python 3.10–3.13, the Web rebuild comparison, the legacy snapshot format and packages on all three systems; run the suite with `python -B -m unittest discover -s tests`. Historical Evaluation results and host checks are in [evals](evals/README.md): dedupe retrieval recall@10 is 1.00; blind dedupe judgments made 0 % false merges and 3.4 % missed merges (Opus and Sonnet); blind answers scored 1.7 / 2 from a separate judge with no unsupported claims; on Claude Code the trigger suite passes with Sonnet, while Haiku's recall (0.73–0.80) is below the gate. Extracted content and reference answers still need checking against the original material, sources and scope.
 
 The repository contains the Skill, tests, evaluations and development tools, documentation, license and the README image. Personal material, banks, research ledgers and local environments are not published; test and evaluation data are synthetic.
 

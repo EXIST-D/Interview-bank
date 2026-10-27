@@ -2,6 +2,7 @@
 import http.client
 import json
 import os
+import re
 import tempfile
 import threading
 import time
@@ -20,7 +21,7 @@ from ibank_core.web_intake import IntakeJobs, clean_source
 ROOT = Path(__file__).resolve().parents[1]
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
 JPEG = b"\xff\xd8\xff\xe0" + b"\x01" * 64
-LIMITS = {"max_images_per_job": 12, "max_answers_per_job": 40, "daily_images": 60, "answer_batch": 4}
+LIMITS = {"max_images_per_job": 12, "max_answers_per_job": 40, "daily_images": 60, "answer_batch": 4, "daily_research": 100}
 ENDPOINT = {"protocol": "openai", "base_url": "http://127.0.0.1:9", "model": "stand-in", "timeout": 5, "max_tokens": 1024,
             "temperature": 0.2, "json_mode": False, "_key": None}
 CONFIG = {"vision": ENDPOINT, "text": ENDPOINT, "limits": LIMITS}
@@ -47,6 +48,16 @@ class Model:
                 raise reply
             return reply
         text = parts[0]["text"]
+        if "You research one interview question" in system:
+            urls = re.findall(r"^\[\d+\] URL: (\S+)$", text, re.M)
+            if "拒答" in text:
+                return {"skip": True, "reason": "网页之间说法矛盾"}
+            return {"status": "source_backed", "short_answer": "按官方文档的结论。", "key_points": ["有出处的要点", "没有出处的要点"],
+                    "sources": [{"url": urls[0], "title": "官方文档", "publisher": "Example", "type": "official_doc",
+                                 "evidence_note": "说明了该机制", "evidence_quote": "RDB 是定时快照"},
+                                {"url": urls[-1], "title": "转载", "evidence_quote": "页面里没有这句话"},
+                                {"url": "https://never-read.example/page", "title": "没读过的页面"}],
+                    "evidence": [{"key_point": 0, "source_urls": [urls[0]]}, {"key_point": 1, "source_urls": ["https://never-read.example/page"]}]}
         if "deduplication step" in system:
             if self.before_dedupe:
                 self.before_dedupe()
@@ -67,6 +78,46 @@ class Model:
                              "key_points": ["要点一", "要点二"], "common_mistakes": ["混淆概念"]} for q in questions]}
 
 
+class Web:
+    """A stand-in search engine and the pages it finds; records what was searched and fetched."""
+
+    def __init__(self):
+        self.queries, self.fetched = [], []
+        self.results = lambda query: [{"title": "Redis 持久化", "url": "https://redis.io/docs/persistence", "site": "Redis", "snippet": "", "date": None},
+                                      {"title": "转载", "url": "https://blog.example/redis", "site": "Blog", "snippet": "", "date": None}]
+
+    def search(self, settings, query):
+        self.queries.append(query)
+        return self.results(query)
+
+    def opener(self, request, timeout):
+        import email.message
+        url = request.full_url
+        self.fetched.append(url)
+        headers = email.message.Message()
+        headers["Content-Type"] = "text/html; charset=utf-8"
+        body = f"<html><body><nav>菜单</nav><p>RDB 是定时快照，AOF 记录每条写命令。</p><p>{url}</p></body></html>".encode()
+
+        class Response:
+            status = 200
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_):
+                return False
+
+            def read(self, size=-1):
+                return body
+
+            def geturl(self):
+                return url
+        response = Response()
+        response.headers = headers
+        return response
+
+
+SEARCH = {"provider": "bocha", "url": "https://search.example", "count": 8, "pages": 2, "timeout": 5, "_key": "k"}
 FIRST = image("first")
 SECOND = image("second", JPEG)
 EXTRACTION = {
@@ -349,6 +400,93 @@ class IntakeCase(unittest.TestCase):
         self.assertEqual(clean_source("garbage", {}, {}, "s3")["status"], "no_questions")
 
 
+    def researching(self, limits=None):
+        self.web = Web()
+        config = {**CONFIG, "search": SEARCH, "limits": {**LIMITS, **(limits or {})}}
+        self.jobs = self.app.intake = IntakeJobs(self.app.bank, config, self.app.mutation_lock, call=self.model,
+                                                 search=self.web.search, fetch=self.web.opener)
+        return self.jobs
+
+    def test_new_questions_are_answered_from_pages_the_server_read(self):
+        self.researching()
+        self.web.results = lambda query: [] if "向量" in query else Web().results(query)
+        self.model.screenshots[FIRST] = {"status": "extracted", "questions": [
+            {"id": "x", "original_text": "RDB 和 AOF 怎么选？", "sequence": 1, "domains": ["backend.cache"], "technologies": ["redis"],
+             "confidence": {"is_question": 0.99, "classification": 0.9}},
+            {"id": "y", "original_text": "什么是向量数据库？", "sequence": 2, "domains": ["backend.database.vector"],
+             "confidence": {"is_question": 0.99, "classification": 0.9}}]}
+        job = self.started(FIRST)
+        self.jobs.confirm({"job": job["id"], "sources": []})
+        job = self.wait(job["id"], "done")
+        after = self.questions()
+        sourced = self.app.question(after["RDB 和 AOF 怎么选？"]["id"])
+        self.assertEqual(sourced["answer_status"], "source_backed")
+        answer = sourced["answer"]
+        self.assertEqual(answer["key_points"], ["有出处的要点"])
+        self.assertEqual([s["url"] for s in answer["sources"]], ["https://redis.io/docs/persistence"])
+        self.assertEqual((answer["sources"][0]["evidence_quote"], answer["sources"][0]["quote_verified"]), ("RDB 是定时快照", True))
+        stored = next(a for a in load_data(self.bank)["answers"] if a["id"] == answer["id"])
+        self.assertTrue(any("page text read by the server" in c for c in stored["checks"]))
+        self.assertEqual(self.app.question(after["什么是向量数据库？"]["id"])["answer_status"], "ai_draft")
+        self.assertEqual(job["answers"]["sourced"], [sourced["id"]])
+        self.assertEqual(len(job["answers"]["done"]), 2)
+        self.assertEqual(self.web.fetched, ["https://redis.io/docs/persistence", "https://blog.example/redis"])
+        self.assertTrue((self.bank / "cache/pages").is_dir())
+
+    def test_existing_drafts_are_upgraded_on_request_and_skips_keep_them(self):
+        self.model.screenshots[FIRST] = {"status": "extracted", "questions": [
+            {"id": "x", "original_text": "RDB 和 AOF 怎么选？", "sequence": 1, "domains": ["backend.cache"],
+             "confidence": {"is_question": 0.99, "classification": 0.9}},
+            {"id": "y", "original_text": "这个问题请拒答", "sequence": 2, "domains": ["backend.cache"],
+             "confidence": {"is_question": 0.99, "classification": 0.9}}]}
+        job = self.started(FIRST)
+        self.jobs.confirm({"job": job["id"], "sources": []})
+        self.wait(job["id"], "done")
+        drafts = {q: self.questions()[q]["id"] for q in ("RDB 和 AOF 怎么选？", "这个问题请拒答")}
+        self.assertEqual({self.app.question(i)["answer_status"] for i in drafts.values()}, {"ai_draft"})
+        with self.assertRaises(ValidationError):
+            self.jobs.research({})
+        self.researching()
+        overview = self.jobs.overview()
+        self.assertGreaterEqual(overview["research"]["candidates"], 2)
+        self.assertTrue(self.app.library({})["can_research"])
+        job = self.jobs.research({"question_ids": list(drafts.values())})
+        self.assertEqual((job["kind"], job["status"]), ("research", "answering"))
+        job = self.wait(job["id"], "done")
+        self.assertEqual(self.app.question(drafts["RDB 和 AOF 怎么选？"])["answer_status"], "source_backed")
+        self.assertEqual(self.app.question(drafts["这个问题请拒答"])["answer_status"], "ai_draft")
+        self.assertEqual(job["answers"]["failed"], {drafts["这个问题请拒答"]: "网页之间说法矛盾"})
+        with self.assertRaises(ValidationError):
+            self.jobs.research({"question_ids": [drafts["RDB 和 AOF 怎么选？"]]})
+        demo = self.questions()["Redis 为什么快？"]["id"]
+        with self.assertRaises(ValidationError):
+            self.jobs.research({"question_ids": [demo]})
+
+    def test_the_daily_search_limit_falls_back_to_drafts(self):
+        self.researching({"daily_research": 1})
+        self.model.screenshots[FIRST] = {"status": "extracted", "questions": [
+            {"id": "x", "original_text": "RDB 和 AOF 怎么选？", "sequence": 1, "domains": ["backend.cache"],
+             "confidence": {"is_question": 0.99, "classification": 0.9}},
+            {"id": "y", "original_text": "AOF 重写是什么？", "sequence": 2, "domains": ["backend.cache"],
+             "confidence": {"is_question": 0.99, "classification": 0.9}}]}
+        job = self.started(FIRST)
+        self.jobs.confirm({"job": job["id"], "sources": []})
+        job = self.wait(job["id"], "done")
+        self.assertEqual((len(self.web.queries), len(job["answers"]["sourced"]), len(job["answers"]["done"])), (1, 1, 2))
+        with self.assertRaises(ValidationError):
+            self.jobs.research({})
+
+    def test_a_redirect_to_a_private_address_is_refused(self):
+        import urllib.error
+        import urllib.request
+        from ibank_core.citations import _Redirects
+        request = urllib.request.Request("https://public.example/page")
+        for target in ("http://127.0.0.1:8765/api/library", "http://100.100.100.200/latest/meta-data/", "http://10.0.0.1/"):
+            with self.assertRaises(urllib.error.HTTPError, msg=target):
+                _Redirects().redirect_request(request, None, 302, "Found", {}, target)
+        self.assertIsNotNone(_Redirects().redirect_request(request, None, 302, "Found", {}, "https://8.8.8.8/elsewhere"))
+
+
 class HostedIntakeCase(IntakeCase):
     """The same import over HTTP: login and token still apply, uploads are raw image bodies."""
 
@@ -400,6 +538,10 @@ class HostedIntakeCase(IntakeCase):
     test_uploads_and_jobs_are_validated = None
     test_a_restart_leaves_interrupted_jobs_actionable = None
     test_model_output_is_reduced_to_the_extraction_schema = None
+    test_new_questions_are_answered_from_pages_the_server_read = None
+    test_existing_drafts_are_upgraded_on_request_and_skips_keep_them = None
+    test_the_daily_search_limit_falls_back_to_drafts = None
+    test_a_redirect_to_a_private_address_is_refused = None
 
 
 class StandIn(BaseHTTPRequestHandler):
@@ -485,8 +627,9 @@ class ModelClientCase(unittest.TestCase):
 
     def test_provider_options_and_the_shipped_example(self):
         example = json.loads((ROOT / "tools/deploy/ai.example.json").read_text(encoding="utf-8"))
-        example["vision"]["api_key_file"] = "key"
+        example["vision"]["api_key_file"] = example["search"]["api_key_file"] = "key"
         config = self.config(example)
+        self.assertEqual((config["search"]["provider"], config["search"]["pages"], config["limits"]["daily_research"]), ("bocha", 4, 100))
         self.assertEqual((config["vision"]["model"], config["vision"]["extra_body"]), ("deepseek-flash", {"thinking": {"type": "disabled"}}))
         self.assertEqual((config["text"]["model"], config["text"]["base_url"], config["text"]["extra_body"], config["text"]["_key"]),
                          ("deepseek-flash", "https://api.deepseek.com", {"thinking": {"type": "disabled"}}, "sk-secret-value"))
@@ -501,6 +644,31 @@ class ModelClientCase(unittest.TestCase):
         for bad in ({"model": "other"}, {"messages": []}, "thinking"):
             with self.assertRaises(ValidationError):
                 self.config({"vision": {"base_url": self.base, "model": "m", "api_key_file": "key", "extra_body": bad}})
+
+    def test_search_section_and_both_providers(self):
+        (self.dir / "search-key").write_text("bocha-secret\n")
+        os.chmod(self.dir / "search-key", 0o600)
+        config = self.config({"vision": {"base_url": self.base, "model": "m", "api_key_file": "key"},
+                              "search": {"api_key_file": "search-key", "pages": 3}})
+        self.assertEqual((config["search"]["provider"], config["search"]["pages"], config["search"]["_key"]), ("bocha", 3, "bocha-secret"))
+        self.assertEqual(ai.describe(config)["search"], {"provider": "bocha", "pages": 3})
+        StandIn.replies = [(200, {"code": 200, "data": {"webPages": {"value": [
+            {"name": "Redis persistence", "url": "https://redis.io/docs/persistence", "summary": "RDB and AOF", "siteName": "Redis",
+             "datePublished": "2025-01-01T00:00:00+08:00"}, {"name": "bad", "url": "javascript:alert(1)"}]}}}),
+            (200, {"results": [{"title": "T", "url": "https://example.org/a", "content": "c"}]}), (401, {})]
+        found = ai.search({**config["search"], "url": self.base + "/v1/web-search"}, "Redis 持久化")
+        self.assertEqual([(r["url"], r["site"]) for r in found], [("https://redis.io/docs/persistence", "Redis")])
+        path, headers, body = StandIn.seen[-1]
+        self.assertEqual((path, headers["Authorization"], body["query"], body["count"]), ("/v1/web-search", "Bearer bocha-secret", "Redis 持久化", 8))
+        tavily = {**config["search"], "provider": "tavily", "url": self.base + "/search"}
+        self.assertEqual(ai.search(tavily, "q")[0]["url"], "https://example.org/a")
+        with self.assertRaises(ai.AIError) as caught:
+            ai.search(tavily, "q")
+        self.assertNotIn("bocha-secret", str(caught.exception))
+        for bad in ({"provider": "google"}, {"pages": 9}, {}):
+            with self.assertRaises(Exception, msg=bad):
+                self.config({"vision": {"base_url": self.base, "model": "m", "api_key_file": "key"},
+                             "search": {"api_key_env": "IBANK_TEST_UNSET", **bad}})
 
     def test_prompts_are_cut_from_the_skill_references(self):
         prompt = ai_prompts.extraction_prompt()
