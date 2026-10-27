@@ -96,7 +96,9 @@ class Web:
         self.fetched.append(url)
         headers = email.message.Message()
         headers["Content-Type"] = "text/html; charset=utf-8"
-        body = f"<html><body><nav>菜单</nav><p>RDB 是定时快照，AOF 记录每条写命令。</p><p>{url}</p></body></html>".encode()
+        article = "<p>RDB 是定时快照，AOF 记录每条写命令。</p>" + "<p>持久化的取舍取决于恢复速度与数据完整性。</p>" * 12
+        body = ('<html><body>{"l1":"var arg1=\'5dcd8af6\';"}</body></html>' if "stub" in url else
+                f"<html><body><nav>菜单</nav>{article}<p>{url}</p></body></html>").encode()
 
         class Response:
             status = 200
@@ -462,6 +464,22 @@ class IntakeCase(unittest.TestCase):
         with self.assertRaises(ValidationError):
             self.jobs.research({"question_ids": [demo]})
 
+    def test_anti_bot_pages_are_skipped_and_a_second_query_adds_the_technology(self):
+        self.researching()
+        stubs = [{"title": "s", "url": f"https://stub{n}.example/q", "site": None, "snippet": "", "date": None} for n in range(3)]
+        self.web.results = lambda query: (Web().results(query)[:1] if query.startswith("redis ") else stubs)
+        self.model.screenshots[FIRST] = {"status": "extracted", "questions": [
+            {"id": "x", "original_text": "RDB 和 AOF 怎么选？", "sequence": 1, "domains": ["backend.cache"], "technologies": ["redis"],
+             "confidence": {"is_question": 0.99, "classification": 0.9}}]}
+        job = self.started(FIRST)
+        self.jobs.confirm({"job": job["id"], "sources": []})
+        job = self.wait(job["id"], "done")
+        answer = self.app.question(self.questions()["RDB 和 AOF 怎么选？"]["id"])["answer"]
+        self.assertEqual([s["url"] for s in answer["sources"]], ["https://redis.io/docs/persistence"])
+        self.assertEqual(self.web.queries, ["RDB 和 AOF 怎么选？", "redis RDB 和 AOF 怎么选？"])
+        research = next(text for system, parts in self.model.calls if "You research" in system for text in [parts[0]["text"]])
+        self.assertNotIn("stub", research)
+
     def test_the_daily_search_limit_falls_back_to_drafts(self):
         self.researching({"daily_research": 1})
         self.model.screenshots[FIRST] = {"status": "extracted", "questions": [
@@ -541,6 +559,7 @@ class HostedIntakeCase(IntakeCase):
     test_new_questions_are_answered_from_pages_the_server_read = None
     test_existing_drafts_are_upgraded_on_request_and_skips_keep_them = None
     test_the_daily_search_limit_falls_back_to_drafts = None
+    test_anti_bot_pages_are_skipped_and_a_second_query_adds_the_technology = None
     test_a_redirect_to_a_private_address_is_refused = None
 
 

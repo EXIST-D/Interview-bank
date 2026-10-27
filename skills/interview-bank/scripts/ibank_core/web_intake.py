@@ -224,6 +224,16 @@ def needs_research(q):
 
 
 SOURCE_TYPES = ("official_doc", "standard", "paper", "blog", "forum", "news", "other")
+MAX_FETCHES = 12
+# Answer farms and document-sharing sites: read only when nothing better is readable.
+LAST_RESORT = ("wenwen.sogou.com", "zhidao.baidu.com", "wenku.baidu.com", "book118.com", "doc88.com", "docin.com",
+               "taodocs.com", "360doc.com", "5axxw.com")
+BLOCKED_PAGE = re.compile(r"var arg1=|acw_sc__v2|enable javascript|开启\s*javascript|访问验证|安全验证|人机验证", re.I)
+
+
+def readable(text):
+    """Enough page text to answer from, and not an anti-bot or JavaScript stub."""
+    return len(text.strip()) >= 300 and not BLOCKED_PAGE.search(text[:2000])
 
 
 def url_key(url):
@@ -961,30 +971,44 @@ class IntakeJobs:
         return answers, texts, searched, reasons
 
     def _read_pages(self, item):
-        """Up to `pages` readable public pages for a question: official domains first, at most two per site."""
+        """Up to `pages` readable public pages for a question: official domains first, Q&A farms last, one per site.
+
+        Many result pages are JavaScript-only or anti-bot stubs for a server; those count as failed and the next
+        results are read. When none are left, one more search adds the question's technologies to the query."""
         settings = self.config["search"]
-        found = self.search(settings, item["suggested_queries"][0])
+        question = item["question"]
+        queries = [item["suggested_queries"][0]]
+        if question.get("technologies"):
+            queries.append(" ".join(question["technologies"][:2]) + " " + question["canonical"])
         preferred = tuple(item.get("preferred_domains") or ())
-        ranked = sorted(found, key=lambda r: not (urlsplit(r["url"]).hostname or "").endswith(preferred) if preferred else False)
-        chosen, per_site = [], {}
-        for row in ranked:
-            host = urlsplit(row["url"]).hostname or ""
-            if per_site.get(host, 0) >= 2 or row["url"] in {c["url"] for c in chosen}:
-                continue
-            per_site[host] = per_site.get(host, 0) + 1
-            chosen.append(row)
-        chosen = chosen[:settings["pages"] + 2]
-        if not chosen:
-            return []
-        report = fetch_pages(self.bank, [c["url"] for c in chosen], opener=self.fetch)
-        saved = {r["url"]: r for r in report["results"] if r["ok"]}
-        pages = []
-        for row in chosen:
-            if row["url"] in saved and len(pages) < settings["pages"]:
-                result = saved[row["url"]]
-                text = Path(result["path"]).read_text(encoding="utf-8")
-                pages.append({"url": row["url"], "urls": list(dict.fromkeys([row["url"], result.get("final_url") or row["url"]])),
-                              "title": row.get("title"), "site": row.get("site"), "text": text})
+        pages, tried, per_site = [], set(), {}
+        for query in queries:
+            found = self.search(settings, query)
+            host = lambda r: urlsplit(r["url"]).hostname or ""
+            ranked = sorted(found, key=lambda r: (not (preferred and host(r).endswith(preferred)), host(r).endswith(LAST_RESORT)))
+            candidates = []
+            for row in ranked:
+                site = re.sub(r"^(www|m|wap)\.", "", host(row))
+                if row["url"] in tried or per_site.get(site, 0) >= 1:
+                    continue
+                per_site[site] = per_site.get(site, 0) + 1
+                candidates.append(row)
+            while candidates and len(pages) < settings["pages"] and len(tried) < MAX_FETCHES:
+                batch = candidates[:min(settings["pages"] - len(pages) + 2, MAX_FETCHES - len(tried))]
+                candidates = candidates[len(batch):]
+                tried.update(row["url"] for row in batch)
+                report = fetch_pages(self.bank, [row["url"] for row in batch], opener=self.fetch)
+                saved = {r["url"]: r for r in report["results"] if r["ok"]}
+                for row in batch:
+                    result = saved.get(row["url"])
+                    text = Path(result["path"]).read_text(encoding="utf-8") if result else ""
+                    if result and readable(text) and len(pages) < settings["pages"]:
+                        pages.append({"url": row["url"], "urls": list(dict.fromkeys([row["url"], result.get("final_url") or row["url"]])),
+                                      "title": row.get("title"), "site": row.get("site"), "text": text})
+            if len(pages) >= settings["pages"] or len(tried) >= MAX_FETCHES:
+                break
+            if pages:
+                break
         return pages
 
     def _today_research(self):

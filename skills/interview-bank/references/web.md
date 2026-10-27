@@ -220,8 +220,10 @@ Optional `search` in the same configuration (`provider` `bocha` or `tavily`, `ap
 `pages` read per question, default 4). The reader then researches new imported questions before writing anything,
 and 补充出处 (import page, or 联网补充出处 below an answer) does the same for AI drafts, stale and unanswered
 questions, most-asked first. For each question: the `research` task's query goes to the search provider; up to
-`pages` results are read with `page-text` (public addresses only, also after redirects; a site that refuses is
-replaced by the next result; menus and sidebars are left out); the model answers only from those texts, following
+`pages` results are read with `page-text` (public addresses only, also after redirects; menus and sidebars are left
+out). One page per site, official domains first and answer farms last; a refusing, JavaScript-only or anti-bot page
+is replaced by the next result, and when none is readable a second query adds the question's technologies. The
+model answers only from those texts, following
 this policy's research rules; then the server keeps only citations of pages it read, drops quotes not found verbatim,
 drops key points without a supporting page, records its checks and stages the answer as `source_backed` with the page
 texts, so quotes are verified as for `answer --page-texts`. Unsupported questions keep their answer (a new import

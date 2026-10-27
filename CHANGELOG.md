@@ -2,6 +2,18 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.32.1] - 2026-10-27
+
+Fixes from the first web research with real Bocha search.
+
+### Fixed
+- Anti-bot stubs (for example `var arg1=…`) and pages under 300 characters counted as readable, so a question could
+  reach the model with no usable text. They now count as failed and the next results are read, up to 12 pages a question.
+- Many Chinese results are JavaScript-only for a server: when none is readable, a second query adds the question's
+  technologies (for 缓存穿透: 3 of 3 sample questions sourced, against 2 of 3 before).
+- A desktop and a mobile copy of the same page (`www.` / `m.`) both cited; now one page per site, so sources are
+  independent. Answer farms and document-sharing sites are read only when nothing better is readable.
+
 ## [1.32.0] - 2026-10-27
 
 ### Added
