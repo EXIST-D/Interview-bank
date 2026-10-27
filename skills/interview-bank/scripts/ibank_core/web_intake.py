@@ -209,6 +209,11 @@ def build_extraction(job):
     return {"schema_version": 1, "sources": sources}
 
 
+def needs_answer(q):
+    """No answer yet, or an AI draft written for wording a merge has since changed; researched answers are left alone."""
+    return q["answer_status"] == "missing" or (q["answer_status"] == "stale" and q["answer"]["status"] == "ai_draft")
+
+
 def clean_answer(raw, qid):
     if not isinstance(raw, dict):
         return {"question_id": qid, "skip": True, "reason": "模型没有返回这道题的答案"}
@@ -583,7 +588,7 @@ class IntakeJobs:
                 job.update(status="merge_review", decisions=decisions, notice=notice, progress=None,
                            merge_review=[{"question_id": d["question_id"], "question": texts[d["question_id"]],
                                           "target_id": d["target_id"], "target": texts.get(d["target_id"], ""),
-                                          "reason": d["reason"]} for d in uncertain])
+                                          "reason": d["reason"], "canonical": d.get("canonical")} for d in uncertain])
             self._update(job_id, ask)
             return
         self._update(job_id, lambda j: j.update(decisions=decisions, notice=notice))
@@ -614,6 +619,10 @@ class IntakeJobs:
                                                             "confidence": best["score"], "reason": f"文字相似度 {best['score']:.2f}"}
             with open_bank(self.bank, shared=True) as (_, _config, data):
                 questions = {q["id"]: q for q in data["questions"]}
+                latest = {}
+                for answer in data["answers"]:
+                    if answer["version"] > latest.get(answer["question_id"], {}).get("version", 0):
+                        latest[answer["question_id"]] = answer
             for qid, d in proposed.items():
                 target = d.get("target_id")
                 if target in order and order.index(target) > order.index(qid):
@@ -624,6 +633,10 @@ class IntakeJobs:
                 existing = questions.get(target)
                 if existing and (existing.get("report_exclusion") or exclusion_reason(existing)):
                     continue
+                answer = latest.get(existing["merged_into"] or target) if existing else None
+                if d.get("canonical") and d["action"] == "MERGE_VARIANT" and answer and answer["status"] in ("source_backed", "reviewed"):
+                    # Rewording a question whose answer was researched makes that answer need a recheck: the person decides.
+                    d = {**d, "action": "REVIEW", "reason": f"{d['reason']}；合并后题目会改为新的问法，已有的参考答案需要重新核验"}
                 decisions[qid] = d
         return [{"question_id": qid, **decisions[qid]} for qid in order], notice
 
@@ -660,6 +673,9 @@ class IntakeJobs:
                 continue
             proposed[qid] = {"action": action, "target_id": target, "confidence": confidence,
                              "reason": _text(row.get("reason"), 300) or "AI 判断"}
+            canonical = _text(row.get("canonical"), 2000)
+            if canonical and action in ("MERGE_VARIANT", "REVIEW") and not classified_findings(canonical):
+                proposed[qid]["canonical"] = canonical
         return proposed
 
     def merge(self, payload):
@@ -680,6 +696,8 @@ class IntakeJobs:
                 if d["question_id"] in chosen:
                     d.update(action=chosen[d["question_id"]], confidence=1.0,
                              reason=f"网页导入时由本人确认{labels[chosen[d['question_id']]]}（AI：{d['reason']}）")
+                    if d["action"] != "MERGE_VARIANT":
+                        d.pop("canonical", None)
                     if d["action"] == "KEEP_DISTINCT":
                         d.pop("target_id", None)
             job.update(status="saving", progress={"phase": "save", "done": 0, "total": 1})
@@ -728,7 +746,7 @@ class IntakeJobs:
                 final.append(target)
             final = list(dict.fromkeys(final))
             rows = select(data, config, self.bank, ids=final)
-            missing = [q["id"] for q in rows if q["answer_status"] == "missing"]
+            missing = [q["id"] for q in rows if needs_answer(q)]
         relations = sum(d["action"] == "KEEP_RELATED" for d in job["decisions"])
         limit = self.limits["max_answers_per_job"]
         return {"added": added, "merged": merged, "related": relations, "answers_skipped_for_limit": max(0, len(missing) - limit)}, missing[:limit]
@@ -756,7 +774,7 @@ class IntakeJobs:
             batch = pending[:size]
             with self.mutation:
                 with open_bank(self.bank, shared=True) as (_, config, data):
-                    still = {q["id"] for q in select(data, config, self.bank, ids=batch) if q["answer_status"] == "missing"}
+                    still = {q["id"] for q in select(data, config, self.bank, ids=batch) if needs_answer(q)}
                 batch = [qid for qid in batch if qid in still]
                 task = research_task(self.bank, question_ids=batch) if batch else None
             answered, failed = [], {}

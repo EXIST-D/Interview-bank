@@ -8,7 +8,7 @@ REFERENCES = Path(__file__).resolve().parents[2] / "references"
 EXTRACTION_SECTIONS = (("extraction.md", "Response"), ("extraction.md", "Phone screenshots"),
                        ("extraction.md", "Wording and follow-ups"), ("extraction.md", "What to keep"),
                        ("report-policy.md", "Selection"))
-DEDUPE_SECTIONS = (("dedupe.md", "Judging a pair"),)
+DEDUPE_SECTIONS = (("dedupe.md", "Judging a pair"), ("dedupe.md", "Canonical wording for a merge"))
 ANSWER_SECTIONS = (("answer-policy.md", "Verifying one question"), ("answer-policy.md", "Writing the answer"))
 
 
@@ -86,8 +86,9 @@ action; merges need >= 0.90, otherwise use REVIEW. A shared keyword is not a mer
 
 Output exactly one JSON object:
 {{"decisions": [{{"question_id": "n1", "action": "MERGE_VARIANT", "target_id": "e12", "confidence": 0.95,
-                 "reason": "一句中文理由"}}]}}
-List only questions that are not KEEP_DISTINCT; unlisted ones stay distinct. target_id is required except for KEEP_DISTINCT."""
+                 "reason": "一句中文理由", "canonical": "only when the merge adds a sub-point the target's wording lacks"}}]}}
+List only questions that are not KEEP_DISTINCT; unlisted ones stay distinct. target_id is required except for KEEP_DISTINCT.
+Write canonical in the questions' language."""
 
 
 @lru_cache(maxsize=None)

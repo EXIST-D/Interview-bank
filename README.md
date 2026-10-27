@@ -6,7 +6,7 @@
 
 目前已在作者本人的小服务器上线[在线测试版](https://exist.qd.je/)，八股资料、公开面经和学习资料可免登录阅读。个人面经、笔记、收藏和练习记录需要登录；如需参与完整功能测试，欢迎联系 QQ：**1939123241**，一起提出建议。
 
-适用于校招、实习、秋招和社招。当前版本为 **1.31.0**。详见 [更新记录](CHANGELOG.md) 与 [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases)。
+适用于校招、实习、秋招和社招。当前版本为 **1.31.1**。详见 [更新记录](CHANGELOG.md) 与 [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases)。
 
 ## 本次更新：1.31 网页截图导入
 

@@ -23,7 +23,7 @@ export type IntakeSource = {
   questions: IntakeQuestion[];
   self_introductions_dropped?: number;
 };
-export type MergeAsk = { question_id: string; question: string; target_id: string; target: string; reason: string };
+export type MergeAsk = { question_id: string; question: string; target_id: string; target: string; reason: string; canonical?: string | null };
 export type Saved = { id: string; canonical: string; from?: string };
 export type JobStatus = "collecting" | "extracting" | "review" | "saving" | "merge_review" | "answering" | "done" | "cancelled";
 export type Job = {
@@ -73,7 +73,7 @@ const TILE_WIDTH = 1440;
 const MAX_TILES = 8;
 const LARGE_VIEW = 3.5 * 1024 * 1024;
 
-export type Prepared = { key: string; name: string; original: Blob; views: Blob[]; thumb: string | null; tiles: number };
+export type Prepared = { key: string; name: string; original: Blob; views: Blob[]; thumb: string | null; preview: string | null; tiles: number };
 
 function encode(canvas: HTMLCanvasElement, quality = 0.86) {
   return new Promise<Blob>((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("encode"))), "image/jpeg", quality));
@@ -103,11 +103,13 @@ export async function prepare(file: File, maxBytes: number): Promise<Prepared> {
   } catch {
     if (!SENDABLE.includes(file.type)) throw new Error("unsupported");
   }
-  if (!bitmap) return { key, name: file.name, original: file, views: [], thumb: null, tiles: 0 };
+  if (!bitmap) return { key, name: file.name, original: file, views: [], thumb: null, preview: null, tiles: 0 };
   try {
     const { width, height } = bitmap;
     const thumbScale = Math.min(1, 240 / width, 480 / height);
     const thumb = draw(bitmap, 0, 0, width, height, thumbScale).toDataURL("image/jpeg", 0.7);
+    // For checking the questions against the screenshot on the review page; data URLs keep the content policy.
+    const preview = draw(bitmap, 0, 0, width, height, Math.min(1, 900 / width, Math.sqrt(6_000_000 / (width * height)))).toDataURL("image/jpeg", 0.8);
     let original: Blob = file;
     if (!SENDABLE.includes(file.type) || file.size > maxBytes) {
       const scale = Math.min(1, Math.sqrt(16_000_000 / (width * height)));
@@ -130,7 +132,7 @@ export async function prepare(file: File, maxBytes: number): Promise<Prepared> {
     } else if (original.size > LARGE_VIEW || Math.max(width, height) > 3000) {
       views.push(await encode(draw(bitmap, 0, 0, width, height, Math.min(1, 2048 / Math.max(width, height)))));
     }
-    return { key, name: file.name, original, views, thumb, tiles: views.length > 1 ? views.length : 0 };
+    return { key, name: file.name, original, views, thumb, preview, tiles: views.length > 1 ? views.length : 0 };
   } finally {
     bitmap.close();
   }

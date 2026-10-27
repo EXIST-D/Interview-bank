@@ -74,7 +74,7 @@ const model = createServer((request, response) => {
       const listing = JSON.parse(content[0].text.split("candidates:\n")[1].split("\n\nThe review sheet")[0]);
       reply = { decisions: listing.filter((item) => item.question.includes("单线程")).map((item) => ({
         question_id: item.ref, action: "REVIEW", target_id: item.candidates.find((c) => c.question === "Redis 为什么快？").ref,
-        confidence: 0.6, reason: "都在问 Redis 的性能来源" })) };
+        confidence: 0.6, reason: "都在问 Redis 的性能来源", canonical: "Redis 为什么快？单线程模型为什么还这么快？" })) };
     } else {
       const questions = JSON.parse(content[0].text.split(":\n").slice(1).join(":\n"));
       reply = { answers: questions.map((q) => ({ question_id: q.question_id, short_answer: `${q.question} 的参考结论。`, key_points: ["第一点", "第二点"], follow_up_questions: ["还能怎么优化？"] })) };
@@ -129,12 +129,17 @@ try {
   check("a screenshot without questions is explained", await page.getByText("没有面试题：只有聊天记录").isVisible());
   check("the company hint is applied", (await page.getByLabel("公司").first().inputValue()) === "示例科技");
   await shot(page, "review");
+  await page.getByRole("button", { name: "查看截图 1 大图", exact: true }).click();
+  check("a screenshot opens full size for checking", await page.getByRole("dialog").locator("img").isVisible() &&
+    (await page.getByRole("dialog").locator("img").evaluate((img) => img.naturalWidth)) === 200);
+  await page.getByRole("dialog").getByRole("button", { name: "关闭", exact: true }).click();
   const salary = page.locator("li", { has: page.locator("textarea", { hasText: "期望薪资是多少" }) });
   await salary.getByRole("checkbox").uncheck();
   await page.locator("textarea", { hasText: "MCP 和 Function Calling 有什么区别？" }).fill("MCP 与 Function Calling 的区别是什么？");
   await page.getByRole("button", { name: "确认保存 4 道题", exact: true }).click();
 
   await page.getByRole("heading", { name: "这些题可能已经在题库里", exact: true }).waitFor({ timeout: 20000 });
+  check("the merged wording is shown before deciding", await page.getByText("选「同一题」后，题目会改为：Redis 为什么快？单线程模型为什么还这么快？").isVisible());
   check("an uncertain merge is shown with both wordings", await page.getByText("Redis 单线程模型为什么还这么快？").isVisible() && await page.getByText("都在问 Redis 的性能来源").isVisible());
   await shot(page, "merge");
   await page.getByRole("radio", { name: "相关但不同", exact: true }).click();

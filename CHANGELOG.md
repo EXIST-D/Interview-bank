@@ -2,6 +2,22 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.31.1] - 2026-10-27
+
+Fixes from the first import with a real model (DeepSeek `deepseek-flash` / `deepseek-v4-pro`).
+
+### Fixed
+- A merge kept the existing wording and lost the new question's sub-points. The dedupe step now also follows
+  dedupe.md's merged-wording rules: the model proposes a `canonical`, applied directly when the target has no answer or
+  only an AI draft (the draft is written again), and asked on the page when the target has a researched answer,
+  since rewording makes that answer need a recheck. Choosing related or different drops the proposed wording.
+- `deepseek-flash` with thinking off breaks off plain-text JSON; the example configuration turns on `json_mode` for reading.
+- Study wording drops labels such as “手撕：” (extraction.md).
+
+### Added
+- The review page opens each screenshot full size for checking; the merge page shows the wording a merge would produce.
+- The saving step says that judging duplicates takes a minute or two and the page can be left.
+
 ## [1.31.0] - 2026-10-27
 
 ### Added

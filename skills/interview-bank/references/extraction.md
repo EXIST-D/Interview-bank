@@ -78,8 +78,8 @@ second look. Contact details in a candidate also create a review item (see sourc
 
 ## Wording and follow-ups
 
-- `original_text` is verbatim, including multiline code. `canonical_suggestion` may resolve a pronoun from
-  visible context but never adds a question.
+- `original_text` is verbatim, including multiline code. `canonical_suggestion` may resolve a pronoun or drop
+  a label (“手撕：”), never adding a question.
 - Follow-ups are separate candidates whose `parent_id` names an earlier candidate, across images too.
 - `sequence` is positive and unique per source. Multi-company pages need per-question overrides.
 - Ignore comments unless the selected material makes them part of the interview record.

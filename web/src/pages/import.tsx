@@ -1,4 +1,5 @@
 import { AlertTriangle, Check, CornerDownRight, ImagePlus, Loader2, RotateCcw, Sparkles, X } from "lucide-react";
+import { Dialog } from "radix-ui";
 import { useCallback, useEffect, useRef, useState, type ClipboardEvent, type DragEvent } from "react";
 import { ApiError } from "@/lib/api";
 import { useBank } from "@/lib/bank";
@@ -10,8 +11,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Segmented } from "@/components/ui/segmented";
 
-// Thumbnails of this tab's uploads by job and screenshot index; a reload shows the list without them.
-const thumbs = new Map<string, (string | null)[]>();
+// Pictures of this tab's uploads by job and screenshot index; a reload shows the list without them.
+const thumbs = new Map<string, Pick<Prepared, "thumb" | "preview">[]>();
 const field = "h-9 w-full rounded-[10px] bg-fill px-3 text-subhead outline-none focus:ring-2 focus:ring-ring/30";
 
 function message(cause: unknown, fallback: string) {
@@ -37,7 +38,9 @@ function Progress({ job }: { job: Job }) {
       <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-fill">
         <div className="h-full rounded-full bg-primary transition-[width] duration-500" style={{ width: `${Math.max(8, share)}%` }} />
       </div>
-      {job.status === "answering" && <p className="mt-3 text-footnote text-muted-foreground">{t("imp_answering_hint")}</p>}
+      {job.status !== "extracting" && (
+        <p className="mt-3 text-footnote text-muted-foreground">{t(job.status === "saving" ? "imp_saving_hint" : "imp_answering_hint")}</p>
+      )}
     </section>
   );
 }
@@ -92,7 +95,7 @@ function Picker({ overview, onStarted }: { overview: Overview; onStarted: (job: 
         job = await intake.upload(job.id, index, item.original);
         for (const [view, blob] of item.views.entries()) job = await intake.upload(job.id, index, blob, view);
       }
-      thumbs.set(job.id, items.map((item) => item.thumb));
+      thumbs.set(job.id, items.map(({ thumb, preview }) => ({ thumb, preview })));
       onStarted(await intake.start(job.id));
     } catch (cause) {
       setError(message(cause, t("failed")));
@@ -212,6 +215,7 @@ function Review({ job, onChange }: { job: Job; onChange: (job: Job) => void }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(job.error);
   const pictures = thumbs.get(job.id);
+  const [viewing, setViewing] = useState<string | null>(null);
   const kept = Object.values(edits).filter((edit) => edit.keep && edit.canonical.trim()).length;
   const failed = sources.some((s) => s.status === "failed");
   const duplicates = job.images.filter((image) => image.duplicate).length;
@@ -269,8 +273,15 @@ function Review({ job, onChange }: { job: Job; onChange: (job: Job) => void }) {
       {sources.map((source) => (
         <section key={source.source_id} className="surface flex flex-col gap-3 p-4" aria-label={t("imp_shot", { n: source.index + 1 })}>
           <div className="flex gap-3">
-            {pictures?.[source.index] && (
-              <img src={pictures[source.index]!} alt="" className="h-24 w-16 shrink-0 rounded-lg bg-fill object-cover object-top" />
+            {pictures?.[source.index]?.thumb && (
+              <button
+                type="button"
+                aria-label={t("imp_view_shot", { n: source.index + 1 })}
+                onClick={() => setViewing(pictures[source.index].preview)}
+                className="shrink-0 overflow-hidden rounded-lg bg-fill outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+              >
+                <img src={pictures[source.index].thumb!} alt="" className="h-24 w-16 object-cover object-top" />
+              </button>
             )}
             <div className="min-w-0 flex-1">
               <h3 className="text-headline font-semibold">{t("imp_shot", { n: source.index + 1 })}</h3>
@@ -370,6 +381,20 @@ function Review({ job, onChange }: { job: Job; onChange: (job: Job) => void }) {
           )}
         </section>
       ))}
+      <Dialog.Root open={Boolean(viewing)} onOpenChange={(open) => !open && setViewing(null)}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60" />
+          <Dialog.Content className="fixed inset-x-0 top-[4dvh] bottom-[4dvh] z-50 mx-auto w-[min(94vw,640px)] overflow-y-auto rounded-2xl bg-card p-2 outline-none">
+            <div className="sticky top-0 flex justify-end">
+              <Dialog.Title className="sr-only">{t("imp_review_title")}</Dialog.Title>
+              <Dialog.Close aria-label={t("close")} className="grid size-8 place-items-center rounded-full bg-black/55 text-white">
+                <X className="size-4" />
+              </Dialog.Close>
+            </div>
+            {viewing && <img src={viewing} alt="" className="-mt-8 w-full rounded-xl" />}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
       {error && <p className="text-footnote text-destructive">{error}</p>}
       <div className="glass sticky bottom-[calc(52px+env(safe-area-inset-bottom))] -mx-4 flex flex-wrap items-center justify-end gap-2 border-t border-border px-4 py-3 md:bottom-0">
         {!kept && <span className="mr-auto text-footnote text-muted-foreground">{t("imp_none_kept")}</span>}
@@ -436,6 +461,7 @@ function MergeReview({ job, onChange }: { job: Job; onChange: (job: Job) => void
               </div>
             ))}
           </div>
+          {item.canonical && <p className="rounded-xl bg-accent/60 px-3 py-2 text-footnote">{t("imp_merge_canonical", { t: item.canonical })}</p>}
           <p className="text-caption text-muted-foreground">{t("imp_merge_reason", { r: item.reason })}</p>
           <Segmented
             label={t("imp_merge_title")}

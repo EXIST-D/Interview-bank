@@ -7,6 +7,7 @@
     "api_key_file": "/etc/interview-bank/ai-key",
     "timeout": 180,
     "max_tokens": 8192,
+    "json_mode": true,
     "extra_body": {"thinking": {"type": "disabled"}}
   },
   "text": {

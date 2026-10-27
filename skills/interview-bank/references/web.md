@@ -200,6 +200,8 @@ known bytes are not read again), extraction, the person's check, `ingest submit`
 - Exact matches merge; the model judges the rest from the candidates and the review sheet. Merges below 0.90 are
   asked on the page (same / related / different) before the commit. If the bank changed meanwhile (practice on
   another device), the same confirmation is staged again; question IDs do not change.
+  A merge may reword its target to keep the new sub-points (dedupe `canonical`); rewording a question that has a
+  researched answer is asked first, because that answer then needs a recheck. AI drafts are written again.
 - New questions without an answer get `ai_draft` answers with no sources: the model cannot browse and may not
   cite. The reader labels them AI 草稿. Research them later as usual (`research --answer-status ai_draft`).
 - Long phone screenshots are cut in the browser into up to eight overlapping parts that are read together; the

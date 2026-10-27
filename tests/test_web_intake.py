@@ -35,6 +35,8 @@ class Model:
 
     def __init__(self, screenshots):
         self.screenshots, self.calls, self.before_dedupe, self.skip_answers = screenshots, [], None, set()
+        # (words in the new question, existing wording, action, confidence, merged wording)
+        self.merges = [("单线程", "Redis 为什么快？", "MERGE_VARIANT", 0.7, None)]
 
     def __call__(self, endpoint, system, parts):
         self.calls.append((system, parts))
@@ -51,10 +53,12 @@ class Model:
             listing = json.loads(text.split("candidates:\n", 1)[1].split("\n\nThe review sheet", 1)[0])
             decisions = []
             for item in listing:
-                if "单线程" in item["question"]:
-                    target = next(c["ref"] for c in item["candidates"] if c["question"] == "Redis 为什么快？")
-                    decisions.append({"question_id": item["ref"], "action": "MERGE_VARIANT", "target_id": target,
-                                      "confidence": 0.7, "reason": "可能同问 Redis 性能"})
+                for words, existing, action, confidence, canonical in self.merges:
+                    if words in item["question"]:
+                        target = next(c["ref"] for c in item["candidates"] if c["question"] == existing)
+                        decisions.append({"question_id": item["ref"], "action": action, "target_id": target,
+                                          "confidence": confidence, "reason": "可能是同一个问题",
+                                          **({"canonical": canonical} if canonical else {})})
             return {"decisions": decisions}
         questions = json.loads(text.split(":\n", 1)[1])
         return {"answers": [{"question_id": q["question_id"], "skip": True, "reason": "暂时无法回答"}
@@ -186,6 +190,44 @@ class IntakeCase(unittest.TestCase):
         self.jobs.retry_answers({"job": job["id"]})
         job = self.wait(job["id"], "done")
         self.assertEqual((len(job["answers"]["done"]), job["answers"]["failed"]), (1, {}))
+
+    def test_a_merge_keeps_new_sub_points_and_asks_before_rewording_a_researched_question(self):
+        self.model.screenshots[FIRST] = {"status": "extracted", "questions": [
+            {"id": "x", "original_text": "Redis 单线程会不会成为瓶颈？", "sequence": 1, "domains": ["backend.cache"],
+             "confidence": {"is_question": 0.99, "classification": 0.9}},
+            {"id": "y", "original_text": "缓存穿透是什么，布隆过滤器怎么防？", "sequence": 2, "domains": ["backend.cache"],
+             "confidence": {"is_question": 0.99, "classification": 0.9}}]}
+        redis, penetration = "Redis 为什么快？单线程会不会成为瓶颈？", "什么是缓存穿透？如何解决？布隆过滤器怎么防？"
+        self.model.merges = [("单线程", "Redis 为什么快？", "MERGE_VARIANT", 0.95, redis),
+                             ("布隆", "什么是缓存穿透？如何解决？", "MERGE_VARIANT", 0.95, penetration)]
+        before = self.questions()
+        job = self.started(FIRST)
+        self.jobs.confirm({"job": job["id"], "sources": []})
+        job = self.wait(job["id"], "merge_review")
+        [item] = job["merge_review"]
+        self.assertEqual((item["target"], item["canonical"]), ("Redis 为什么快？", redis))
+        self.assertIn("重新核验", item["reason"])
+        self.jobs.merge({"job": job["id"], "decisions": [{"question_id": item["question_id"], "action": "MERGE_VARIANT"}]})
+        job = self.wait(job["id"], "done")
+        after = self.questions()
+        self.assertEqual((after[redis]["id"], after[penetration]["id"]),
+                         (before["Redis 为什么快？"]["id"], before["什么是缓存穿透？如何解决？"]["id"]))
+        self.assertEqual(self.app.question(after[redis]["id"])["answer_status"], "stale")
+        self.assertEqual(job["answers"]["done"], [after[penetration]["id"]])
+        self.assertEqual(self.app.question(after[penetration]["id"])["answer_status"], "ai_draft")
+
+    def test_choosing_related_drops_the_proposed_wording(self):
+        self.model.screenshots[FIRST] = {"status": "extracted", "questions": [
+            {"id": "x", "original_text": "Redis 单线程会不会成为瓶颈？", "sequence": 1, "domains": ["backend.cache"],
+             "confidence": {"is_question": 0.99, "classification": 0.9}}]}
+        self.model.merges = [("单线程", "Redis 为什么快？", "MERGE_VARIANT", 0.95, "Redis 为什么快？会成为瓶颈吗？")]
+        job = self.started(FIRST)
+        self.jobs.confirm({"job": job["id"], "sources": []})
+        job = self.wait(job["id"], "merge_review")
+        self.jobs.merge({"job": job["id"], "decisions": [{"question_id": job["merge_review"][0]["question_id"], "action": "KEEP_RELATED"}]})
+        self.wait(job["id"], "done")
+        self.assertIn("Redis 为什么快？", self.questions())
+        self.assertEqual(len(load_data(self.bank)["relations"]), 1)
 
     def test_a_bank_change_during_judging_restages_the_same_confirmation(self):
         self.model.screenshots[FIRST] = {"status": "extracted", "questions": [
