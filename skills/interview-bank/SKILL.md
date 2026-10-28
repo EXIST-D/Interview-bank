@@ -4,7 +4,7 @@ description: Build and maintain a personal interview question bank (面试题库
 license: MIT
 metadata:
   author: EXIST-D
-  version: "1.32.1"
+  version: "1.33.0"
   repository: https://github.com/EXIST-D/Interview-bank
 ---
 

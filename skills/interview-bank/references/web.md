@@ -212,6 +212,12 @@ known bytes are not read again), extraction, the person's check, `ingest submit`
   screenshot copies. Endpoints: GET `/api/intake`, `/api/intake/job`; POST `/api/intake/jobs`, `upload`, `start`,
   `confirm`, `merge`, `answers`, `retry`, `cancel`. Behind nginx the upload path needs a larger body limit
   (`tools/deploy/nginx-location.conf`).
+- Usage: every model call (cached and uncached input, output tokens) and search is recorded per job and per Beijing
+  day (`cache/web-intake/usage.json`, 120 days); the page shows today's and the last 30 days' totals. Optional
+  `prices` (per million tokens, `peak`/`off_peak` for DeepSeek's Beijing weekday 9–12 and 14–18 rates, or `call` for
+  a search provider) turn them into costs, and `limits.daily_budget` then refuses new jobs and searches once today's
+  cost reaches it. Prices change: copy them from the provider's price page. Page texts read for research are
+  deleted after 30 days.
 - Screenshots leave the server for the model provider the person configured. Enable it only when they ask.
 
 ### Web research for sourced answers (1.32+)

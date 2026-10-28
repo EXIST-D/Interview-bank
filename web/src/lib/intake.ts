@@ -50,15 +50,18 @@ export type Job = {
     more?: number;
   } | null;
   answers: { pending: string[]; done: string[]; failed: Record<string, string>; sourced?: string[]; searched?: number } | null;
+  usage?: Usage | null;
 };
+export type Usage = { calls: number; input: number; cached: number; output: number; searches: number; cost: number; unpriced: number };
 export type Hints = { company?: string; position?: string; round?: string; interview_type?: string; event_date?: string };
 export type Overview = {
   enabled: boolean;
   models?: Record<"vision" | "text", { model: string; host: string }> & { search?: { provider: string; pages: number } };
   limits?: { max_images_per_job: number; images_left_today: number; max_image_bytes: number; max_view_bytes: number; max_views: number };
   research?: { candidates: number; per_job: number; left_today: number } | null;
+  usage?: { today: Usage | null; last_30_days: Usage | null; priced: boolean; daily_budget: number | null };
   active?: Job | null;
-  recent?: { id: string; kind?: Job["kind"]; status: JobStatus; created_at: string; images: number; result: Job["result"]; answers: Job["answers"] }[];
+  recent?: { id: string; kind?: Job["kind"]; status: JobStatus; created_at: string; images: number; result: Job["result"]; answers: Job["answers"]; usage?: Usage | null }[];
 };
 
 export const RUNNING: JobStatus[] = ["extracting", "saving", "answering"];

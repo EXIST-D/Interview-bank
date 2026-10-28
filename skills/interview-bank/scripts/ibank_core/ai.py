@@ -8,7 +8,10 @@ import json
 import os
 import re
 import stat
+import threading
 import time
+from contextlib import contextmanager
+from datetime import datetime, timedelta, timezone
 import urllib.error
 import urllib.request
 from pathlib import Path
@@ -22,9 +25,12 @@ DEFAULT_KEY_ENV = "INTERVIEW_BANK_AI_KEY"
 SEARCH_KEY_ENV = "INTERVIEW_BANK_SEARCH_KEY"
 SEARCH_PROVIDERS = {"bocha": "https://api.bochaai.com/v1/web-search", "tavily": "https://api.tavily.com/search"}
 SEARCH_FIELDS = {"provider", "base_url", "api_key_file", "api_key_env", "count", "pages", "timeout"}
-LIMIT_DEFAULTS = {"max_images_per_job": 12, "max_answers_per_job": 40, "daily_images": 60, "answer_batch": 4, "daily_research": 100}
+LIMIT_DEFAULTS = {"max_images_per_job": 12, "max_answers_per_job": 40, "daily_images": 60, "answer_batch": 4, "daily_research": 100,
+                  "daily_budget": 0}
 LIMIT_RANGES = {"max_images_per_job": (1, 30), "max_answers_per_job": (0, 200), "daily_images": (1, 1000), "answer_batch": (1, 10),
                 "daily_research": (1, 2000)}
+PRICE_FIELDS = {"hit", "miss", "output"}
+BEIJING = timezone(timedelta(hours=8))
 ENDPOINT_FIELDS = {"protocol", "base_url", "model", "api_key_file", "api_key_env", "timeout", "max_tokens", "json_mode", "temperature",
                    "extra_body", "image_encoding"}
 # extra_body carries provider switches (DeepSeek/Zhipu "thinking", Qwen "enable_thinking"); it cannot replace the request itself.
@@ -112,8 +118,8 @@ def load_config(path):
         raw = json.loads(path.read_text(encoding="utf-8"))
     except ValueError as exc:
         raise BankError(f"AI configuration is not valid JSON: {exc}") from None
-    require(isinstance(raw, dict) and set(raw) <= {"schema_version", "vision", "text", "search", "limits"},
-            "AI configuration: vision, text, search and limits only")
+    require(isinstance(raw, dict) and set(raw) <= {"schema_version", "vision", "text", "search", "limits", "prices"},
+            "AI configuration: vision, text, search, limits and prices only")
     require(raw.get("schema_version", 1) == 1, "AI configuration: unsupported schema_version")
     require("vision" in raw, "AI configuration needs a vision endpoint (a model that reads images)")
     vision = _endpoint(raw["vision"], "vision", path.parent)
@@ -123,8 +129,93 @@ def load_config(path):
     require(set(limits) == set(LIMIT_DEFAULTS), f"ai.limits: known fields are {sorted(LIMIT_DEFAULTS)}")
     for name, (low, high) in LIMIT_RANGES.items():
         require(type(limits[name]) is int and low <= limits[name] <= high, f"ai.limits.{name} must be {low}..{high}")
+    require(type(limits["daily_budget"]) in (int, float) and 0 <= limits["daily_budget"] <= 10000,
+            "ai.limits.daily_budget is a daily cost cap in the prices' currency, 0 for none")
     search = _search(raw["search"], path.parent) if raw.get("search") is not None else None
-    return {"vision": vision, "text": text, "search": search, "limits": limits}
+    prices = _prices(raw.get("prices", {}))
+    require(not limits["daily_budget"] or prices, "ai.limits.daily_budget needs prices to compute costs")
+    return {"vision": vision, "text": text, "search": search, "limits": limits, "prices": prices}
+
+
+def _rate(raw, label):
+    require(isinstance(raw, dict) and set(raw) == PRICE_FIELDS and all(type(v) in (int, float) and v >= 0 for v in raw.values()),
+            f"ai.prices.{label}: hit, miss and output per million tokens")
+    return dict(raw)
+
+
+def _prices(raw):
+    """{"<model>": {hit, miss, output} or {"peak": {...}, "off_peak": {...}}, "<search provider>": {"call": n}}.
+    Peak is DeepSeek's: Beijing weekdays 9-12 and 14-18 (public holidays are not known here, so they count as peak)."""
+    require(isinstance(raw, dict), "ai.prices: an object keyed by model or search provider")
+    prices = {}
+    for name, entry in raw.items():
+        require(isinstance(entry, dict), f"ai.prices.{name}: expected an object")
+        if set(entry) == {"call"}:
+            require(type(entry["call"]) in (int, float) and entry["call"] >= 0, f"ai.prices.{name}.call: price per search")
+            prices[name] = {"call": entry["call"]}
+        elif set(entry) == {"peak", "off_peak"}:
+            prices[name] = {"peak": _rate(entry["peak"], f"{name}.peak"), "off_peak": _rate(entry["off_peak"], f"{name}.off_peak")}
+        else:
+            prices[name] = _rate(entry, name)
+    return prices
+
+
+def peak(at):
+    local = at.astimezone(BEIJING)
+    return local.weekday() < 5 and (9 <= local.hour < 12 or 14 <= local.hour < 18)
+
+
+def cost(entry, prices):
+    """The price of one recorded call, or None when no price is configured for it."""
+    price = prices.get(entry.get("model") or entry.get("provider"))
+    if not price:
+        return None
+    if entry["kind"] == "search":
+        return price.get("call")
+    if "peak" in price:
+        price = price["peak" if peak(datetime.fromisoformat(entry["at"])) else "off_peak"]
+    return (entry["hit"] * price["hit"] + entry["miss"] * price["miss"] + entry["output"] * price["output"]) / 1_000_000
+
+
+_meter = threading.local()
+
+
+@contextmanager
+def metering():
+    """Collect the usage of every model call and search made by this thread."""
+    _meter.entries = []
+    try:
+        yield _meter.entries
+    finally:
+        _meter.entries = None
+
+
+def take_usage():
+    """Usage recorded since the last call (and clear it); empty outside metering()."""
+    entries = getattr(_meter, "entries", None)
+    if not entries:
+        return []
+    taken = list(entries)
+    entries.clear()
+    return taken
+
+
+def record(entry):
+    entries = getattr(_meter, "entries", None)
+    if entries is not None:
+        entries.append({"at": datetime.now(timezone.utc).isoformat(timespec="seconds"), **entry})
+
+
+def _usage(protocol, model, reply):
+    usage = reply.get("usage") if isinstance(reply.get("usage"), dict) else {}
+    number = lambda *keys: next((int(usage[k]) for k in keys if isinstance(usage.get(k), (int, float))), 0)
+    if protocol == "anthropic":
+        hit = number("cache_read_input_tokens")
+        return {"kind": "model", "model": model, "hit": hit, "miss": number("input_tokens"), "output": number("output_tokens")}
+    details = usage.get("prompt_tokens_details") if isinstance(usage.get("prompt_tokens_details"), dict) else {}
+    hit = number("prompt_cache_hit_tokens") or int(details.get("cached_tokens") or 0)
+    miss = number("prompt_cache_miss_tokens") or max(0, number("prompt_tokens") - hit)
+    return {"kind": "model", "model": model, "hit": hit, "miss": miss, "output": number("completion_tokens")}
 
 
 def describe(config):
@@ -151,6 +242,7 @@ def search(settings, query, post=None):
         raise AIError(f"搜索服务返回 HTTP {exc.code}：{hint}。") from None
     except (urllib.error.URLError, TimeoutError, ConnectionError, ValueError):
         raise AIError("连不上搜索服务，请检查网络。") from None
+    record({"kind": "search", "provider": settings["provider"]})
     if settings["provider"] == "tavily":
         rows = [{"title": r.get("title"), "url": r.get("url"), "site": None, "snippet": r.get("content"), "date": None}
                 for r in reply.get("results", []) if isinstance(r, dict)]
@@ -244,6 +336,7 @@ def call(endpoint, system, parts, attempts=3, sleep=time.sleep):
         retry = attempt + 1 < attempts
         try:
             reply = _post(url, body, headers, endpoint["timeout"])
+            record(_usage(endpoint["protocol"], endpoint["model"], reply))
             return parse_json(_reply_text(endpoint["protocol"], reply))
         except urllib.error.HTTPError as exc:
             if exc.code in (429, 500, 502, 503, 504) and retry:

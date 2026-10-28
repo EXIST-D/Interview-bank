@@ -84,7 +84,8 @@ const model = createServer((request, response) => {
       const questions = JSON.parse(content[0].text.split(":\n").slice(1).join(":\n"));
       reply = { answers: questions.map((q) => ({ question_id: q.question_id, short_answer: `${q.question} 的参考结论。`, key_points: ["第一点", "第二点"], follow_up_questions: ["还能怎么优化？"] })) };
     }
-    const text = JSON.stringify({ choices: [{ message: { content: "```json\n" + JSON.stringify(reply) + "\n```" } }] });
+    const text = JSON.stringify({ choices: [{ message: { content: "```json\n" + JSON.stringify(reply) + "\n```" } }],
+      usage: { prompt_tokens: 12000, completion_tokens: 3000, prompt_cache_hit_tokens: 2000, prompt_cache_miss_tokens: 10000 } });
     response.writeHead(200, { "Content-Type": "application/json" });
     response.end(text);
   });
@@ -96,7 +97,8 @@ try {
   await new Promise((resolve) => model.listen(0, "127.0.0.1", resolve));
   const config = join(root, "ai.json");
   writeFileSync(config, JSON.stringify({ vision: { base_url: `http://127.0.0.1:${model.address().port}/v1`, model: "stand-in-vl" }, text: { model: "stand-in-chat" },
-    search: { base_url: `http://127.0.0.1:${model.address().port}/v1/web-search`, api_key_env: "IBANK_E2E_SEARCH_KEY" } }));
+    search: { base_url: `http://127.0.0.1:${model.address().port}/v1/web-search`, api_key_env: "IBANK_E2E_SEARCH_KEY" },
+    prices: { "stand-in-vl": { hit: 0.02, miss: 1, output: 4 }, "stand-in-chat": { hit: 0.02, miss: 1, output: 4 }, bocha: { call: 0.036 } } }));
   execFileSync(python, ["-B", "-X", "utf8", cli, "--bank", bank, "--json", "demo", "--v2"], { encoding: "utf8" });
   server = spawn(python, ["-B", "-X", "utf8", cli, "--bank", bank, "web", "--port", "0", "--read-only", "--allow-personal", "--allow-practice",
     "--allow-intake", "--ai-config", config, "--json"], { env: { ...process.env, IBANK_E2E_SEARCH_KEY: "stand-in" } });
@@ -153,6 +155,7 @@ try {
   await page.getByRole("heading", { name: "导入完成", exact: true }).waitFor({ timeout: 20000 });
   check("the summary counts new and merged questions", await page.getByText("新增 3 道题").isVisible() && await page.getByText(/合并到已有题目 1 道/).isVisible());
   await shot(page, "done");
+  check("the job's usage and cost are shown", await page.getByText(/^本次用量：模型调用 \d+ 次 · 输入 .+ tokens · 搜索 3 次 · 约 ¥/).isVisible());
   check("draft answers are reported as unverified", await page.getByText(/已为 3 道题生成 AI 草稿答案/).isVisible());
 
   const library = await api("/api/library?limit=100&sort=recent");
@@ -170,6 +173,7 @@ try {
   await page.goto(base + "#/import");
   await page.getByRole("heading", { name: "最近的导入", exact: true }).waitFor();
   check("the finished import is listed", await page.getByText("2 张 · 新增 3 · 合并 1 · 答案 3").isVisible());
+  check("today's usage is summarised with the 30-day cost", await page.getByText(/^今天：模型调用 \d+ 次 .* 近 30 天约 ¥/).isVisible());
   await page.getByRole("heading", { name: "补充出处", exact: true }).waitFor();
   await shot(page, "research-card");
   await page.getByRole("button", { name: /^为其中 \d+ 道补充出处$/ }).click();

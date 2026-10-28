@@ -21,7 +21,7 @@ from ibank_core.web_intake import IntakeJobs, clean_source
 ROOT = Path(__file__).resolve().parents[1]
 PNG = b"\x89PNG\r\n\x1a\n" + b"\x00" * 64
 JPEG = b"\xff\xd8\xff\xe0" + b"\x01" * 64
-LIMITS = {"max_images_per_job": 12, "max_answers_per_job": 40, "daily_images": 60, "answer_batch": 4, "daily_research": 100}
+LIMITS = {"max_images_per_job": 12, "max_answers_per_job": 40, "daily_images": 60, "answer_batch": 4, "daily_research": 100, "daily_budget": 0}
 ENDPOINT = {"protocol": "openai", "base_url": "http://127.0.0.1:9", "model": "stand-in", "timeout": 5, "max_tokens": 1024,
             "temperature": 0.2, "json_mode": False, "_key": None}
 CONFIG = {"vision": ENDPOINT, "text": ENDPOINT, "limits": LIMITS}
@@ -41,6 +41,7 @@ class Model:
 
     def __call__(self, endpoint, system, parts):
         self.calls.append((system, parts))
+        ai.record({"kind": "model", "model": endpoint["model"], "hit": 1000, "miss": 9000, "output": 2000})
         if "vision step" in system:
             images = [p["image"] for p in parts if "image" in p]
             reply = self.screenshots[images[0]]
@@ -88,6 +89,7 @@ class Web:
 
     def search(self, settings, query):
         self.queries.append(query)
+        ai.record({"kind": "search", "provider": settings["provider"]})
         return self.results(query)
 
     def opener(self, request, timeout):
@@ -494,6 +496,39 @@ class IntakeCase(unittest.TestCase):
         with self.assertRaises(ValidationError):
             self.jobs.research({})
 
+    def test_usage_and_cost_are_recorded_per_job_and_per_day_and_a_budget_stops_new_jobs(self):
+        prices = {"stand-in": {"hit": 0.02, "miss": 1, "output": 4}, "bocha": {"call": 0.036}}
+        self.web = Web()
+        self.jobs = self.app.intake = IntakeJobs(self.app.bank, {**CONFIG, "search": SEARCH, "prices": prices,
+                                                                  "limits": {**LIMITS, "daily_budget": 0.05}},
+                                                 self.app.mutation_lock, call=self.model, search=self.web.search, fetch=self.web.opener)
+        self.model.screenshots[FIRST] = {"status": "extracted", "questions": [
+            {"id": "x", "original_text": "RDB 和 AOF 怎么选？", "sequence": 1, "domains": ["backend.cache"], "technologies": ["redis"],
+             "confidence": {"is_question": 0.99, "classification": 0.9}}]}
+        job = self.started(FIRST)
+        self.jobs.confirm({"job": job["id"], "sources": []})
+        job = self.wait(job["id"], "done")
+        usage = job["usage"]
+        calls = len(self.model.calls)
+        self.assertEqual((usage["calls"], usage["input"], usage["cached"], usage["output"], usage["searches"]),
+                         (calls, calls * 10000, calls * 1000, calls * 2000, len(self.web.queries)))
+        self.assertAlmostEqual(usage["cost"], calls * (1000 * 0.02 + 9000 * 1 + 2000 * 4) / 1e6 + len(self.web.queries) * 0.036, places=6)
+        overview = self.jobs.overview()
+        self.assertEqual(overview["usage"]["today"], usage)
+        self.assertEqual((overview["usage"]["daily_budget"], overview["recent"][0]["usage"]), (0.05, usage))
+        with self.assertRaises(ValidationError) as caught:
+            self.jobs.create({"hints": {}})
+        self.assertIn("费用", str(caught.exception))
+
+    def test_old_page_texts_are_pruned(self):
+        folder = self.bank / "cache/pages"
+        folder.mkdir(parents=True, exist_ok=True)
+        old, recent = folder / "old.txt", folder / "recent.txt"
+        old.write_text("x"), recent.write_text("y")
+        os.utime(old, (time.time() - 40 * 86400,) * 2)
+        IntakeJobs(self.app.bank, CONFIG, self.app.mutation_lock, call=self.model)
+        self.assertEqual((old.exists(), recent.exists()), (False, True))
+
     def test_a_redirect_to_a_private_address_is_refused(self):
         import urllib.error
         import urllib.request
@@ -561,6 +596,8 @@ class HostedIntakeCase(IntakeCase):
     test_the_daily_search_limit_falls_back_to_drafts = None
     test_anti_bot_pages_are_skipped_and_a_second_query_adds_the_technology = None
     test_a_redirect_to_a_private_address_is_refused = None
+    test_usage_and_cost_are_recorded_per_job_and_per_day_and_a_budget_stops_new_jobs = None
+    test_old_page_texts_are_pruned = None
 
 
 class StandIn(BaseHTTPRequestHandler):
@@ -688,6 +725,32 @@ class ModelClientCase(unittest.TestCase):
             with self.assertRaises(Exception, msg=bad):
                 self.config({"vision": {"base_url": self.base, "model": "m", "api_key_file": "key"},
                              "search": {"api_key_env": "IBANK_TEST_UNSET", **bad}})
+
+    def test_usage_is_read_from_each_protocol_and_priced_by_the_hour(self):
+        deepseek = ai._usage("openai", "deepseek-flash", {"usage": {"prompt_tokens": 100, "completion_tokens": 30,
+                             "prompt_cache_hit_tokens": 60, "prompt_cache_miss_tokens": 40}})
+        openai = ai._usage("openai", "gpt", {"usage": {"prompt_tokens": 100, "completion_tokens": 30, "prompt_tokens_details": {"cached_tokens": 20}}})
+        anthropic = ai._usage("anthropic", "claude", {"usage": {"input_tokens": 80, "output_tokens": 30, "cache_read_input_tokens": 20}})
+        self.assertEqual([(u["hit"], u["miss"], u["output"]) for u in (deepseek, openai, anthropic)], [(60, 40, 30), (20, 80, 30), (20, 80, 30)])
+        prices = ai._prices({"deepseek-flash": {"peak": {"hit": 0.04, "miss": 2, "output": 8}, "off_peak": {"hit": 0.02, "miss": 1, "output": 4}},
+                             "bocha": {"call": 0.036}})
+        entry = {"kind": "model", "model": "deepseek-flash", "hit": 1_000_000, "miss": 1_000_000, "output": 1_000_000}
+        self.assertAlmostEqual(ai.cost({**entry, "at": "2026-10-28T06:30:00+00:00"}, prices), 10.04)
+        self.assertAlmostEqual(ai.cost({**entry, "at": "2026-10-31T06:30:00+00:00"}, prices), 5.02)
+        self.assertEqual(ai.cost({"kind": "search", "provider": "bocha"}, prices), 0.036)
+        self.assertIsNone(ai.cost({**entry, "model": "other", "at": "2026-10-28T06:30:00+00:00"}, prices))
+        StandIn.replies = [(200, {"choices": [{"message": {"content": "{}"}}], "usage": {"prompt_tokens": 5, "completion_tokens": 2}})]
+        config = self.config({"vision": {"base_url": self.base, "model": "m", "api_key_file": "key"}})
+        with ai.metering():
+            ai.call(config["vision"], "s", [{"text": "x"}])
+            [recorded] = ai.take_usage()
+        self.assertEqual((recorded["model"], recorded["miss"], recorded["output"]), ("m", 5, 2))
+        self.assertEqual(ai.take_usage(), [])
+        for bad in ({"m": {"hit": 1}}, {"m": {"call": -1}}):
+            with self.assertRaises(ValidationError):
+                ai._prices(bad)
+        with self.assertRaises(ValidationError):
+            self.config({"vision": {"base_url": self.base, "model": "m", "api_key_file": "key"}, "limits": {"daily_budget": 5}})
 
     def test_prompts_are_cut_from_the_skill_references(self):
         prompt = ai_prompts.extraction_prompt()

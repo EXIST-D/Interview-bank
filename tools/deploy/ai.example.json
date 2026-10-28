@@ -8,14 +8,22 @@
     "timeout": 180,
     "max_tokens": 8192,
     "json_mode": true,
-    "extra_body": {"thinking": {"type": "disabled"}}
+    "extra_body": {
+      "thinking": {
+        "type": "disabled"
+      }
+    }
   },
   "text": {
     "model": "deepseek-flash",
     "timeout": 180,
     "max_tokens": 12000,
     "json_mode": true,
-    "extra_body": {"thinking": {"type": "disabled"}}
+    "extra_body": {
+      "thinking": {
+        "type": "disabled"
+      }
+    }
   },
   "search": {
     "provider": "bocha",
@@ -27,6 +35,36 @@
     "daily_images": 60,
     "max_answers_per_job": 40,
     "answer_batch": 4,
-    "daily_research": 100
+    "daily_research": 100,
+    "daily_budget": 10
+  },
+  "prices": {
+    "deepseek-flash": {
+      "peak": {
+        "hit": 0.04,
+        "miss": 2,
+        "output": 8
+      },
+      "off_peak": {
+        "hit": 0.02,
+        "miss": 1,
+        "output": 4
+      }
+    },
+    "deepseek-v4-pro": {
+      "peak": {
+        "hit": 0.3,
+        "miss": 9,
+        "output": 27
+      },
+      "off_peak": {
+        "hit": 0.15,
+        "miss": 4.5,
+        "output": 13.5
+      }
+    },
+    "bocha": {
+      "call": 0.036
+    }
   }
 }

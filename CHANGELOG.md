@@ -2,6 +2,20 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.33.0] - 2026-10-28
+
+### Added
+- Usage and cost of the Web import and web research: every model call (cached and uncached input, output tokens) and
+  every search is recorded per job and per Beijing day (`cache/web-intake/usage.json`, 120 days). The import page shows
+  today's usage and the last 30 days; each finished job shows its own. Works with the usage fields of DeepSeek,
+  OpenAI-compatible and Anthropic replies.
+- Optional `prices` in the AI configuration (per million tokens, with `peak` / `off_peak` for DeepSeek's Beijing
+  weekday 9–12 and 14–18 rates, or `call` for a search provider) and `limits.daily_budget`, which refuses new jobs and
+  further searches once today's cost reaches it. The example carries DeepSeek's and Bocha's list prices of 2026-10-28.
+
+### Changed
+- Page texts saved for web research (`cache/pages`) are deleted after 30 days.
+
 ## [1.32.1] - 2026-10-27
 
 Fixes from the first web research with real Bocha search.

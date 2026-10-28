@@ -5,7 +5,7 @@ import { ApiError } from "@/lib/api";
 import { useBank } from "@/lib/bank";
 import { useToast } from "@/lib/hooks";
 import { useI18n, type TextKey } from "@/lib/i18n";
-import { intake, prepare, ROUNDS, RUNNING, type Hints, type IntakeSource, type Job, type Overview, type Prepared } from "@/lib/intake";
+import { intake, prepare, ROUNDS, RUNNING, type Hints, type IntakeSource, type Job, type Overview, type Prepared, type Usage } from "@/lib/intake";
 import { href } from "@/lib/router";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,26 @@ import { Segmented } from "@/components/ui/segmented";
 // Pictures of this tab's uploads by job and screenshot index; a reload shows the list without them.
 const thumbs = new Map<string, Pick<Prepared, "thumb" | "preview">[]>();
 const field = "h-9 w-full rounded-[10px] bg-fill px-3 text-subhead outline-none focus:ring-2 focus:ring-ring/30";
+
+function tokens(n: number, lang: string) {
+  return lang === "en" ? `${(n / 1000).toFixed(n < 10000 ? 1 : 0)}k` : `${(n / 10000).toFixed(n < 100000 ? 1 : 0)} 万`;
+}
+
+function money(n: number) {
+  return "¥" + (n > 0 && n < 0.01 ? n.toFixed(4) : n.toFixed(2));
+}
+
+/** Calls, tokens, searches and, when prices are configured, the cost of a job or a day. */
+export function UsageLine({ usage, priced }: { usage: Usage; priced: boolean }) {
+  const { t, lang } = useI18n();
+  const parts = [
+    t("usage_calls", { n: usage.calls }),
+    t("usage_tokens", { i: tokens(usage.input, lang), o: tokens(usage.output, lang) }),
+    ...(usage.searches ? [t("usage_searches", { n: usage.searches })] : []),
+    ...(priced ? [t(usage.unpriced ? "usage_cost_partial" : "usage_cost", { c: money(usage.cost) })] : []),
+  ];
+  return <>{parts.join(" · ")}</>;
+}
 
 function message(cause: unknown, fallback: string) {
   return cause instanceof ApiError || cause instanceof Error ? cause.message : fallback;
@@ -516,7 +536,7 @@ function MergeReview({ job, onChange }: { job: Job; onChange: (job: Job) => void
   );
 }
 
-function Done({ job, onChange, onAgain }: { job: Job; onChange: (job: Job) => void; onAgain: () => void }) {
+function Done({ job, priced, onChange, onAgain }: { job: Job; priced: boolean; onChange: (job: Job) => void; onAgain: () => void }) {
   const { t } = useI18n();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -602,6 +622,12 @@ function Done({ job, onChange, onAgain }: { job: Job; onChange: (job: Job) => vo
       )}
       {Boolean(result?.answers_skipped_for_limit) && (
         <p className="text-caption text-muted-foreground">{t("imp_limit_answers", { n: result!.answers_skipped_for_limit! })}</p>
+      )}
+      {job.usage && (
+        <p className="text-caption text-muted-foreground">
+          {t("usage_job")}
+          <UsageLine usage={job.usage} priced={priced} />
+        </p>
       )}
       {error && <p className="text-footnote text-destructive">{error}</p>}
       <div className="flex flex-wrap justify-end gap-2">
@@ -702,7 +728,7 @@ export function ImportPage() {
   else if (job.status === "collecting") body = <Pending job={job} onChange={update} />;
   else if (job.status === "review") body = <Review key={job.id + job.updated_at} job={job} onChange={update} />;
   else if (job.status === "merge_review") body = <MergeReview job={job} onChange={update} />;
-  else body = <Done job={job} onChange={update} onAgain={again} />;
+  else body = <Done job={job} priced={Boolean(overview?.usage?.priced)} onChange={update} onAgain={again} />;
 
   const date = (value: string) => new Date(value).toLocaleString(lang, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
   const recent = (overview?.recent ?? []).filter((entry) => entry.id !== job?.id && entry.status !== "cancelled");
@@ -718,6 +744,14 @@ export function ImportPage() {
         {overview?.models && ` ${t("imp_models", { v: overview.models.vision.model, a: overview.models.text.model })}`}
         {overview?.models?.search && ` ${t("imp_models_search", { s: overview.models.search.provider })}`}
       </p>
+      {overview?.usage?.today && (
+        <p className="-mt-3 mb-5 text-caption text-tertiary-foreground">
+          {t("usage_today")}
+          <UsageLine usage={overview.usage.today} priced={overview.usage.priced} />
+          {overview.usage.daily_budget ? ` · ${t("usage_budget", { b: money(overview.usage.daily_budget) })}` : ""}
+          {overview.usage.priced && overview.usage.last_30_days ? ` · ${t("usage_month", { c: money(overview.usage.last_30_days.cost) })}` : ""}
+        </p>
+      )}
       {body}
       {!job && recent.length > 0 && (
         <section className="mt-8">
