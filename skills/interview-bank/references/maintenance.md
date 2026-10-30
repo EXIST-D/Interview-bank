@@ -189,3 +189,18 @@ uncited answers, evidence older than `answer_stale_days` and V1 banks. New sub-q
 questions. An intake that was never committed (a recording still waiting to be read) is not listed; `doctor` shows it
 under `media_intakes`. A collector such as Gleaner uses this to avoid packing the same post twice. The fields above are a
 contract with such tools: within 1.x they are only added to, never renamed or removed (`tests/test_source_list.py`).
+
+## Move questions between banks
+
+`export-bundle --bank <source> --output <file>` writes the active questions of a bank as plain text: each question
+with its occurrences (company, role tracks, round, interview type, dates, original wording) and one text source per
+post (platform, URL, date). Media, answers, transcript locators and questions excluded from reports stay behind.
+`import-bundle --bank <target> --input <file>` fits the file to the target (companies matched by name or alias,
+sources by hash, unknown domains and role tracks dropped and reported, ids kept unless taken), stages the questions
+as new ones and returns the usual dedupe task: read its review sheet, then `ingest finalize --task … --decisions …`.
+`--fill-event-date year|month|day` gives occurrences that have no interview date the date their post was published,
+cut to that precision: an approximation for filing questions under a period, which the person must accept; the exact
+publish date stays on the source. `--dry-run` only reports and checks that the result validates. Importing the same file again adds nothing.
+Nothing is merged on its own: merging an imported question into an existing one adds its occurrence to the
+existing question's frequency, so decide each one. Back up the target first (`backup create`) and try it on a
+restored copy before a production bank.

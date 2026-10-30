@@ -2,6 +2,17 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.37.0] - 2026-10-30
+
+### Added
+- `export-bundle` and `import-bundle`: carry the questions of one bank into another as text only (questions, occurrences
+  with company, role, round, interview type and dates, one text source per post; no media, answers or transcripts).
+  The import fits ids, companies, sources and taxonomy to the target, stages the questions as new ones and returns the
+  usual dedupe task; `--dry-run` reports and validates without writing, and importing the same file twice adds nothing.
+  `--fill-event-date year|month|day` gives occurrences without an interview date the date their post was published, at
+  that precision (an approximation, to file questions under a period; the exact date stays on the source).
+  The bundle also carries the wordings merged into each question, so the reader still lists them as its other phrasings.
+
 ## [1.36.1] - 2026-10-30
 
 ### Fixed

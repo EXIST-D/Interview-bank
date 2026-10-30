@@ -96,6 +96,14 @@ def parser():
     sources.add_argument("--type", dest="source_type", help="image, web, audio, video, ...")
     sources.add_argument("--limit", type=positive_int, default=50)
     sources.add_argument("--offset", type=int, default=0)
+    export_bundle = sub.add_parser("export-bundle", parents=[common], help="Write the questions of this bank (no media, no answers) to one JSON file another bank can import")
+    export_bundle.add_argument("--output", type=Path, required=True)
+    import_bundle = sub.add_parser("import-bundle", parents=[common], help="Stage the questions of such a file as new questions, then dedupe with ingest finalize")
+    import_bundle.add_argument("--input", type=Path, required=True)
+    import_bundle.add_argument("--top-k", type=positive_int, help="Candidates per incoming question (default: bank dedupe.top_k)")
+    import_bundle.add_argument("--fill-event-date", choices=("year", "month", "day"),
+                               help="Occurrences without an interview date get their post's publish date at this precision (an approximation, to file questions under a period)")
+    import_bundle.add_argument("--dry-run", action="store_true", help="Only report what would be imported and check it validates; write nothing")
     stage = sub.add_parser("stage", parents=[common], help="Stage a structured JSON bundle or selected question lines")
     source = stage.add_mutually_exclusive_group(required=True)
     source.add_argument("--input", type=Path, help="JSON bundle with schema_version and canonical table arrays")
@@ -271,6 +279,15 @@ def dispatch(args):
             return catalog_view(args.dimension, args.query, args.limit, args.offset, config.get("taxonomy_extensions"))
     if args.command == "companies":
         return list_companies(bank, **{k: getattr(args, k) for k in ("query", "industry", "company_type", "ownership", "business_model", "limit", "offset")})
+    if args.command == "export-bundle":
+        from ibank_core.bank_import import export_bundle as run_export
+        from ibank_core.storage import atomic_write, dumps
+        wrapper = run_export(bank)
+        atomic_write(args.output, dumps(wrapper) + "\n")
+        return {"output": str(args.output), "counts": wrapper["counts"]}
+    if args.command == "import-bundle":
+        from ibank_core.bank_import import import_bundle as run_import, read_bundle
+        return run_import(bank, read_bundle(args.input), args.top_k, args.dry_run, args.fill_event_date)
     if args.command == "sources":
         return list_sources(bank, **{k: getattr(args, k) for k in ("query", "url", "platform", "source_type", "limit", "offset")})
     if args.command == "demo":
