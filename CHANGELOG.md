@@ -2,6 +2,26 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.35.0] - 2026-10-30
+
+The Skill is narrowed to what an Agent does with a bank: collect, extract, classify, deduplicate, write answers in the
+answer format, export, and read the bank in the Web reader. Review, mock interviews, saved topics and 八股 notes
+belong to the Web reader project; their commands and data format stay in the engine, only the Skill no longer routes to them.
+
+### Changed
+- `SKILL.md`: description and routing table no longer mention JD practice, spaced review, mock interviews, saved topics
+  or notes; the reader row is "read the bank in a browser"; `sources` is listed beside search and export. This frees
+  about 1 KB of the reading budget of the end-to-end path.
+- References of the Web reader project (`practice`, `studysets`, `notes`, `public-experiences`, `knowledge-cleanup`,
+  `knowledge-taxonomy`, and the model sections of `web`) carry a scope note.
+- Trigger evaluation: six cases about review, mock interviews and JD practice now expect no trigger, and six cases about
+  web pages, recordings and imported sources were added (86 cases).
+
+### Added
+- `tests/test_boundaries.py`: engine modules may not import the Web reader's code (one-way, Web → engine); only the
+  command-line entry starts the reader.
+- The `sources` output fields are pinned by a test as a contract with outside collectors: within 1.x they are only added to.
+
 ## [1.34.0] - 2026-10-30
 
 ### Added

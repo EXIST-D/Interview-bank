@@ -1,5 +1,7 @@
 # Personal review and mock interviews
 
+> Scope: this protocol belongs to the Web reader project. It is not on the Skill's routing table; read it only when the user asks for this feature by name.
+
 Requires V2; see [maintenance](maintenance.md). Practice data belongs to the user's bank, not the Skill.
 Never fabricate the user's answers, mastery, project experience or human review. Automated tests may use clearly labeled synthetic responses only in isolated test banks.
 

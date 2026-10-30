@@ -187,4 +187,5 @@ uncited answers, evidence older than `answer_stale_days` and V1 banks. New sub-q
 `--query` is a case-insensitive substring of the URL or platform, `--platform` and `--type` filter, `--limit` and
 `--offset` page. Read-only: stored file paths are not shown. A source with no occurrences was committed but held no
 questions. An intake that was never committed (a recording still waiting to be read) is not listed; `doctor` shows it
-under `media_intakes`. A collector such as Gleaner uses this to avoid packing the same post twice.
+under `media_intakes`. A collector such as Gleaner uses this to avoid packing the same post twice. The fields above are a
+contract with such tools: within 1.x they are only added to, never renamed or removed (`tests/test_source_list.py`).

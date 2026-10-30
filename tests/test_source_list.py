@@ -50,6 +50,14 @@ class SourceList(unittest.TestCase):
         self.assertEqual((page["total"], page["offset"], page["sources"]), (1, 1, []))
         self.assertEqual(self.bank.cli("sources", "--limit", "0", check=False).returncode, 2)
 
+    def test_the_output_fields_are_a_stable_contract(self):
+        """A collector outside this repository reads these fields: within 1.x they are added to, never renamed or removed."""
+        self.extract()
+        listed = self.bank.result("sources")
+        self.assertEqual(set(listed), {"total", "offset", "sources"})
+        self.assertEqual(set(listed["sources"][0]), {"id", "type", "platform", "source_url", "source_date", "imported_at", "retention",
+                                                      "engine", "model", "segments", "occurrences", "questions"})
+
     def test_it_is_read_only_and_hides_file_paths(self):
         self.extract()
         table = self.bank.path / "data" / "sources.jsonl"

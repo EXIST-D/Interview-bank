@@ -1,5 +1,7 @@
 # 八股资料 beside the bank
 
+> Scope: this protocol belongs to the Web reader project. It is not on the Skill's routing table; read it only when the user asks for this feature by name.
+
 A collection of published study notes (八股文) lives beside the user's own interview questions. Its questions
 and answers are kept exactly as published, with where they came from. Notes never become occurrences: they do
 not change frequency, dedupe, sourced answers or reports. Links join a bank question to the notes that answer it,

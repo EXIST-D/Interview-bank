@@ -1,5 +1,7 @@
 # Public interview accounts
 
+> Scope: this protocol belongs to the Web reader project. It is not on the Skill's routing table; read it only when the user asks for this feature by name.
+
 Read this when organising public sources that mix technical knowledge, interview accounts and career advice.
 Keep the source collections separate. These articles never become private question occurrences or inflate
 frequency. The Web reader has three primary entries: **个人面经**, **八股**, **公开面经**. Public accounts

@@ -1,5 +1,7 @@
 # Mixed knowledge-source cleanup
 
+> Scope: this protocol belongs to the Web reader project. It is not on the Skill's routing table; read it only when the user asks for this feature by name.
+
 Use this after a broad repository import or when the user finds roadmaps, news or unrelated material among 八股.
 Read [notes](notes.md) for the atomic organization protocol and [knowledge taxonomy](knowledge-taxonomy.md) for
 subject classification. A content kind describes the entry's purpose; an area/topic describes its technical subject.

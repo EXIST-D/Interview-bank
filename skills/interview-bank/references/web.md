@@ -1,5 +1,7 @@
 # Optional local Web reader and practice
 
+> Scope: reading the bank in the reader is part of the Skill. Practice, notes, screenshot import, web research and the mock interview described below belong to the Web reader project.
+
 Use this mode when the user requests a local visual question library, browsing, or browser-based practice. The default intake and two-report workflow stays unchanged.
 No npm, build step, CDN or extra Python package is required to use it, and a model key only for the optional screenshot import: the page ships prebuilt in `assets/web`
 (built from the repository's `web/` with React and Tailwind; only people changing the page need Node), and Python 3.10+

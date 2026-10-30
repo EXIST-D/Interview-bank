@@ -1,10 +1,10 @@
 ---
 name: interview-bank
-description: Build and maintain a personal interview question bank (面试题库 / 面经 / 八股文) from screenshots, pasted text, audio/video recordings or subtitle files. Use when the user wants to 整理面经或面试题截图, extract interview questions from images, recordings or subtitles (提取题目), deduplicate or merge repeated questions with provenance (去重、合并), classify them by role, company, domain or tech stack (按技术栈分类), count the most frequent questions or topics (统计高频考点), research sourced reference answers (参考答案), pick practice questions for a job description (根据 JD 挑题、JD 备考), export study reports with and without answers, run spaced review or a mock interview (模拟面试), or open the local web reader. Do not use for one technical question or practice problem the user does not want saved, general coding help, resume writing, drafting a self-introduction, salary negotiation, or post-interview emails.
+description: Build and maintain a personal interview question bank (面试题库 / 面经 / 八股文) from screenshots, pasted text, audio/video recordings or subtitle files. Use when the user wants to 整理面经或面试题截图, extract interview questions from images, recordings or subtitles (提取题目), deduplicate or merge repeated questions with provenance (去重、合并), classify them by role, company, domain or tech stack (按技术栈分类), count the most frequent questions or topics (统计高频考点), research sourced reference answers (参考答案), export study reports with and without answers, or read the bank in the local web reader. Do not use for one technical question or practice problem the user does not want saved, general coding help, resume writing, drafting a self-introduction, salary negotiation, or post-interview emails.
 license: MIT
 metadata:
   author: EXIST-D
-  version: "1.34.0"
+  version: "1.35.0"
   repository: https://github.com/EXIST-D/Interview-bank
 ---
 
@@ -37,7 +37,7 @@ Only `media-transcribe` and the Web AI (`--ai-config`) run a model. Prepare task
 
 - **Quick path** (first use, up to about 30 questions): intake → extraction → classification and dedupe →
   commit → export. Add answers per rule 6. `demo --bank <new dir>` builds a sample bank to try it.
-- **Full path** (ongoing bank, JD topics, review, mock interviews, audio/video, protected edits):
+- **Full path** (ongoing bank, audio/video, protected edits):
   read the protocol for the request from the table; do not load every reference.
 
 | The user wants to… | Read first | Main commands |
@@ -48,13 +48,9 @@ Only `media-transcribe` and the Web AI (`--ai-config`) run a model. Prepare task
 | classify or correct labels and companies | [classification](references/classification.md), [taxonomy](references/taxonomy.md) | `classify`, `taxonomy`, `companies`, `curate` |
 | merge duplicates in an existing bank | [dedupe](references/dedupe.md) | `dedupe-candidates`, `dedupe`, `commit` |
 | add or refresh reference answers | [answer policy](references/answer-policy.md) | `research`, `page-text`, `answer --commit`, `answer-recheck` |
-| search, count or export | [query/export](references/query-export.md) | `search`, `show`, `stats`, `export` |
+| search, count, list imported sources or export | [query/export](references/query-export.md) | `search`, `show`, `stats`, `sources`, `export` |
 | keep a bank over time, protect edits, recover, free space | [maintenance](references/maintenance.md) | `migrate`, `backup`, `policy`, `workflow`, `undo`, `gc` |
-| prepare for a role or a JD | [study sets](references/studysets.md) | `studyset` |
-| review weak questions or run a mock interview | [practice](references/practice.md) | `study`, `interview turn`, `interview review` |
-| organise 八股资料, learning or public interviews | [notes](references/notes.md) | `notes` |
-| clean mixed sources or fragmented articles | [cleanup](references/knowledge-cleanup.md) | `notes` |
-| browse, practise, review or import screenshots in a browser | [local Web](references/web.md) | `web`, `ai-check` |
+| read the bank in a browser | [local Web](references/web.md) | `web` |
 | set up a new host or check its tools | [portability](references/portability.md) | `capabilities`, `media-plan` |
 
 ## Default end-to-end flow
@@ -71,12 +67,12 @@ keep the user's filters throughout. A report with pending answers is not finishe
   else `./interview-bank`. Create a bank only when the user means a new one (`init --bank <dir>`).
 - Start with `doctor --bank <bank> --json`. Use IDs exactly as returned; never invent them.
 - Writes return a `run_id`; inspect the result, then `commit --run <id>`. Composite commands
-  (`ingest finalize`, `answer --commit`, `interview turn/review`) commit only when there are no review items.
+  (`ingest finalize`, `answer --commit`) commit only when there are no review items.
   `ingest finalize --defer-review` commits the rest and leaves uncertain merges to the user (Web 合并裁决).
 - Output is compact and capped at 32 KB. A result with `_page` was trimmed: page task items with
   `run-show --run <id> --offset <n> --limit 20`, or narrow the query; `_page.full_output` holds all of it.
 - Reads share the bank lock; a write waits up to 10 s for others (`INTERVIEW_BANK_LOCK_TIMEOUT`).
-- V1 banks cover intake, answers and export. Topics, workflows and practice need V2: ask, then
+- V1 banks cover intake, answers and export. Workflows and protection rules need V2: ask, then
   `migrate plan` and `migrate apply` on that bank only (it writes a verified backup first).
 - Only `verify-citations` (when the user asks) and `page-text` (saving pages you cite, for quote checks) go online.
 

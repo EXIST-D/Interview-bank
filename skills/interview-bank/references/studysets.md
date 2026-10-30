@@ -1,5 +1,7 @@
 # Saved topics and JD preparation
 
+> Scope: this protocol belongs to the Web reader project. It is not on the Skill's routing table; read it only when the user asks for this feature by name.
+
 Use a V2 bank and [maintenance protocol](maintenance.md). Interpret the user's natural language into explicit conditions and cite the interpreted scope in the result.
 The Agent performs semantic mapping; the Python engine executes and validates conditions. This is not an embedding-search service.
 

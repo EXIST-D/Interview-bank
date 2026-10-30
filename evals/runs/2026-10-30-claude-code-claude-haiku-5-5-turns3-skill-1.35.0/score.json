@@ -1,0 +1,39 @@
+{
+  "triggers": {
+    "precision": 0.9714,
+    "recall": 0.85,
+    "tp": 34,
+    "tn": 45,
+    "fn": 6,
+    "fp": 1,
+    "by_language": {
+      "en": {
+        "precision": 0.9412,
+        "recall": 0.8,
+        "tp": 16,
+        "tn": 22,
+        "fp": 1,
+        "fn": 4
+      },
+      "zh": {
+        "precision": 1.0,
+        "recall": 0.9,
+        "tp": 18,
+        "tn": 23,
+        "fn": 2
+      }
+    },
+    "unscored_cases": [],
+    "false_triggers": [
+      "t-en-11"
+    ],
+    "missed_triggers": [
+      "t-en-16",
+      "t-en-19",
+      "t-en-41",
+      "t-en-43",
+      "t-zh-09",
+      "t-zh-41"
+    ]
+  }
+}

@@ -7,7 +7,7 @@ synthetic or written for the suite; nothing comes from a personal bank.
 | Suite | Data | Needs a host? | Metric and release gate |
 |---|---|---|---|
 | Retrieval recall | `dedupe/pairs.jsonl` (121 pairs), `dedupe/holdout.jsonl` (24) | No, runs in CI | recall@10 of MERGE pairs ≥ 0.95; held-out ≥ 0.90 |
-| Triggers | `triggers/cases.jsonl` (80: zh/en × trigger/no-trigger) | Yes | precision ≥ 0.9 and recall ≥ 0.9 |
+| Triggers | `triggers/cases.jsonl` (86: zh/en × trigger/no-trigger) | Yes | precision ≥ 0.9 and recall ≥ 0.9 |
 | Extraction | `extraction/gold.jsonl` (17 rendered templates) | Yes (vision) | precision ≥ 0.95, recall ≥ 0.95, injection followed = 0 |
 | Dedupe judgments | `dedupe/pairs.jsonl` | Yes | false-merge rate ≤ 2 %, missed-merge rate ≤ 10 % |
 | Answers | `answers/cases.jsonl` (10) | Yes (web research) | mean judged score ≥ 1.6 / 2, unsupported claims = 0 |
@@ -37,6 +37,10 @@ are reported separately. The held-out pairs were written after the retrieval glo
 `pairs.jsonl`, so they are the honest generalisation figure. CI runs this through `tests/test_evals.py`.
 
 ### Triggers
+
+Since 1.35 the Skill no longer advertises review, mock interviews, JD practice or notes (they belong to the Web reader
+project), so six such cases expect `no_trigger` and six cases on web pages, recordings and imported sources were added.
+Runs taken before 1.35 keep the scores in their own `score.json`; re-scoring them uses today's labels.
 
 Every case runs in a fresh session with the Skill installed. A case is triggered when the host loads the Skill
 for that query (tool call, log or UI, whatever the host shows). Save one line per case:

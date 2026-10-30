@@ -22,6 +22,7 @@
   answer_status, answer_stale_reason, answer_version), 20 per page with `next_offset`; `--detail` returns full
   records with matching occurrences and answer history. `--limit` / `--offset` page.
 - `show <id>`: occurrences, sources, relations, merged variants and answer history; merged IDs resolve.
+- `sources`: imported screenshots, pages and recordings with the questions each yielded (see [maintenance](maintenance.md)).
 - `stats`: distributions by company, role, domain, technology, month, round, type and answer status, with
   unknown and imprecise date counts (multi-label totals can exceed the occurrences).
 
