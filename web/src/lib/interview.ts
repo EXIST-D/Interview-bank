@@ -70,7 +70,7 @@ export type Overview =
   | { enabled: false }
   | { enabled: true; model: string; left_today: number; max_response: number; max_questions: number; usage: { today: Usage | null; priced: boolean; daily_budget: number | null }; sessions: SessionRow[] };
 
-export type Pick = { id: string; canonical: string; frequency: number; answered: boolean; quote: string | null; reason: string };
+export type Pick = { id: string; canonical: string; frequency: number; answered: boolean; quote: string | null; reason: string; coverage?: string; priority?: string };
 export type Plan = { id: string; status: "running" | "done" | "failed"; picks: Pick[]; uncovered: string[]; error: string | null; considered: number };
 
 export type StartBody = {

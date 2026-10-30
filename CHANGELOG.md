@@ -2,6 +2,27 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.36.0] - 2026-10-30
+
+### Added
+- Preparation board in the Web reader (`#/prepare`, 备考), for any bank (the list tab needs V2):
+  - **Most asked**: questions ranked by how often they were asked, weighted by how recently (each occurrence halves
+    its weight every 180, 365 or 730 days; an occurrence with no recorded date counts 0.3), with the library's
+    domain, technology and company filters, a time window (all, 3 years, 1 year) and an order by heat or by count.
+    Practise or start a mock interview on what is shown, weak and unseen questions first.
+  - **Companies**: every company with its questions, occurrences, years and main domains; a company page lists what it
+    asked by round and year, with practice and mock interview on that company's questions.
+  - **Study lists**: the job-description selection of the mock interview can be saved as a list (a snapshot
+    `studyset` with the JD mapping, so `studyset show/export/plan` read it too). A list shows each requirement with the
+    words of the job description, its priority (must or nice) and whether the bank covers it directly, partly or not at
+    all, the questions with the person's progress, a warning when a question was reworded since, and practice and mock
+    interview on the list. Coverage is about the bank's questions only, never about the person or the job.
+- A bank whose occurrences carry no interview date (a bank imported without dates has none) ranks by count: the page
+  says so and hides the time window and half-life controls, which would have nothing to work on. Publication and import
+  dates are never used in place of the interview date.
+- The job-description selection now also returns each pick's coverage (direct or partial) and priority.
+- Endpoints: GET `/api/prepare/top`, `companies`, `company`, `lists`, `list`; POST `/api/prepare/save` (needs practice).
+
 ## [1.35.0] - 2026-10-30
 
 The Skill is narrowed to what an Agent does with a bank: collect, extract, classify, deduplicate, write answers in the

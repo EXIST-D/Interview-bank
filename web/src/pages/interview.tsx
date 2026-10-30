@@ -4,6 +4,7 @@ import { api, ApiError, questionDetail, type QuestionDetail } from "@/lib/api";
 import { useBank } from "@/lib/bank";
 import { useI18n, type TextKey } from "@/lib/i18n";
 import { interview, type Overview, type Plan, type Session, type SessionRow } from "@/lib/interview";
+import { prepare } from "@/lib/prepare";
 import { href, navigate, type Route } from "@/lib/router";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -139,6 +140,20 @@ function JobDescription({ onError }: { onError: (text: string | null) => void })
     }
   };
 
+  const [name, setName] = useState("");
+  const save = async () => {
+    if (!plan) return;
+    setBusy(true);
+    onError(null);
+    try {
+      const saved = await prepare.save(plan.id, plan.picks.filter((item) => kept.has(item.id)).map((item) => item.id), name);
+      navigate("prepare", ["list", saved.id]);
+    } catch (cause) {
+      onError(message(cause, t("failed")));
+      setBusy(false);
+    }
+  };
+
   const start = async () => {
     if (!plan) return;
     setBusy(true);
@@ -223,11 +238,27 @@ function JobDescription({ onError }: { onError: (text: string | null) => void })
           )}
           {plan.uncovered.length > 0 && <p className="text-footnote text-muted-foreground">{t("iv_jd_uncovered", { r: plan.uncovered.join("；") })}</p>}
           {plan.picks.length > 0 && (
-            <div>
-              <Button disabled={busy || kept.size === 0} onClick={start}>
-                {busy ? <Loader2 className="animate-spin" /> : <Play />}
-                {t("iv_start")}
-              </Button>
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <Button disabled={busy || kept.size === 0} onClick={start}>
+                  {busy ? <Loader2 className="animate-spin" /> : <Play />}
+                  {t("iv_start")}
+                </Button>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  className={cn(field, "max-w-64")}
+                  maxLength={120}
+                  value={name}
+                  placeholder={t("pp_list_name")}
+                  aria-label={t("pp_list_name")}
+                  onChange={(event) => setName(event.target.value)}
+                />
+                <Button variant="tinted" disabled={busy || kept.size === 0} onClick={save}>
+                  {t("pp_save_list")}
+                </Button>
+              </div>
+              <p className="text-caption text-muted-foreground">{t("pp_save_note")}</p>
             </div>
           )}
         </div>
@@ -308,7 +339,7 @@ export function InterviewPage({ route }: { route: Route }) {
   const { t } = useI18n();
   const [overview, setOverview] = useState<Overview | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [tab, setTab] = useState<"direction" | "jd">("direction");
+  const [tab, setTab] = useState<"direction" | "jd">(route.params.get("tab") === "jd" ? "jd" : "direction");
   const sessionId = route.rest[0];
   const asked = route.params.get("question");
 

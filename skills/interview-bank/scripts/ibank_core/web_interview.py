@@ -98,6 +98,8 @@ def clean_plan(raw, jd_text, candidates, limit):
         quote = _text(item.get("quote"), 300)
         picks.append({"id": qid, "canonical": known[qid]["canonical"], "frequency": known[qid]["frequency"],
                       "answered": known[qid]["answered"], "quote": quote if quote and quote in jd_text else None,
+                      "coverage": item.get("coverage") if item.get("coverage") in ("direct", "partial") else "uncertain",
+                      "priority": item.get("priority") if item.get("priority") in ("must", "nice") else "unspecified",
                       "reason": _text(item.get("reason"), 200) or ""})
         if len(picks) >= limit:
             break
@@ -329,7 +331,8 @@ class Coach:
         with self.lock:
             running = [p for p in self.plans.values() if p["status"] == "running"]
             require(not running, "还有一个选题没有完成，请稍等")
-            self.plans[key] = {"id": key, "status": "running", "picks": [], "uncovered": [], "error": None, "considered": len(pool)}
+            # Keys with an underscore stay on the server: the job description is needed to save the picks as a list.
+            self.plans[key] = {"id": key, "status": "running", "picks": [], "uncovered": [], "error": None, "considered": len(pool), "_jd": jd.strip()}
             for old in list(self.plans)[:-KEEP_PLANS]:
                 del self.plans[old]
         jd = jd.strip()
@@ -347,4 +350,12 @@ class Coach:
     def plan_result(self, key):
         with self.lock:
             require(key in self.plans, "这次选题已经过期，请重新开始")
-            return dict(self.plans[key])
+            return {k: v for k, v in self.plans[key].items() if not k.startswith("_")}
+
+    def plan_basis(self, key, kept):
+        """The finished plan's job description and the picks the person kept, to save them as a list."""
+        with self.lock:
+            require(key in self.plans and self.plans[key]["status"] == "done", "这次选题已经过期，请重新开始")
+            plan = self.plans[key]
+            picks = [p for p in plan["picks"] if p["id"] in set(kept)]
+            return plan["_jd"], [dict(p) for p in picks], list(plan["uncovered"])

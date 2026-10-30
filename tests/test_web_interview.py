@@ -41,7 +41,7 @@ class Model:
             raise self.fail.pop(0)
         if "choose practice questions" in system:
             ids = [line.split(" | ")[0] for line in text.split("--- bank questions (id | count | text) ---\n", 1)[1].splitlines()]
-            return {"picks": [{"id": ids[1], "quote": "熟悉 Redis", "reason": "直接考察"}, {"id": "q_unknown", "quote": "x", "reason": "不存在"},
+            return {"picks": [{"id": ids[1], "quote": "熟悉 Redis", "coverage": "direct", "priority": "must", "reason": "直接考察"}, {"id": "q_unknown", "quote": "x", "reason": "不存在"},
                               {"id": ids[1], "quote": "熟悉 Redis", "reason": "重复"}, {"id": ids[0], "quote": "不在原文里", "reason": "相关"}],
                     "uncovered": ["有数据库性能优化经验", "原文里没有的要求"]}
         answer = text.split("--- the person's response (verbatim) ---\n", 1)[1]

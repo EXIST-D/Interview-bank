@@ -9,7 +9,7 @@ SCRIPTS = Path(__file__).resolve().parents[1] / "skills/interview-bank/scripts"
 PACKAGE = SCRIPTS / "ibank_core"
 # The reader and everything that only the Web's model features use. Core modules must never import these;
 # only the command-line entry (ibank.py) starts the reader.
-WEB_SIDE = {"web", "web_intake", "web_interview", "usage_ledger", "ai", "ai_prompts", "weblogin", "public_reader"}
+WEB_SIDE = {"web", "web_intake", "web_interview", "web_prepare", "usage_ledger", "ai", "ai_prompts", "weblogin", "public_reader"}
 
 
 def imported(path):

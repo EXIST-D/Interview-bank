@@ -206,9 +206,14 @@ that best prepare the person: first questions that directly test a requirement, 
 interviewers ask often (count). Pick at most the number asked for; fewer if the bank has nothing relevant: an honest gap is
 better than a stretch. Do not claim a question proves the person can do the job.
 
+For each pick, `coverage` is "direct" when the question tests that requirement itself and "partial" when it only touches it,
+and `priority` is "must" or "nice" when the job description says so ("必须", "熟练", "加分", "优先"), else "unspecified".
+Coverage is about this bank's questions, never a claim about the person or the job.
+
 Output exactly one JSON object:
 {{"picks": [{{"id": "the question's id exactly as listed", "quote": "verbatim excerpt of the job description it prepares for",
-             "reason": "一句中文理由"}}], "uncovered": ["verbatim excerpt of a requirement no bank question tests"]}}"""
+             "coverage": "direct | partial", "priority": "must | nice | unspecified", "reason": "一句中文理由"}}],
+ "uncovered": ["verbatim excerpt of a requirement no bank question tests"]}}"""
 
 
 def plan_request(jd_text, candidates, limit):

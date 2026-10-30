@@ -1,6 +1,6 @@
 # Optional local Web reader and practice
 
-> Scope: reading the bank in the reader is part of the Skill. Practice, notes, screenshot import, web research and the mock interview described below belong to the Web reader project.
+> Scope: reading the bank in the reader is part of the Skill. Practice, notes, preparation, screenshot import, web research and the mock interview described below belong to the Web reader project.
 
 Use this mode when the user requests a local visual question library, browsing, or browser-based practice. The default intake and two-report workflow stays unchanged.
 No npm, build step, CDN or extra Python package is required to use it, and a model key only for the optional screenshot import: the page ships prebuilt in `assets/web`
@@ -237,6 +237,21 @@ drops key points without a supporting page, records its checks and stages the an
 texts, so quotes are verified as for `answer --page-texts`. Unsupported questions keep their answer (a new import
 falls back to an `ai_draft`). `limits.daily_research` caps searches per day. This is machine research from a few
 pages: the person's 人工审阅 and an agent's deeper research remain the stronger checks.
+
+### Preparation (1.36+)
+
+`#/prepare` reads the bank only; no model is involved except in picking questions for a new list.
+
+- Ranking: `GET /api/prepare/top` takes the library's filters plus `window` (`all`, `3y`, `1y`), `order` (`weighted`,
+  `count`), `half_life` (180, 365 or 730 days), `offset`, `limit`. A question's heat is the sum over its occurrences of
+  0.5^(age / half_life); an occurrence with no date counts 0.3 and is left out of a window other than `all`; a partial
+  date (YYYY or YYYY-MM) sits in the middle of its period. The response reports `dated`, `undated` and `occurrences`; with no dated occurrence the page hides the recency
+  controls. Only the interview date (`event_date`) counts, never the publication or import date.
+- Companies: `/api/prepare/companies` and `/api/prepare/company?id=` use the occurrences' company, round and date.
+- Lists: a list is a snapshot `studyset` (`mode: snapshot`, the job description in `jd_text`, `requirements` quoting it).
+  `POST /api/prepare/save` takes `plan_id` (a finished job-description selection of the mock interview), the
+  question IDs the person kept and a name; the server rebuilds the mapping from its own copy of the selection, so the
+  client cannot invent quotes. Lists made by an agent with `studyset create` appear here too.
 
 ### Mock interview and answer feedback (1.34+)
 

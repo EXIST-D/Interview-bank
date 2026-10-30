@@ -1,5 +1,5 @@
 import { Dialog } from "radix-ui";
-import { BookOpen, Bookmark, Compass, GitFork, House, ImagePlus, MessageSquareQuote, MessagesSquare, MoreHorizontal, Newspaper, Shuffle } from "lucide-react";
+import { BookOpen, Bookmark, Compass, GitFork, House, ImagePlus, MessageSquareQuote, MessagesSquare, MoreHorizontal, Newspaper, Shuffle, Target } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useBank } from "@/lib/bank";
 import { useI18n } from "@/lib/i18n";
@@ -29,6 +29,7 @@ function useBoards(): BoardItem[] {
     );
   }
   items.push({ board: "mine" });
+  if (library?.can_prepare) items.push({ board: "prepare" });
   if (library?.can_intake) items.push({ board: "import" });
   if (library?.can_interview) items.push({ board: "interview" });
   return items;
@@ -102,16 +103,17 @@ export function TopBar({
   );
 }
 
-const TAB_ICONS = { home: House, bank: MessagesSquare, knowledge: BookOpen, public: Newspaper, learning: Compass, mine: Bookmark, import: ImagePlus, interview: MessageSquareQuote } as const;
+const TAB_ICONS = { home: House, bank: MessagesSquare, knowledge: BookOpen, public: Newspaper, learning: Compass, mine: Bookmark, import: ImagePlus, interview: MessageSquareQuote, prepare: Target } as const;
 
 export function TabBar({ board }: { board: Board }) {
   const { t } = useI18n();
   const { library, notes } = useBank();
   const [more, setMore] = useState(false);
-  const inMore = board === "public" || board === "learning" || board === "mine" || board === "import" || board === "interview";
-  const extras: ("public" | "learning" | "mine" | "import" | "interview")[] = [
+  const inMore = board === "public" || board === "learning" || board === "mine" || board === "import" || board === "interview" || board === "prepare";
+  const extras: ("public" | "learning" | "mine" | "import" | "interview" | "prepare")[] = [
     ...(notes ? (["public", "learning"] as const) : []),
     "mine",
+    ...(library?.can_prepare ? (["prepare"] as const) : []),
     ...(library?.can_intake ? (["import"] as const) : []),
     ...(library?.can_interview ? (["interview"] as const) : []),
   ];

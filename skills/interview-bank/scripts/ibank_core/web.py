@@ -27,6 +27,7 @@ from .study import event
 from .studysets import select
 from .selection import apply_expression
 from .messages import group_title, label, language
+from .ai import BEIJING
 from . import notes as notebook
 from . import note_organization
 from . import note_experiences
@@ -175,6 +176,107 @@ class WebApp:
             require(bool(ids), '没有符合条件的题')
         return coach.start({'name': payload.get('name'), 'question_ids': ids, 'mode': payload.get('mode', 'mock'), 'meta': meta})
 
+    # ---- preparation: most-asked ranking, companies, saved job-description lists ---------------------------------
+    def prepare_top(self, params):
+        """Questions by how often (and how recently) they were asked, within the library's filters."""
+        from . import web_prepare as prep
+        extra = {'window', 'half_life', 'order', 'offset', 'limit'}
+        require(set(params) <= FILTERS | {'view'} | extra, 'Unknown filter')
+        window, order = params.get('window', 'all'), params.get('order', 'weighted')
+        half_life, limit, offset = int(params.get('half_life', 365)), int(params.get('limit', 30)), int(params.get('offset', 0))
+        require(1 <= limit <= 100 and offset >= 0, 'Invalid pagination (limit 1..100)')
+        with open_bank(self.bank, shared=True) as (manifest, config, data):
+            rows = select(data, config, self.bank)
+            states = progress(data, rows)
+            found = filtered(rows, data['companies'], states, {k: v for k, v in params.items() if k in FILTERS | {'view'}})
+            ranked = prep.rank(found, datetime.now(BEIJING).date(), half_life, window, order)
+            lang = language(config)
+            # Without any interview date, recency cannot be weighed and a time window would be empty: the page says so.
+            dated = sum(1 for q in found for o in q['occurrences'] if prep.occurrence_day(o.get('event_date')))
+            return {'dated': dated, 'occurrences': sum(len(q['occurrences']) for q in found), 'total': len(ranked), 'offset': offset, 'limit': limit, 'window': window, 'order': order, 'half_life': half_life,
+                    'unknown_weight': prep.UNKNOWN_WEIGHT, 'undated': sum(r['undated'] for r in ranked),
+                    'questions': [{**card(r['q'], states[r['q']['id']], lang), 'rank': offset + n + 1, 'count': r['count'], 'score': r['score'],
+                                   'companies_n': r['companies'], 'last_year': r['last_year']}
+                                  for n, r in enumerate(ranked[offset:offset + limit])]}
+
+    def prepare_companies(self):
+        from . import web_prepare as prep
+        with open_bank(self.bank, shared=True) as (_, config, data):
+            rows = select(data, config, self.bank)
+            lang = language(config)
+            index = prep.company_index(rows, data['companies'])
+            for entry in index:
+                entry['domains'] = [{'id': d['id'], 'count': d['count'], 'label': label(lang, 'domains', d['id'], display('domains', d['id']))} for d in entry['domains']]
+            return {'companies': index, 'total': len(index)}
+
+    def prepare_company(self, params):
+        from . import web_prepare as prep
+        require(set(params) == {'id'}, 'Expected company ID')
+        with open_bank(self.bank, shared=True) as (_, config, data):
+            company = next((c for c in data['companies'] if c['id'] == params['id']), None)
+            require(company is not None, '这家公司已经不在题库里')
+            rows = select(data, config, self.bank)
+            states = progress(data, rows)
+            lang = language(config)
+            entries = prep.company_questions(rows, company['id'], datetime.now(BEIJING).date())
+            summary = next((c for c in prep.company_index(rows, data['companies']) if c['id'] == company['id']), None)
+            for entry in summary['domains']:
+                entry['label'] = label(lang, 'domains', entry['id'], display('domains', entry['id']))
+            return {'id': company['id'], 'name': company['name'], 'summary': summary, 'total': len(entries),
+                    'questions': [{**card(e['q'], states[e['q']['id']], lang), 'count': e['count'], 'score': e['score'],
+                                   'rounds': e['rounds'], 'years_here': e['years']} for e in entries]}
+
+    def prepare_lists(self):
+        from .studysets import view
+        with open_bank(self.bank, shared=True) as (manifest, config, data):
+            require(manifest['schema_version'] == 2, '备考清单需要 V2 题库')
+            items = sorted(data['_state']['studysets'].values(), key=lambda i: i['created_at'], reverse=True)
+            lists = []
+            for item in items:
+                shown = view(data, item)
+                lists.append({'id': item['id'], 'name': item['name'], 'created_at': item['created_at'], 'intent': item.get('source_intent', ''),
+                              'questions': len(shown['resolved_question_ids']), 'changed': len(shown['changed_questions']),
+                              'requirements': shown['jd_coverage']['requirements'], 'covered': shown['jd_coverage']['directly_covered'],
+                              'has_jd': bool(item.get('jd_text'))})
+            return {'lists': lists, 'can_save': self.coach is not None and self.can_practise}
+
+    def prepare_list(self, params):
+        from .studysets import view
+        require(set(params) == {'id'}, 'Expected list ID')
+        with open_bank(self.bank, shared=True) as (manifest, config, data):
+            require(manifest['schema_version'] == 2, '备考清单需要 V2 题库')
+            item = data['_state']['studysets'].get(params['id'])
+            require(item is not None, '这份备考清单不存在')
+            shown = view(data, item)
+            rows = {q['id']: q for q in select(data, config, self.bank, ids=shown['resolved_question_ids'])}
+            states = progress(data, list(rows.values()))
+            lang = language(config)
+            ordered = [rows[qid] for qid in shown['resolved_question_ids'] if qid in rows]
+            titles = {qid: q['canonical'] for qid, q in rows.items()}
+            requirements = []
+            for r in shown['requirements']:
+                matches = [{'question_id': m['resolved_question_id'], 'title': titles.get(m['resolved_question_id']), 'coverage': m['coverage'],
+                            'reason': m['reason'], 'needs_recheck': bool(m.get('needs_recheck'))} for m in r['matches']]
+                requirements.append({'id': r['id'], 'quote': r['quote'], 'priority': r['priority'], 'matches': matches})
+            counts = Counter(states[q['id']]['state'] for q in ordered)
+            return {'id': item['id'], 'name': item['name'], 'created_at': item['created_at'], 'intent': item.get('source_intent', ''),
+                    'requirements': requirements, 'coverage': shown['jd_coverage'], 'changed': shown['changed_questions'],
+                    'summary': {'questions': len(ordered), 'unseen': counts['unseen'], 'weak': counts['weak'] + counts['changed'], 'familiar': counts['familiar'],
+                                'due': sum(states[q['id']]['due'] for q in ordered)},
+                    'questions': [card(q, states[q['id']], lang) for q in ordered]}
+
+    def prepare_save(self, payload):
+        """Keep the picks of a finished job-description selection as a saved list (a snapshot `studyset`)."""
+        from . import web_prepare as prep
+        coach = self.interviews()
+        require(isinstance(payload, dict) and set(payload) == {'plan_id', 'question_ids', 'name'}, 'Invalid list payload')
+        require(isinstance(payload['plan_id'], str) and isinstance(payload['name'], str) and isinstance(payload['question_ids'], list)
+                and all(isinstance(i, str) for i in payload['question_ids']), 'Invalid list payload')
+        name = payload['name'].strip() or f"JD 备考 {datetime.now(BEIJING):%m-%d %H:%M}"
+        require(len(name) <= 120 and 1 <= len(payload['question_ids']) <= 30, '名称最长 120 字，题数 1 到 30')
+        jd, picks, uncovered = coach.plan_basis(payload['plan_id'], payload['question_ids'])
+        return {'id': prep.save_list(self.bank, self.mutation_lock, name, jd, picks, uncovered)}
+
     def interview_plan(self, payload):
         coach = self.interviews()
         from .web_interview import has_reference
@@ -243,7 +345,7 @@ class WebApp:
                 'name': self.bank.name, 'version': __version__, 'schema_version': manifest['schema_version'],
                 'can_record': manifest['schema_version'] == 2 and self.can_practise, 'can_review': not self.read_only,
                 'can_write_answer': self.can_write_answer, 'can_write_personal': self.can_write_answer,
-                'can_intake': self.intake is not None, 'can_interview': self.coach is not None and manifest['schema_version'] == 2,
+                'can_intake': self.intake is not None, 'can_prepare': True, 'can_interview': self.coach is not None and manifest['schema_version'] == 2,
                 'can_research': bool(self.intake and self.intake.config.get('search')), 'language': language(config),
                 'read_only': self.read_only, 'updated_at': manifest.get('last_updated_at'),
                 'summary': {'questions': len(rows), 'answered': sum(q['answer_status'] in ('source_backed', 'reviewed') for q in rows),
@@ -270,7 +372,7 @@ class WebApp:
             'name': 'Public library', 'version': __version__, 'schema_version': manifest['schema_version'],
             'language': language(config), 'guest': True, 'can_login': True, 'can_logout': False,
             'read_only': True, 'can_record': False, 'can_review': False,
-            'can_write_answer': False, 'can_write_personal': False, 'can_intake': False, 'can_interview': False, 'can_research': False,
+            'can_write_answer': False, 'can_write_personal': False, 'can_intake': False, 'can_prepare': False, 'can_interview': False, 'can_research': False,
             'summary': dict.fromkeys(('questions', 'answered', 'answer_count', 'stale', 'due', 'weak', 'unseen', 'domains'), 0),
             'notes': {'total': len(bundle['notes']), 'collections': len(bundle['collections'])},
             'total': 0, 'total_answered': 0, 'offset': offset, 'limit': limit,
@@ -692,6 +794,9 @@ class Handler(BaseHTTPRequestHandler):
             if path not in handlers:
                 return self.send(404, {'error': 'Unknown endpoint'})
             result = handlers[path](self.json_body(512 * 1024))
+        elif post and path == '/api/prepare/save':
+            require(app.can_practise, 'This server is in read-only mode')
+            result = app.prepare_save(self.json_body())
         elif post and path.startswith('/api/interview/'):
             coach = app.interviews()
             handlers = {'/api/interview/start': app.interview_start, '/api/interview/plan': app.interview_plan,
@@ -714,6 +819,18 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/intake/job':
             require(set(params) == {'id'}, 'Expected job ID')
             result = app.intake_jobs().job(params['id'])
+        elif path == '/api/prepare/top':
+            result = app.prepare_top(params)
+        elif path == '/api/prepare/companies':
+            require(not params, 'No parameters expected')
+            result = app.prepare_companies()
+        elif path == '/api/prepare/company':
+            result = app.prepare_company(params)
+        elif path == '/api/prepare/lists':
+            require(not params, 'No parameters expected')
+            result = app.prepare_lists()
+        elif path == '/api/prepare/list':
+            result = app.prepare_list(params)
         elif path == '/api/interview':
             require(not params, 'No parameters expected')
             result = app.interview_overview() if app.coach else {'enabled': False}

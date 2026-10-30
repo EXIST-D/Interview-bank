@@ -4,15 +4,14 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.35.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.36.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.34 AI mock interview and answer feedback
+## This update: 1.36 Prepare: most asked, companies, study lists
 
-- The page gains Mock interview: the AI interviewer asks only questions from your own bank, chosen by area (topic, domain, technology, company; optionally only due, weak or unseen ones) or from a pasted job description, where the AI picks relevant questions and you tick the ones you want; requirements the bank does not cover are listed, never filled with invented questions.
-- You write your answer and it is saved verbatim; the AI checks it against the sourced reference answer, key point by key point (covered, partly, missed), comments on accuracy, coverage, boundaries and wording, quotes your own words, and asks a follow-up when one is worth it. No score, and it never rates you.
-- Quotes in the feedback are verified word for word. With no sourced reference answer (or after the wording changed) the feedback covers structure and wording only, never correctness. *Check my answer with AI* is also below every question.
-- Mastery stays your own click (again / hard / good / easy) in the review plan; interviews are the same `interview` records as on the command line, so an agent can read and continue them.
-- Feedback and job-description picking share the usage ledger and daily budget; `limits.daily_feedback` caps feedbacks per day. Needs `web --ai-config` and `--allow-practice` (V2 bank).
+- The page gains Prepare. **Most asked** ranks questions by how often they were asked, weighted by how recently (recent interviews matter more; an undated one counts 0.3), filterable by domain, technology, company and time range, with practice and mock interview right there.
+- **Companies**: what each company asked, in which rounds and years; practise only one company's questions.
+- **Study lists**: save the job-description selection of the mock interview as a list; each requirement shows the job description's own words, must or nice, and whether the bank covers it directly, partly or not, next to your practice progress. Coverage only says whether the bank has related questions, nothing about you or the job. A list is the CLI's `studyset`, so an agent reads it too.
+- The 1.34 AI mock interview and answer check work as before (needs `web --ai-config` and `--allow-practice`).
 
 Try the [online test site](https://exist.qd.je/) without an account for public reading. Contact the maintainer on QQ **1939123241** for full-feature testing and suggestions.
 

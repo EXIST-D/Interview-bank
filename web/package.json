@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "typecheck": "tsc -b",
-    "e2e": "node e2e/reader.mjs && node e2e/import.mjs && node e2e/interview.mjs"
+    "e2e": "node e2e/reader.mjs && node e2e/import.mjs && node e2e/interview.mjs && node e2e/prepare.mjs"
   },
   "dependencies": {
     "@codemirror/commands": "6.11.1",
