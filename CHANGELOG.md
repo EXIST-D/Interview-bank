@@ -2,6 +2,13 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.36.1] - 2026-10-30
+
+### Fixed
+- A failed mock-interview feedback or job-description pick could show as failed before its model call was on the usage
+  ledger; the ledger is now written first, so a poll never sees an outcome whose cost is missing.
+- Test runs no longer race background import and feedback tasks while their temporary bank folder is deleted.
+
 ## [1.36.0] - 2026-10-30
 
 ### Added

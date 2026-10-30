@@ -8,7 +8,7 @@ from datetime import date
 
 import support  # noqa: F401  (puts the Skill's scripts on sys.path)
 from test_foundation import BankFixture
-from test_web_interview import CONFIG, Model
+from test_web_interview import CONFIG, Model, finish_workers
 from ibank_core import web_prepare as prep
 from ibank_core.errors import ValidationError
 from ibank_core.migrations import migrate
@@ -86,6 +86,7 @@ class Pure(unittest.TestCase):
 class Fixture(BankFixture):
     def setUp(self):
         super().setUp()
+        self.addCleanup(finish_workers, "ibank-coach-")
         # Redis was asked twice, recently, by two companies; MySQL once, in 2019; React once, with no date recorded.
         occurrences = {o["id"]: o for o in self.bundle["occurrences"]}
         occurrences["occ_demo0"]["event_date"] = "2019-05"

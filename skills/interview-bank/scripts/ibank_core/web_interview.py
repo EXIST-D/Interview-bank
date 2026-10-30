@@ -253,22 +253,22 @@ class Coach:
     def _spawn(self, key, work, plan=False):
         def run():
             with ai.metering():
+                failure = None
                 try:
                     work()
                 except Exception as exc:  # The page shows the failure and offers a retry; the reader keeps serving.
-                    message = str(exc) if isinstance(exc, BankError) else "批改时发生意外错误，请重试"
-                    with self.lock:
-                        if plan:
-                            self.plans[key].update(status="failed", error=message)
-                        else:
-                            self.work[key] = {"state": "failed", "error": message, "since": utc_now()}
-                else:
-                    with self.lock:
+                    failure = str(exc) if isinstance(exc, BankError) else "批改时发生意外错误，请重试"
+                # What was spent is on the ledger before the page can see the outcome, so a poll never beats the bill.
+                entries = ai.take_usage()
+                if entries:
+                    self.ledger.add(entries)
+                with self.lock:
+                    if failure is None:
                         self.work.pop(key, None)
-                finally:
-                    entries = ai.take_usage()
-                    if entries:
-                        self.ledger.add(entries)
+                    elif plan:
+                        self.plans[key].update(status="failed", error=failure)
+                    else:
+                        self.work[key] = {"state": "failed", "error": failure, "since": utc_now()}
         threading.Thread(target=run, name=f"ibank-coach-{key[-6:]}", daemon=True).start()
 
     def _grade(self, session_id):

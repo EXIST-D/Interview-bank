@@ -55,12 +55,20 @@ class Model:
         return reply
 
 
+def finish_workers(prefix):
+    """A background task may still be writing when a test ends; wait for it before the bank folder is deleted."""
+    for worker in threading.enumerate():
+        if worker.name.startswith(prefix):
+            worker.join(10)
+
+
 class InterviewCase(unittest.TestCase):
     def setUp(self):
         work = ROOT / ".work/tests"
         work.mkdir(parents=True, exist_ok=True)
         self.temp = tempfile.TemporaryDirectory(dir=work)
         self.addCleanup(self.temp.cleanup)
+        self.addCleanup(finish_workers, "ibank-coach-")  # runs before the folder is removed
         self.bank = Path(self.temp.name) / "bank"
         build_demo(self.bank, v2=True)
         self.model = Model()
