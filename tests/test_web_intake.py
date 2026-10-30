@@ -381,6 +381,10 @@ class IntakeCase(unittest.TestCase):
 
     def test_a_restart_leaves_interrupted_jobs_actionable(self):
         job = self.started(FIRST)
+        # The worker saves the job once more after it reaches review; rewriting the file before it ends would be overwritten.
+        for worker in threading.enumerate():
+            if worker.name.startswith("ibank-intake-"):
+                worker.join(10)
         stored = self.jobs._load(job["id"])
         stored["status"] = "extracting"
         stored["sources"][0]["status"] = "pending"
