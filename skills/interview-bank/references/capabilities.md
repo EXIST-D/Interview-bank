@@ -14,6 +14,7 @@ Who does what. Version history lives in the repository CHANGELOG, not here.
 | Store, query, export, recover | — | Transactions, change-set runs, audit, undo, search, statistics, reports, `gc`, `backup` |
 | Local Web reader and practice | User's browser | Loopback-only server; self-ratings saved only in V2 banks |
 | Screenshot import in the Web reader (opt-in) | The person confirms what was read and decides unsure merges | `web --ai-config` lets a configured model read, judge duplicates and draft answers through the same intake, dedupe and answer validation |
+| Mock interview and answer feedback in the Web reader (opt-in) | The person writes the answers and rates their own mastery | `web --ai-config` with `--allow-practice` lets a configured model write feedback against the sourced reference answer; quotes are verified, a limited basis is disclosed, nothing is scored |
 | Human decisions (review, merges, ratings) | Relays the user's words only | Web buttons and an interactive-terminal confirmation; agents cannot mark answers reviewed |
 
 When the host lacks a capability, report the specific limitation and use selected text, a supplied transcript or an explicitly labelled draft where appropriate.

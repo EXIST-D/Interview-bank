@@ -26,9 +26,9 @@ SEARCH_KEY_ENV = "INTERVIEW_BANK_SEARCH_KEY"
 SEARCH_PROVIDERS = {"bocha": "https://api.bochaai.com/v1/web-search", "tavily": "https://api.tavily.com/search"}
 SEARCH_FIELDS = {"provider", "base_url", "api_key_file", "api_key_env", "count", "pages", "timeout"}
 LIMIT_DEFAULTS = {"max_images_per_job": 12, "max_answers_per_job": 40, "daily_images": 60, "answer_batch": 4, "daily_research": 100,
-                  "daily_budget": 0}
+                  "daily_budget": 0, "daily_feedback": 200}
 LIMIT_RANGES = {"max_images_per_job": (1, 30), "max_answers_per_job": (0, 200), "daily_images": (1, 1000), "answer_batch": (1, 10),
-                "daily_research": (1, 2000)}
+                "daily_research": (1, 2000), "daily_feedback": (1, 2000)}
 PRICE_FIELDS = {"hit", "miss", "output"}
 BEIJING = timezone(timedelta(hours=8))
 ENDPOINT_FIELDS = {"protocol", "base_url", "model", "api_key_file", "api_key_env", "timeout", "max_tokens", "json_mode", "temperature",

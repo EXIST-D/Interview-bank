@@ -1,5 +1,5 @@
 import { Dialog } from "radix-ui";
-import { BookOpen, Bookmark, Compass, GitFork, House, ImagePlus, MessagesSquare, MoreHorizontal, Newspaper, Shuffle } from "lucide-react";
+import { BookOpen, Bookmark, Compass, GitFork, House, ImagePlus, MessageSquareQuote, MessagesSquare, MoreHorizontal, Newspaper, Shuffle } from "lucide-react";
 import { useLayoutEffect, useRef, useState } from "react";
 import { useBank } from "@/lib/bank";
 import { useI18n } from "@/lib/i18n";
@@ -30,6 +30,7 @@ function useBoards(): BoardItem[] {
   }
   items.push({ board: "mine" });
   if (library?.can_intake) items.push({ board: "import" });
+  if (library?.can_interview) items.push({ board: "interview" });
   return items;
 }
 
@@ -101,14 +102,19 @@ export function TopBar({
   );
 }
 
-const TAB_ICONS = { home: House, bank: MessagesSquare, knowledge: BookOpen, public: Newspaper, learning: Compass, mine: Bookmark, import: ImagePlus } as const;
+const TAB_ICONS = { home: House, bank: MessagesSquare, knowledge: BookOpen, public: Newspaper, learning: Compass, mine: Bookmark, import: ImagePlus, interview: MessageSquareQuote } as const;
 
 export function TabBar({ board }: { board: Board }) {
   const { t } = useI18n();
   const { library, notes } = useBank();
   const [more, setMore] = useState(false);
-  const inMore = board === "public" || board === "learning" || board === "mine" || board === "import";
-  const extras: ("public" | "learning" | "mine" | "import")[] = [...(notes ? (["public", "learning"] as const) : []), "mine", ...(library?.can_intake ? (["import"] as const) : [])];
+  const inMore = board === "public" || board === "learning" || board === "mine" || board === "import" || board === "interview";
+  const extras: ("public" | "learning" | "mine" | "import" | "interview")[] = [
+    ...(notes ? (["public", "learning"] as const) : []),
+    "mine",
+    ...(library?.can_intake ? (["import"] as const) : []),
+    ...(library?.can_interview ? (["interview"] as const) : []),
+  ];
   const count = (target: (typeof extras)[number]) =>
     target === "public" ? notes?.section_counts.experiences : target === "learning" ? notes?.section_counts.learning : undefined;
   const tabs: { board: Board; label: string }[] = [

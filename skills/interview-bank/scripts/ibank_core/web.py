@@ -126,10 +126,63 @@ class WebApp:
         if ai_config and (not read_only or allow_intake):
             from .web_intake import IntakeJobs
             self.intake = IntakeJobs(self.bank, ai_config, self.mutation_lock)
+        # Mock interviews use the same model, usage ledger and daily budget, and save as practice records.
+        self.coach = None
+        if self.intake and self.can_practise:
+            from .web_interview import Coach
+            self.coach = Coach(self.bank, ai_config, self.mutation_lock, self.intake.ledger)
 
     def intake_jobs(self):
         require(self.intake is not None, 'Screenshot import is not enabled on this server')
         return self.intake
+
+    def interviews(self):
+        require(self.coach is not None, 'AI mock interviews are not enabled on this server')
+        return self.coach
+
+    def interview_overview(self):
+        coach = self.interviews()
+        with open_bank(self.bank, shared=True) as (manifest, _config, _data):
+            require(manifest['schema_version'] == 2, 'Mock interviews need a V2 bank')
+        return coach.overview()
+
+    def interview_start(self, payload):
+        """Questions chosen by the person (IDs) or by direction (the library's filters); the session keeps only IDs."""
+        coach = self.interviews()
+        require(isinstance(payload, dict) and set(payload) <= {'mode', 'question_ids', 'filters', 'limit', 'order', 'direction', 'reasons', 'jd', 'name'},
+                'Invalid interview payload')
+        meta = {k: payload[k] for k in ('direction', 'reasons', 'jd') if payload.get(k) is not None}
+        require(isinstance(meta.get('direction', ''), str) and len(meta.get('direction', '')) <= 200, 'Invalid direction')
+        ids = payload.get('question_ids')
+        if payload.get('filters') is not None:
+            require(ids is None, 'Choose either question_ids or filters')
+            filters = payload['filters']
+            require(isinstance(filters, dict) and set(filters) <= FILTERS | {'view'} and all(isinstance(v, str) for v in filters.values()), 'Unknown filter')
+            limit, order = payload.get('limit', 10), payload.get('order', 'frequency')
+            require(type(limit) is int and 1 <= limit <= 20 and order in ('frequency', 'random'), 'limit is 1..20; order is frequency or random')
+            with open_bank(self.bank, shared=True) as (manifest, config, data):
+                require(manifest['schema_version'] == 2, 'Mock interviews need a V2 bank')
+                rows = select(data, config, self.bank)
+                found = filtered(rows, data['companies'], progress(data, rows), filters)
+            # Questions with a sourced or reviewed answer first: only they can be judged confidently.
+            from .web_interview import has_reference
+            groups = [[q for q in found if has_reference(q)], [q for q in found if not has_reference(q)]]
+            if order == 'random':
+                import random
+                for group in groups:
+                    random.shuffle(group)
+            ids = [q['id'] for q in (groups[0] + groups[1])[:limit]]
+            require(bool(ids), '没有符合条件的题')
+        return coach.start({'name': payload.get('name'), 'question_ids': ids, 'mode': payload.get('mode', 'mock'), 'meta': meta})
+
+    def interview_plan(self, payload):
+        coach = self.interviews()
+        from .web_interview import has_reference
+        with open_bank(self.bank, shared=True) as (manifest, config, data):
+            require(manifest['schema_version'] == 2, 'Mock interviews need a V2 bank')
+            candidates = [{'id': q['id'], 'canonical': q['canonical'], 'frequency': q['frequency'], 'answered': has_reference(q)}
+                          for q in select(data, config, self.bank)]
+        return coach.plan(payload, candidates)
 
     @property
     def can_write_answer(self):
@@ -190,7 +243,7 @@ class WebApp:
                 'name': self.bank.name, 'version': __version__, 'schema_version': manifest['schema_version'],
                 'can_record': manifest['schema_version'] == 2 and self.can_practise, 'can_review': not self.read_only,
                 'can_write_answer': self.can_write_answer, 'can_write_personal': self.can_write_answer,
-                'can_intake': self.intake is not None,
+                'can_intake': self.intake is not None, 'can_interview': self.coach is not None and manifest['schema_version'] == 2,
                 'can_research': bool(self.intake and self.intake.config.get('search')), 'language': language(config),
                 'read_only': self.read_only, 'updated_at': manifest.get('last_updated_at'),
                 'summary': {'questions': len(rows), 'answered': sum(q['answer_status'] in ('source_backed', 'reviewed') for q in rows),
@@ -217,7 +270,7 @@ class WebApp:
             'name': 'Public library', 'version': __version__, 'schema_version': manifest['schema_version'],
             'language': language(config), 'guest': True, 'can_login': True, 'can_logout': False,
             'read_only': True, 'can_record': False, 'can_review': False,
-            'can_write_answer': False, 'can_write_personal': False, 'can_intake': False, 'can_research': False,
+            'can_write_answer': False, 'can_write_personal': False, 'can_intake': False, 'can_interview': False, 'can_research': False,
             'summary': dict.fromkeys(('questions', 'answered', 'answer_count', 'stale', 'due', 'weak', 'unseen', 'domains'), 0),
             'notes': {'total': len(bundle['notes']), 'collections': len(bundle['collections'])},
             'total': 0, 'total_answered': 0, 'offset': offset, 'limit': limit,
@@ -639,6 +692,14 @@ class Handler(BaseHTTPRequestHandler):
             if path not in handlers:
                 return self.send(404, {'error': 'Unknown endpoint'})
             result = handlers[path](self.json_body(512 * 1024))
+        elif post and path.startswith('/api/interview/'):
+            coach = app.interviews()
+            handlers = {'/api/interview/start': app.interview_start, '/api/interview/plan': app.interview_plan,
+                        '/api/interview/answer': coach.answer, '/api/interview/regrade': coach.regrade,
+                        '/api/interview/follow-up': coach.follow_up, '/api/interview/end': coach.end}
+            if path not in handlers:
+                return self.send(404, {'error': 'Unknown endpoint'})
+            result = handlers[path](self.json_body())
         elif post:
             handlers = {'/api/practice': app.record, '/api/review': app.review, '/api/dedupe-decision': app.dedupe_decision,
                         '/api/my-answer': app.my_answer, '/api/favorites': app.change_favorites, '/api/learning': app.change_learning}
@@ -653,6 +714,13 @@ class Handler(BaseHTTPRequestHandler):
         elif path == '/api/intake/job':
             require(set(params) == {'id'}, 'Expected job ID')
             result = app.intake_jobs().job(params['id'])
+        elif path == '/api/interview':
+            require(not params, 'No parameters expected')
+            result = app.interview_overview() if app.coach else {'enabled': False}
+        elif path in ('/api/interview/session', '/api/interview/plan'):
+            require(set(params) == {'id'}, 'Expected ID')
+            coach = app.interviews()
+            result = coach.session(params['id']) if path.endswith('session') else coach.plan_result(params['id'])
         elif path == '/api/library':
             result = app.library(params)
             if self.server.login:

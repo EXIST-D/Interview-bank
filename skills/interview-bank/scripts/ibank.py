@@ -34,6 +34,7 @@ from ibank_core.dedupe import candidate_task, stage_decisions
 from ibank_core.answers import research_task, stage_answers, review_answer
 from ibank_core.schema import require, validate_data
 from ibank_core.search import search, detail
+from ibank_core.sources import list_sources
 from ibank_core.export import export_bank
 from ibank_core.output import encode, fit
 from ibank_core.stats import stats
@@ -88,6 +89,13 @@ def parser():
         companies.add_argument(f"--{field}")
     companies.add_argument("--limit", type=positive_int, default=50)
     companies.add_argument("--offset", type=int, default=0)
+    sources = sub.add_parser("sources", parents=[common], help="List imported sources (screenshots, pages, recordings) with the questions extracted from each")
+    sources.add_argument("--query", help="Case-insensitive text inside the source URL or platform")
+    sources.add_argument("--url", help="Exact source URL")
+    sources.add_argument("--platform")
+    sources.add_argument("--type", dest="source_type", help="image, web, audio, video, ...")
+    sources.add_argument("--limit", type=positive_int, default=50)
+    sources.add_argument("--offset", type=int, default=0)
     stage = sub.add_parser("stage", parents=[common], help="Stage a structured JSON bundle or selected question lines")
     source = stage.add_mutually_exclusive_group(required=True)
     source.add_argument("--input", type=Path, help="JSON bundle with schema_version and canonical table arrays")
@@ -263,6 +271,8 @@ def dispatch(args):
             return catalog_view(args.dimension, args.query, args.limit, args.offset, config.get("taxonomy_extensions"))
     if args.command == "companies":
         return list_companies(bank, **{k: getattr(args, k) for k in ("query", "industry", "company_type", "ownership", "business_model", "limit", "offset")})
+    if args.command == "sources":
+        return list_sources(bank, **{k: getattr(args, k) for k in ("query", "url", "platform", "source_type", "limit", "offset")})
     if args.command == "demo":
         from ibank_core.demo import build_demo
         return build_demo(bank, v2=args.v2)

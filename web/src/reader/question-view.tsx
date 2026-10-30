@@ -176,10 +176,13 @@ export function QuestionView({
   onReviewed,
   onOpenNote,
   onPractise,
+  onGrade,
   onToast,
 }: {
   question: QuestionDetail;
   onPractise: () => void;
+  /** AI feedback on the person's own answer; only when the server runs mock interviews. */
+  onGrade?: () => void;
   revealed: boolean;
   onReveal: () => void;
   canReview: boolean;
@@ -269,6 +272,11 @@ export function QuestionView({
           <Button variant="link" size="sm" className="px-0" onClick={onPractise}>
             {t("practise_one")}
           </Button>
+          {onGrade && (
+            <Button variant="link" size="sm" className="px-0" onClick={onGrade}>
+              {t("iv_grade_mine")}
+            </Button>
+          )}
           <ResearchButton question={q} onToast={onToast} />
         </div>
       </div>

@@ -236,6 +236,34 @@ texts, so quotes are verified as for `answer --page-texts`. Unsupported question
 falls back to an `ai_draft`). `limits.daily_research` caps searches per day. This is machine research from a few
 pages: the person's 人工审阅 and an agent's deeper research remain the stronger checks.
 
+### Mock interview and answer feedback (1.34+)
+
+With `--ai-config` and practice enabled (`--allow-practice` on a read-only server; V2 bank) the reader adds 模拟面试
+(`#/interview`) and *AI 批改我的答案* below a question (a one-question session). The session, its frozen prompts,
+the person's answers and the feedback are the CLI's own `interview` records (`interview start / answer / feedback / follow-up /
+end`, committed one step at a time), so an agent can read and continue them (`interview show`, `summary`).
+
+- Questions come from the person's own bank, never invented: by direction (the library's filters, with questions that
+  have a sourced or reviewed answer first, optionally random) or by job description: the model picks from the bank's
+  questions (most-asked 500) and the server keeps only real IDs and excerpts that really occur in the job description;
+  the person unticks what they do not want, and the session records why each was chosen (`meta.reasons`).
+- The prompt never carries the reference answer. After the person submits (saved verbatim first, idempotent by
+  request ID), a background task gives the text model the question, the reference answer's key points (numbered) and
+  the response, with the Skill's own rules (`practice.md`, *Writing feedback*). The server then keeps only what it can
+  stand behind: known dimensions, quotes found verbatim in the response (others are dropped and noted in
+  `generated_by.checks`), key-point checks that exist in the reference. Feedback has no score, grade or percentage.
+- Without a sourced or reviewed answer, or when the question's wording changed since the session began, the feedback is
+  `limited_basis`: no verdicts and no key-point checks, only structure, clarity and what to verify. Feedback written by
+  the model is stored with `generated_by` (model, checks) and, when useful, one suggested follow-up that the person may
+  accept (two per question at most).
+- Self-ratings stay the person's: after feedback the page offers again / hard / good / easy through the normal practice
+  record (`user_self_rating`). The model never writes a rating.
+- Costs: feedback and job-description picking go into the same usage ledger and daily budget as import;
+  `limits.daily_feedback` (default 200) caps feedbacks per 24 hours. A failed feedback keeps the answer and can be
+  asked for again. Endpoints: GET `/api/interview`, `/api/interview/session`, `/api/interview/plan`; POST
+  `/api/interview/start`, `plan`, `answer`, `regrade`, `follow-up`, `end`.
+- The person's answers and the reference text leave the server for the model provider they configured.
+
 ### Hosted public reading (1.30+)
 
 Keep the existing HTTPS proxy, token file, login file and account banks. Add

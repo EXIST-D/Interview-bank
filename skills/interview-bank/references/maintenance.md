@@ -178,3 +178,13 @@ When the reason is `wording_changed` and the new wording asks nothing the answer
 `answer-recheck --input <file>` stages a version with the same content, sources and `verified_at`, bound to the
 current wording, with your checks appended. A reviewed answer returns as source_backed. Refused for drafts,
 uncited answers, evidence older than `answer_stale_days` and V1 banks. New sub-question or scope: research it.
+
+## See which sources are imported
+
+`sources --bank <bank> --json` lists the committed sources, newest first: `id`, `type` (`image`, `web`, `audio`,
+`video`), `platform`, `source_url`, `source_date`, `imported_at`, `retention`, the transcription `engine`, `model` and
+`segments`, and how many `occurrences` and distinct `questions` came from it. `--url` matches a URL exactly,
+`--query` is a case-insensitive substring of the URL or platform, `--platform` and `--type` filter, `--limit` and
+`--offset` page. Read-only: stored file paths are not shown. A source with no occurrences was committed but held no
+questions. An intake that was never committed (a recording still waiting to be read) is not listed; `doctor` shows it
+under `media_intakes`. A collector such as Gleaner uses this to avoid packing the same post twice.

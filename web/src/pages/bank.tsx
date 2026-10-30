@@ -447,6 +447,7 @@ export function BankPage({ route }: { route: Route }) {
               }}
               onOpenNote={(id) => navigate("knowledge", [], { open: id })}
               onPractise={() => setPractice({ kind: "one", question: detail })}
+              onGrade={data?.can_interview ? () => navigate("interview", [], { question: detail.id }) : undefined}
               onToast={toast}
             />
           </ReaderFrame>

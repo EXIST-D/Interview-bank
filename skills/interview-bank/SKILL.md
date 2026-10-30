@@ -4,14 +4,14 @@ description: Build and maintain a personal interview question bank (面试题库
 license: MIT
 metadata:
   author: EXIST-D
-  version: "1.33.0"
+  version: "1.34.0"
   repository: https://github.com/EXIST-D/Interview-bank
 ---
 
 # Interview Bank
 
 Read sources, judge meaning and research answers; Python validates, stores and exports.
-Only `media-transcribe` and Web import (`--ai-config`) run a model. Prepare task JSON yourself.
+Only `media-transcribe` and the Web AI (`--ai-config`) run a model. Prepare task JSON yourself.
 
 ## Core rules
 

@@ -8,7 +8,8 @@ the only paths that reach the network, all opt-in:
 - `verify-citations` (link checks, on request) and `page-text` (saving the text of pages being cited);
 - `media-transcribe --download-model`, which downloads public model weights and never uploads media;
 - the Web reader started with `--ai-config`: screenshot import sends the screenshots you upload to the model
-  provider you configured, and web research (an optional `search` section) sends questions to the search provider
+  provider you configured, the mock interview sends the answers you type, the question and its reference answer (and a
+  pasted job description with the bank's question list) to it, and web research (an optional `search` section) sends questions to the search provider
   and fetches the result pages; `ai-check` sends one tiny request to each configured service.
 
 Page fetches go only to public addresses: loopback, private, link-local and carrier-grade NAT ranges (including cloud

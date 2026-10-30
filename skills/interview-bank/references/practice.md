@@ -87,3 +87,18 @@ Learning records are separate: only call study record after a real user self-rat
 
 Retrying the same answer request ID with the same question/text, or identical feedback for the same response, returns the existing receipt even after session end.
 Different content with a reused ID is rejected. Repeated end is harmless. On missing receipts inspect the session before generating another ID.
+
+## Writing feedback
+
+These rules apply to an Agent writing feedback and to the model behind the Web reader's mock interview alike.
+- Compare the person's actual response with the reference answer's key points, one by one: covered, partly covered, or missing.
+  Name what is missing or wrong and why it matters for this question; praise only what is really there.
+- Every observation has one dimension (accuracy, coverage, constraints or clarity). Quote the person's own words exactly when you
+  judge them; if you cannot quote a passage, make the observation without a quote.
+- The reference answer is the only basis for saying something is right or wrong. A reference marked as limited (no sourced or
+  reviewed answer, or the question changed) allows comments on structure, clarity and what to verify, never a verdict on correctness.
+- A response that answers a different question, has no content or only repeats the question gets one honest observation, not an
+  invented critique.
+- No score, grade, percentage or opinion about the person; only about this response. Do not write the answer for the person.
+- Review topics are short knowledge points to revisit. A follow-up is optional: ask one only when it tests a gap or a boundary
+  the response left open.

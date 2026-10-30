@@ -36,6 +36,7 @@
     "max_answers_per_job": 40,
     "answer_batch": 4,
     "daily_research": 100,
+    "daily_feedback": 200,
     "daily_budget": 10
   },
   "prices": {

@@ -4,15 +4,15 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.33.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.34.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.32 web sources in the reader
+## This update: 1.34 AI mock interview and answer feedback
 
-- With a search service configured (Bocha or Tavily), new imported questions are researched first: the server reads a few web pages and the AI answers only from them, naming the page behind every key point.
-- The server keeps only pages it actually read as sources, checks quotes word for word and drops unsupported key points; only then is an answer *sourced*. Questions without support keep an AI draft.
-- Existing AI drafts, outdated and unanswered questions get *Add sources* on the import page (most-asked first) or *Add sources from the web* below an answer.
-- Hardening: page fetches reach public addresses only, also after redirects (cloud metadata addresses included); menus and sidebars no longer end up in page text.
-- The 1.31 screenshot import is unchanged: upload → AI reads → you confirm → deduplicated into the bank, with the models you configure; the example uses DeepSeek `deepseek-flash` with thinking off (about 40 s a batch). Off by default: `web --ai-config` (plus `--allow-intake` on a read-only server).
+- The page gains Mock interview: the AI interviewer asks only questions from your own bank, chosen by area (topic, domain, technology, company; optionally only due, weak or unseen ones) or from a pasted job description, where the AI picks relevant questions and you tick the ones you want; requirements the bank does not cover are listed, never filled with invented questions.
+- You write your answer and it is saved verbatim; the AI checks it against the sourced reference answer, key point by key point (covered, partly, missed), comments on accuracy, coverage, boundaries and wording, quotes your own words, and asks a follow-up when one is worth it. No score, and it never rates you.
+- Quotes in the feedback are verified word for word. With no sourced reference answer (or after the wording changed) the feedback covers structure and wording only, never correctness. *Check my answer with AI* is also below every question.
+- Mastery stays your own click (again / hard / good / easy) in the review plan; interviews are the same `interview` records as on the command line, so an agent can read and continue them.
+- Feedback and job-description picking share the usage ledger and daily budget; `limits.daily_feedback` caps feedbacks per day. Needs `web --ai-config` and `--allow-practice` (V2 bank).
 
 Try the [online test site](https://exist.qd.je/) without an account for public reading. Contact the maintainer on QQ **1939123241** for full-feature testing and suggestions.
 
@@ -155,7 +155,7 @@ Open the local Web reader; I want to review answers myself and settle the uncert
 
 ## The Web reader: study on a computer or a phone
 
-The agent organises the bank; the Web page is for reading it. By default the page runs no AI and searches nothing online; it only reads your bank. With screenshot import enabled on the server, screenshots you upload go to the model you configured.
+The agent organises the bank; the Web page is for reading it. By default the page runs no AI and searches nothing online; it only reads your bank. With screenshot import or the mock interview enabled on the server, the screenshots you upload and the answers you write go to the model you configured.
 
 - **Overview and four sections:** a top bar (a bottom tab bar on phones) switches the overview and the sections. *Personal* holds your collected questions. *Notes* keeps Q&A, explanations, coding solutions and cases by source. *Public* groups interviews across sources by topic or year, with company/year filters. *Learning* offers five category cards for roadmaps, tutorials, resource indexes, career material and industry news. Every entry retains its text and provenance, and interviews and notes link both ways.
 - **My answer and my notes:** write your own answer or note below the reference or the original; it may stay empty, is independent of it and syncs across devices. The 我的 (Me) page lists, searches and exports them all and holds your favourite folders (practise from a folder).
@@ -164,6 +164,7 @@ The agent organises the bank; the Web page is for reading it. By default the pag
 - **Made for spare minutes:** on a phone, a list and a full-screen reader with previous/next at the bottom, a swipe, or the system back gesture to close; a peek at any answer from the list; read marks and group progress; a random pick that prefers unread questions; Think first hides answers by default.
 - **Side by side on a computer:** list and reader together, plus a contents column for a notes source. The list folds away, and Focus also hides the top bar so the reader fills the window at a comfortable line length.
 - **Easy on the eyes:** three text sizes, a reading progress bar, light / dark / system themes, highlighted search words; tables, code, quotes and nested lists in long answers render properly. Read marks, folds, text size, source order and theme stay in the browser.
+- **Mock interview and answer feedback** (when the server enables them): the AI asks only questions from your own bank (by area or job description), you answer, and it checks your answer against the sourced reference answer, point by point, with follow-ups; answers are saved verbatim as practice records and you rate your own mastery.
 - **Screenshot import and web sources** (when the server enables them): upload → AI reads → you confirm → deduplicated into the bank → answers written from web pages with sources (an AI draft when nothing supports one); existing drafts get sources with one click, all in the page; setup in [Web usage](skills/interview-bank/references/web.md).
 - **Practice and your own decisions** (on a writable reader): practise a round or one question with a self-rating (V2 banks save progress and schedule reviews), **human review** of answers and **merge decisions** on pairs the agent was unsure about; only you can do these.
 

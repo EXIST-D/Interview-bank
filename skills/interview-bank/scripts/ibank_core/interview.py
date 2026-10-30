@@ -1,7 +1,8 @@
 """One-question-at-a-time interviews with durable user responses and sourced feedback."""
 import copy
+import json
 from .schema import require, string
-from .state import require_v2, record, revision, question
+from .state import require_v2, record, resolve, revision, question
 from .ids import new_id, utc_now
 from .storage import open_bank, fingerprint
 from .runs import stage_snapshot
@@ -57,10 +58,21 @@ def interview(bank,action,payload=None,key=None):
             require(ids is not None,'Choose a question set for the interview')
             rows = select(current,config,bank,ids=ids,limit=payload.get('limit',10))
             require(bool(rows),'No questions selected')
+            if payload.get('keep_order') is True and not payload.get('studyset_id'):
+                # The caller chose the order (for example by relevance to a job description).
+                position = {}
+                for index, qid in enumerate(ids):
+                    position.setdefault(resolve(current, qid), index)
+                rows.sort(key=lambda q: position.get(q['id'], len(ids)))
             key = new_id('session')
             s = {'id':key,'created_at':utc_now(),'name':payload['name'],'status':'running','position':0,
                  'question_ids':[q['id'] for q in rows], 'question_revisions':{q['id']:revision(q) for q in rows},
                  'prompts':{q['id']:q['canonical'] for q in rows},'responses':[], 'follow_up':None}
+            # How the session came about (the Web reader: direction, JD reasons); display only, never evidence.
+            meta = payload.get('meta')
+            if meta is not None:
+                require(isinstance(meta, dict) and len(json.dumps(meta, ensure_ascii=False)) <= 20000, 'Invalid session meta')
+                s['meta'] = copy.deepcopy(meta)
             final['_state']['sessions'][key]=s
         else:
             s=record('sessions',final,key)
@@ -117,6 +129,22 @@ def interview(bank,action,payload=None,key=None):
                     'limited_basis':payload.get('limited_basis',False),'reference_answer_id':ref['id'] if ref else None,
                     'reference_sources':copy.deepcopy(ref['sources']) if ref else [],'created_at':utc_now(),
                     'request_digest':fingerprint(payload)}
+                # Feedback written by the Web reader's model says so, and may carry a per-key-point check of the reference.
+                if payload.get('generated_by') is not None:
+                    author = payload['generated_by']
+                    require(isinstance(author, dict) and author.get('kind') == 'model' and isinstance(author.get('model'), str) and author['model'].strip()
+                            and isinstance(author.get('checks', []), list) and all(isinstance(c, str) for c in author.get('checks', [])), 'Invalid generated_by')
+                    s['responses'][-1]['feedback']['generated_by'] = copy.deepcopy(author)
+                if payload.get('follow_up_suggestion') is not None:
+                    suggestion = payload['follow_up_suggestion']
+                    require(isinstance(suggestion, dict) and set(suggestion) == {'prompt', 'reason'}, 'Invalid follow-up suggestion')
+                    string(suggestion['prompt'], 'follow-up prompt');string(suggestion['reason'], 'follow-up reason')
+                    s['responses'][-1]['feedback']['suggested_follow_up'] = copy.deepcopy(suggestion)
+                if payload.get('key_point_checks') is not None:
+                    checks = payload['key_point_checks']
+                    require(isinstance(checks, list) and all(isinstance(c, dict) and type(c.get('index')) is int and c.get('status') in ('covered', 'partial', 'missed')
+                                                             for c in checks), 'Invalid key point checks')
+                    s['responses'][-1]['feedback']['key_point_checks'] = copy.deepcopy(checks)
             elif action=='follow-up':
                 require(s['responses'] and s['responses'][-1]['feedback'] is not None,'Feedback must precede a follow-up')
                 require(not s.get('follow_up'),'Answer the existing follow-up first')

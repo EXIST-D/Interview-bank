@@ -34,6 +34,7 @@ from .schema import TAXONOMY, partial_date, require
 from .storage import atomic_bytes, atomic_write, bank_file, dumps, fingerprint, open_bank, read_json
 from .studysets import select
 from .timestamps import parse_timestamp
+from .usage_ledger import Ledger, add_usage
 
 MIMES = {"image/png": ".png", "image/jpeg": ".jpg", "image/webp": ".webp", "image/gif": ".gif"}
 MAX_IMAGE, MAX_VIEW, MAX_VIEWS = 10 * 1024 * 1024, 4 * 1024 * 1024, 8
@@ -225,7 +226,7 @@ def needs_research(q):
 
 SOURCE_TYPES = ("official_doc", "standard", "paper", "blog", "forum", "news", "other")
 MAX_FETCHES = 12
-USAGE_DAYS, PAGE_DAYS = 120, 30
+PAGE_DAYS = 30
 # Answer farms and document-sharing sites: read only when nothing better is readable.
 LAST_RESORT = ("wenwen.sogou.com", "zhidao.baidu.com", "wenku.baidu.com", "book118.com", "doc88.com", "docin.com",
                "taodocs.com", "360doc.com", "5axxw.com")
@@ -297,25 +298,6 @@ def clean_sourced(raw, qid, pages, provider):
     return answer, None
 
 
-def add_usage(total, entries, prices):
-    """Fold recorded calls into a usage summary; cost counts only calls with a configured price."""
-    total = dict(total or {"calls": 0, "input": 0, "cached": 0, "output": 0, "searches": 0, "cost": 0.0, "unpriced": 0})
-    for entry in entries:
-        if entry["kind"] == "search":
-            total["searches"] += 1
-        else:
-            total["calls"] += 1
-            total["input"] += entry["hit"] + entry["miss"]
-            total["cached"] += entry["hit"]
-            total["output"] += entry["output"]
-        price = ai.cost(entry, prices)
-        if price is None:
-            total["unpriced"] += 1
-        else:
-            total["cost"] = round(total["cost"] + price, 6)
-    return total
-
-
 def clean_answer(raw, qid):
     if not isinstance(raw, dict):
         return {"question_id": qid, "skip": True, "reason": "模型没有返回这道题的答案"}
@@ -343,13 +325,14 @@ def clean_answer(raw, qid):
 class IntakeJobs:
     """Screenshot imports of one bank. Holds the reader's mutation lock around every bank write."""
 
-    def __init__(self, bank, config, mutation_lock, call=ai.call, search=ai.search, fetch=None):
+    def __init__(self, bank, config, mutation_lock, call=ai.call, search=ai.search, fetch=None, ledger=None):
         self.bank, self.config, self.mutation, self.call = bank, config, mutation_lock, call
         self.search, self.fetch = search, fetch
         self.limits = config["limits"]
         self.lock = threading.RLock()
         self.root = bank_file(bank, "cache/web-intake")
         self.root.mkdir(parents=True, exist_ok=True)
+        self.ledger = ledger or Ledger(self.root, config)
         self._recover()
         self._prune_pages()
 
@@ -375,39 +358,10 @@ class IntakeJobs:
             entries = ai.take_usage()
             if entries:
                 job["usage"] = add_usage(job.get("usage"), entries, self.config.get("prices", {}))
-                self._add_daily(entries)
+                self.ledger.add(entries)
             return self._save(job)
 
-    # ---- usage, cost and cache ----------------------------------------------------------------------------
-    def _ledger(self):
-        path = self.root / "usage.json"
-        return read_json(path) if path.is_file() else {"schema_version": 1, "days": {}}
-
-    def _add_daily(self, entries):
-        """Per Beijing day, so totals line up with DeepSeek's bill; kept for USAGE_DAYS days."""
-        ledger = self._ledger()
-        for entry in entries:
-            day = datetime.fromisoformat(entry["at"]).astimezone(ai.BEIJING).date().isoformat()
-            ledger["days"][day] = add_usage(ledger["days"].get(day), [entry], self.config.get("prices", {}))
-        keep = sorted(ledger["days"])[-USAGE_DAYS:]
-        ledger["days"] = {day: ledger["days"][day] for day in keep}
-        atomic_write(self.root / "usage.json", dumps(ledger) + "\n")
-
-    def _usage_view(self):
-        days = self._ledger()["days"]
-        today = datetime.now(ai.BEIJING).date()
-        recent = [days[d] for d in days if d >= (today - timedelta(days=29)).isoformat()]
-        month = None
-        for day in recent:
-            month = {k: round((month or {}).get(k, 0) + v, 6) for k, v in day.items()}
-        return {"today": days.get(today.isoformat()), "last_30_days": month, "priced": bool(self.config.get("prices")),
-                "daily_budget": self.limits["daily_budget"] or None}
-
-    def _over_budget(self):
-        budget = self.limits["daily_budget"]
-        today = self._ledger()["days"].get(datetime.now(ai.BEIJING).date().isoformat())
-        return bool(budget and today and today["cost"] >= budget)
-
+    # ---- cache ---------------------------------------------------------------------------------------------
     def _prune_pages(self):
         """Page texts read for research are a cache: drop those older than PAGE_DAYS days."""
         folder = bank_file(self.bank, "cache/pages")
@@ -504,7 +458,7 @@ class IntakeJobs:
                         "left_today": max(0, self.limits["daily_research"] - searched)}
         return {"enabled": True, "models": ai.describe(self.config), "limits": {**self.limits, "max_image_bytes": MAX_IMAGE,
                 "max_view_bytes": MAX_VIEW, "max_views": MAX_VIEWS, "images_left_today": max(0, self.limits["daily_images"] - used)},
-                "research": research, "usage": self._usage_view(), "active": self.view(active) if active else None,
+                "research": research, "usage": self.ledger.view(), "active": self.view(active) if active else None,
                 "recent": [{"id": j["id"], "kind": j.get("kind", "import"), "status": j["status"], "created_at": j["created_at"],
                             "images": len(j["images"]), "result": j.get("result"), "answers": j.get("answers"),
                             "usage": j.get("usage")} for j in jobs[:10]]}
@@ -521,7 +475,7 @@ class IntakeJobs:
             active = next((j for j in self._jobs() if j["status"] in ACTIVE), None)
             require(active is None, "还有一个导入任务没有完成：请先完成或取消它")
             require(self._today_images() < self.limits["daily_images"], "今天的截图识别额度已用完，请明天再试")
-            require(not self._over_budget(), "今天的费用已达到上限（ai.json 的 limits.daily_budget），请明天再试")
+            require(not self.ledger.over_budget(), "今天的费用已达到上限（ai.json 的 limits.daily_budget），请明天再试")
             job = {"schema_version": 1, "id": "job_" + secrets.token_hex(12), "status": "collecting", "created_at": utc_now(),
                    "hints": hints, "images": [], "sources": [], "progress": None, "error": None, "notice": None,
                    "merge_review": None, "result": None, "answers": None}
@@ -996,7 +950,7 @@ class IntakeJobs:
         with self.lock:
             require(next((j for j in self._jobs() if j["status"] in ACTIVE), None) is None, "还有一个任务没有完成：请先完成或取消它")
             require(self._today_research() < self.limits["daily_research"], "今天的联网检索额度已用完，请明天再试")
-            require(not self._over_budget(), "今天的费用已达到上限（ai.json 的 limits.daily_budget），请明天再试")
+            require(not self.ledger.over_budget(), "今天的费用已达到上限（ai.json 的 limits.daily_budget），请明天再试")
             job = {"schema_version": 1, "id": "job_" + secrets.token_hex(12), "kind": "research", "status": "answering",
                    "created_at": utc_now(), "hints": {}, "images": [], "sources": [], "error": None, "notice": None,
                    "merge_review": None, "result": {"research": True, "more": max(0, len(candidates) - len(targets)),
@@ -1020,7 +974,7 @@ class IntakeJobs:
             if self._today_research() + searched >= self.limits["daily_research"]:
                 reasons[qid] = "今天的联网检索额度已用完"
                 continue
-            if self._over_budget():
+            if self.ledger.over_budget():
                 reasons[qid] = "今天的费用已达到上限"
                 continue
             searched += 1

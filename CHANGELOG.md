@@ -2,6 +2,31 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.34.0] - 2026-10-30
+
+### Added
+- AI mock interview and answer feedback in the Web reader (`#/interview`; needs `web --ai-config` and, on a read-only
+  reader, `--allow-practice`; V2 banks). The questions come from the person's own bank, never invented: by direction
+  (the library's filters, questions with a sourced or reviewed answer first, optionally random) or from a pasted job
+  description, where the model picks bank questions and the server keeps only real IDs and excerpts that occur in the
+  text; the person ticks what to ask, and the session records why each was chosen. *AI 批改我的答案* below a question
+  starts a one-question session.
+- The person's answer is saved verbatim before anything else (idempotent by request ID); a background task then has
+  the text model compare it with the reference answer's key points, following the new *Writing feedback* rules in
+  `practice.md`. The server keeps only known dimensions, quotes found word for word in the answer and key-point checks
+  that exist in the reference; feedback has no score. Without a sourced or reviewed reference, or when the wording
+  changed, feedback is `limited_basis` (no verdicts, no key-point checks). One suggested follow-up, two per question.
+  A failed feedback keeps the answer and can be asked for again. Mastery stays the person's own rating.
+- Sessions are the CLI's `interview` records (same stage-and-commit steps), so an agent can read and continue them:
+  `interview start` takes `meta` and `keep_order`, `interview feedback` takes `generated_by`, `key_point_checks` and
+  `follow_up_suggestion`.
+- `limits.daily_feedback` (default 200) caps feedbacks per 24 hours; feedback and job-description picking share the
+  usage ledger and the daily budget of the import (`usage_ledger.py`).
+- `sources` lists the committed sources (screenshots, pages, recordings) with platform, URL, date, transcription
+  engine and model and the occurrences and questions extracted from each; `--url`, `--query`, `--platform`, `--type`
+  filter and `--limit`/`--offset` page. Read-only and without stored file paths, so a collector can tell which posts
+  the bank already holds.
+
 ## [1.33.0] - 2026-10-28
 
 ### Added
