@@ -91,18 +91,42 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(300);
   };
+  // settle() returns at once when no request is in flight yet, so a debounced search or an action that ends in a request
+  // needs more than its 300 ms on a slow runner. Poll the outcome instead of waiting a fixed time.
+  const until = async (page, read, timeout = 5000) => {
+    const end = Date.now() + timeout;
+    for (;;) {
+      const value = await read().catch(() => false);
+      if (value || Date.now() > end) return Boolean(value);
+      await page.waitForTimeout(100);
+    }
+  };
   const api = (page, path) =>
     page.evaluate(async (p) => (await fetch(p.slice(1), { headers: { "X-Interview-Token": sessionStorage.getItem("ibank-token") } })).json(), path);
 
-  // Select through the editor's native keymap before inserting plain text, just like select-all + paste.
-  // DOM-only fill() can bypass a decorated editor's logical selection.
+  // Replace the editor's content with plain text: select all through the editor's native keymap, then paste it through
+  // the editor's own paste handler. DOM-only fill() can bypass a decorated editor's logical selection. The text travels
+  // in a paste event, not through Ctrl+V, because the shared system clipboard is not part of what these checks cover and
+  // on a slow runner a real paste can read it before the write lands, which left the editor empty. Focus is confirmed
+  // first, since a dialog can move it after our focus() call; if the editor is still empty the whole step is repeated.
   const writeNote = async (p, target, text) => {
-    await target.focus();
-    await p.keyboard.press("ControlOrMeta+a");
-    await p.context().grantPermissions(["clipboard-read", "clipboard-write"]);
-    await p.evaluate((value) => navigator.clipboard.writeText(value), text);
-    await p.keyboard.press("ControlOrMeta+v");
-    await p.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    let focused = false;
+    for (let attempt = 0; attempt < 5; attempt++) {
+      await target.focus();
+      await p.keyboard.press("ControlOrMeta+a");
+      focused = await target.evaluate((node) => node === document.activeElement);
+      if (focused) {
+        await target.evaluate((node, value) => {
+          const data = new DataTransfer();
+          data.setData("text/plain", value);
+          node.dispatchEvent(new ClipboardEvent("paste", { clipboardData: data, bubbles: true, cancelable: true }));
+        }, text);
+        await p.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+        if (!text || (await target.locator(".cm-placeholder").count()) === 0) return;
+      }
+      await p.waitForTimeout(200);
+    }
+    throw new Error(`the note editor did not take the text (focused: ${focused})`);
   };
 
   const draftText = (p, id) => p.evaluate((item) => {
@@ -199,7 +223,7 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   check("my notes lists the answer and the note", (await page.locator("main a.surface").count()) === 2);
   await page.getByPlaceholder("搜索我的笔记").fill("雪崩 穿透");
   await settle(page);
-  check("my notes search needs every term", (await page.locator("main a.surface").count()) === 1);
+  check("my notes search needs every term", await until(page, async () => (await page.locator("main a.surface").count()) === 1));
   const download = page.waitForEvent("download");
   await page.getByRole("button", { name: "导出 Markdown" }).click();
   check("export is Markdown", readFileSync(await (await download).path(), "utf8").includes("三者要分清"));
@@ -215,7 +239,7 @@ print(json.dumps({'head': members[0]['id'], 'alias': members[1]['id']}))
   check("the folder holds both items", (await page.locator("main .surface > div").count()) === 2);
   await page.getByRole("button", { name: "重命名" }).click();
   await settle(page);
-  check("rename", (await page.locator("main h2").innerText()) === "冲刺");
+  check("rename", await until(page, async () => (await page.locator("main h2").innerText()) === "冲刺"));
   await page.getByRole("button", { name: "练习其中的面经题" }).click();
   await settle(page);
   await page.getByRole("button", { name: "查看参考答案" }).click();
