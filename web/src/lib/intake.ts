@@ -11,6 +11,8 @@ export type IntakeQuestion = {
   question_type: string;
   domains: string[];
   technologies: string[];
+  concept?: string;
+  segment_ids?: number[];
   flags: Flag[];
 };
 export type IntakeSource = {
@@ -20,6 +22,7 @@ export type IntakeSource = {
   reason: string | null;
   error?: string | null;
   metadata: { company?: string; round?: string; event_date?: string; platform?: string };
+  segments?: number;
   questions: IntakeQuestion[];
   self_introductions_dropped?: number;
 };
@@ -29,6 +32,8 @@ export type JobStatus = "collecting" | "extracting" | "review" | "saving" | "mer
 export type Job = {
   id: string;
   kind: "import" | "research";
+  input?: "images" | "text" | "url";
+  origin?: { url: string | null; platform: string | null; source_date: string | null; characters: number } | null;
   status: JobStatus;
   created_at: string;
   updated_at: string;
@@ -57,11 +62,11 @@ export type Hints = { company?: string; position?: string; round?: string; inter
 export type Overview = {
   enabled: boolean;
   models?: Record<"vision" | "text", { model: string; host: string }> & { search?: { provider: string; pages: number } };
-  limits?: { max_images_per_job: number; images_left_today: number; max_image_bytes: number; max_view_bytes: number; max_views: number };
+  limits?: { max_images_per_job: number; images_left_today: number; max_image_bytes: number; max_view_bytes: number; max_views: number; max_text?: number };
   research?: { candidates: number; per_job: number; left_today: number } | null;
   usage?: { today: Usage | null; last_30_days: Usage | null; priced: boolean; daily_budget: number | null };
   active?: Job | null;
-  recent?: { id: string; kind?: Job["kind"]; status: JobStatus; created_at: string; images: number; result: Job["result"]; answers: Job["answers"]; usage?: Usage | null }[];
+  recent?: { id: string; kind?: Job["kind"]; input?: Job["input"]; status: JobStatus; created_at: string; images: number; result: Job["result"]; answers: Job["answers"]; usage?: Usage | null }[];
 };
 
 export const RUNNING: JobStatus[] = ["extracting", "saving", "answering"];
@@ -71,6 +76,8 @@ export const intake = {
   overview: () => api<Overview>("/api/intake"),
   job: (id: string) => api<Job>("/api/intake/job?id=" + encodeURIComponent(id)),
   create: (hints: Hints) => api<Job>("/api/intake/jobs", { hints }),
+  createPage: (hints: Hints, page: { input: "text" | "url"; text?: string; url?: string; source_date?: string }) =>
+    api<Job>("/api/intake/jobs", { hints, ...page }),
   start: (job: string) => api<Job>("/api/intake/start", { job }),
   confirm: (job: string, sources: unknown[]) => api<Job>("/api/intake/confirm", { job, sources }),
   merge: (job: string, decisions: { question_id: string; action: string }[]) => api<Job>("/api/intake/merge", { job, decisions }),

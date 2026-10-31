@@ -18,7 +18,8 @@ from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 from . import ai
-from .ai_prompts import CONCEPT_HINT_LIMIT, answer_prompt, dedupe_prompt, extraction_prompt, extraction_request, research_prompt, research_request
+from .ai_prompts import (CONCEPT_HINT_LIMIT, answer_prompt, dedupe_prompt, extraction_prompt, extraction_request, research_prompt, research_request,
+                         text_extraction_prompt, text_extraction_request)
 from .answers import _quote_text as quote_text, research_task, stage_answers
 from .citations import page_texts as fetch_pages
 from .dates import today
@@ -29,6 +30,7 @@ from .errors import BankError, ValidationError
 from .flows import ingest_submit
 from .ids import utc_now
 from .ingestion import intake_images, stable_id
+from .media import intake_page
 from .normalize import clean_concept
 from .privacy import classified_findings, privacy_check
 from .runs import abandon_run, commit_run, run_path
@@ -43,6 +45,11 @@ MAX_IMAGE, MAX_VIEW, MAX_VIEWS = 10 * 1024 * 1024, 4 * 1024 * 1024, 8
 # What one model request may carry for a screenshot: base64 and the JSON body hold it about three more times.
 MAX_SENT = 8 * 1024 * 1024
 MAX_QUESTIONS_PER_IMAGE = 60
+# Pasted text or a fetched page: how much of it the model reads, and the sites whose names the reader shows.
+MAX_TEXT = 30000
+PLATFORMS = {"nowcoder.com": "牛客", "xiaohongshu.com": "小红书", "zhihu.com": "知乎", "bilibili.com": "B站", "juejin.cn": "掘金",
+             "csdn.net": "CSDN", "cnblogs.com": "博客园", "v2ex.com": "V2EX", "github.com": "GitHub", "douyin.com": "抖音"}
+PAGE_INPUTS = ("text", "url")
 ACTIVE = {"collecting", "extracting", "review", "saving", "merge_review", "answering"}
 RUNNING = {"extracting", "saving", "answering"}
 CANCELLABLE = {"collecting", "review", "merge_review"}
@@ -164,6 +171,8 @@ def clean_source(raw, hints, extensions, prefix):
         concept = clean_concept(row.get("concept"))
         if concept:
             question["concept"] = concept
+        if isinstance(row.get("segment_ids"), list):
+            question["segment_ids"] = [i for i in row["segment_ids"] if type(i) is int]
         if parent:
             question["parent_id"] = parent
         flags = []
@@ -183,8 +192,81 @@ def clean_source(raw, hints, extensions, prefix):
             "self_introductions_dropped": dropped}
 
 
+def platform_of(url):
+    host = (urlsplit(url).hostname or "").lower()
+    for domain, name in PLATFORMS.items():
+        if host == domain or host.endswith("." + domain):
+            return name
+    return re.sub(r"^(www|m|wap)\.", "", host) or None
+
+
+def fetch_reason(error):
+    """Why a page could not be read, in words the person can act on."""
+    error = error or ""
+    for marker, words in (("not a public address", "这个地址不是公开网址（内网或本机地址不能读取）"), ("no readable text", "页面里没有可读的文字"),
+                          ("larger than 3 MB", "页面超过 3 MB"), ("not a text page", "它不是文字页面"), ("redirect to a non-public", "它跳转到了非公开地址")):
+        if marker in error:
+            return words
+    return error or "页面没有可读的文字"
+
+
+def page_text(raw):
+    """One paragraph per line, so a question is anchored to the lines it is written on. Returns (text, cut_short)."""
+    lines = [re.sub(r"[ \t\u00a0\u3000]+", " ", line).strip() for line in raw.replace("\r\n", "\n").replace("\r", "\n").split("\n")]
+    kept, size = [], -2
+    for line in (line for line in lines if line):
+        if size + 2 + len(line) > MAX_TEXT:  # the text is the lines joined by blank lines, and that is what MAX_TEXT bounds
+            return "\n\n".join(kept), True
+        kept.append(line)
+        size += 2 + len(line)
+    return "\n\n".join(kept), False
+
+
+def clean_page_input(raw):
+    """What the person gave for a text or link import: validated, nothing fetched yet."""
+    require(isinstance(raw, dict) and set(raw) <= {"input", "text", "url", "source_date"}, "Expected input, text, url, source_date")
+    kind = raw.get("input")
+    require(kind in PAGE_INPUTS, "input is text or url")
+    url = _text(raw.get("url"), 500)
+    if url:
+        parts = urlsplit(url)
+        require(parts.scheme in ("http", "https") and bool(parts.netloc) and not parts.username, "请填写网页的公开链接（以 http 或 https 开头）")
+        require(not classified_findings(url), "链接里不要带手机号或邮箱")
+    require(kind != "url" or url, "请填写要导入的网页链接")
+    text = raw.get("text")
+    if kind == "text":
+        require(isinstance(text, str) and len(text.strip()) >= 8, "请粘贴面经的正文")
+        require(len(text) <= MAX_TEXT * 2, f"文字太长（最多约 {MAX_TEXT} 字）：请只粘贴面经的正文")
+    require(raw.get("source_date") in (None, "") or _date(raw["source_date"]), "发布日期写成 YYYY、YYYY-MM 或 YYYY-MM-DD")
+    return {"input": kind, "text": text if kind == "text" else None, "url": url, "source_date": raw.get("source_date") or None}
+
+
+def clean_page(raw, job, segments, extensions):
+    """A model's reading of a post, reduced to what the Skill's extraction schema accepts. A question is kept only when it
+    cites paragraphs of the post, and its original wording is those paragraphs, never the model's copy of them."""
+    raw = raw if isinstance(raw, dict) else {}
+    by_id = {segment["id"]: segment["text"] for segment in segments}
+    rows = []
+    for row in raw.get("questions") if isinstance(raw.get("questions"), list) else []:
+        ids = row.get("segment_ids") if isinstance(row, dict) else None
+        if not isinstance(ids, list) or not ids or not all(type(i) is int and i in by_id for i in ids):
+            continue
+        ids = sorted(set(ids))
+        rows.append({**row, "segment_ids": ids, "original_text": "\n".join(by_id[i] for i in ids)})
+    result = clean_source({**raw, "questions": rows}, job["hints"], extensions, "s1")
+    # Where the post comes from and its posting date are what the person gave. The interview date is theirs too: a post's title or
+    # header shows when it was written, and a model reading it cannot tell that from when the interview was (a quote of the title
+    # would pass any check of the text), so only the hint counts and the confirmation page has the field.
+    meta = raw.get("metadata") if isinstance(raw.get("metadata"), dict) else {}
+    metadata = clean_metadata({k: v for k, v in meta.items() if k not in ("platform", "source_date", "event_date")}, job["hints"], extensions)
+    result["metadata"] = metadata
+    result["segments"] = len(segments)
+    return result
+
+
 def build_extraction(job):
     """The Skill's extraction response from the model's reading and the person's confirmation."""
+    page = job.get("input") in PAGE_INPUTS
     sources = []
     for source in job["sources"]:
         confirmed = source.get("confirmed", {})
@@ -204,15 +286,19 @@ def build_extraction(job):
                     row["reviewed"] = True
                 if "contact" in q["flags"]:
                     row.update(pii_reviewed=True, pii_reason="网页导入时由本人查看并确认保留")
+                if page:
+                    row["reviewed"] = True
                 rows.append(row)
+            covered = {"reviewed_segment_ids": list(range(1, source["segments"] + 1))} if page else {}
             if rows:
-                sources.append({"source_id": source["source_id"], "status": "extracted",
+                sources.append({"source_id": source["source_id"], "status": "extracted", **covered,
                                 "metadata": confirmed.get("metadata", source["metadata"]), "questions": rows})
             else:
-                sources.append({"source_id": source["source_id"], "status": "no_questions",
-                                "reason": "网页导入时本人去掉了这张截图的全部候选题"})
+                sources.append({"source_id": source["source_id"], "status": "no_questions", **covered,
+                                "reason": "网页导入时本人去掉了全部候选题" if page else "网页导入时本人去掉了这张截图的全部候选题"})
         elif source["status"] == "no_questions":
-            sources.append({"source_id": source["source_id"], "status": "no_questions", "reason": source["reason"]})
+            covered = {"reviewed_segment_ids": list(range(1, source["segments"] + 1))} if page else {}
+            sources.append({"source_id": source["source_id"], "status": "no_questions", **covered, "reason": source["reason"]})
         else:
             sources.append({"source_id": source["source_id"], "status": "skip", "reviewed": True,
                             "reason": f"网页导入时本人确认跳过：{source.get('reason') or source.get('error') or '无法识别'}"})
@@ -449,7 +535,7 @@ class IntakeJobs:
     def view(self, job):
         return {"kind": job.get("kind", "import"), **{key: job.get(key) for key in (
             "id", "status", "created_at", "updated_at", "hints", "images", "sources", "progress", "error", "notice",
-            "merge_review", "result", "answers", "usage")}}
+            "merge_review", "result", "answers", "usage", "input", "origin")}}
 
     def overview(self):
         with self.lock:
@@ -462,9 +548,9 @@ class IntakeJobs:
             research = {"candidates": len(self._research_candidates()), "per_job": self.limits["max_answers_per_job"],
                         "left_today": max(0, self.limits["daily_research"] - searched)}
         return {"enabled": True, "models": ai.describe(self.config), "limits": {**self.limits, "max_image_bytes": MAX_IMAGE,
-                "max_view_bytes": MAX_VIEW, "max_views": MAX_VIEWS, "images_left_today": max(0, self.limits["daily_images"] - used)},
+                "max_view_bytes": MAX_VIEW, "max_views": MAX_VIEWS, "max_text": MAX_TEXT, "images_left_today": max(0, self.limits["daily_images"] - used)},
                 "research": research, "usage": self.ledger.view(), "active": self.view(active) if active else None,
-                "recent": [{"id": j["id"], "kind": j.get("kind", "import"), "status": j["status"], "created_at": j["created_at"],
+                "recent": [{"id": j["id"], "kind": j.get("kind", "import"), "input": j.get("input"), "status": j["status"], "created_at": j["created_at"],
                             "images": len(j["images"]), "result": j.get("result"), "answers": j.get("answers"),
                             "usage": j.get("usage")} for j in jobs[:10]]}
 
@@ -473,20 +559,75 @@ class IntakeJobs:
             return self.view(self._load(job_id))
 
     # ---- collecting ----------------------------------------------------------------------------------------
-    def create(self, payload):
-        require(isinstance(payload, dict) and set(payload) <= {"hints"}, "Expected hints")
-        hints = clean_hints(payload.get("hints") or {})
-        with self.lock:
-            active = next((j for j in self._jobs() if j["status"] in ACTIVE), None)
-            require(active is None, "还有一个导入任务没有完成：请先完成或取消它")
+    def _ready(self, images=True):
+        """Nothing else is running and today's limits leave room."""
+        active = next((j for j in self._jobs() if j["status"] in ACTIVE), None)
+        require(active is None, "还有一个导入任务没有完成：请先完成或取消它")
+        if images:
             require(self._today_images() < self.limits["daily_images"], "今天的截图识别额度已用完，请明天再试")
-            require(not self.ledger.over_budget(), "今天的费用已达到上限（ai.json 的 limits.daily_budget），请明天再试")
+        require(not self.ledger.over_budget(), "今天的费用已达到上限（ai.json 的 limits.daily_budget），请明天再试")
+
+    def create(self, payload):
+        require(isinstance(payload, dict) and set(payload) <= {"hints", "input", "text", "url", "source_date"}, "Expected hints")
+        hints = clean_hints(payload.get("hints") or {})
+        if payload.get("input") in PAGE_INPUTS:
+            return self._create_page(hints, clean_page_input({k: v for k, v in payload.items() if k != "hints"}))
+        require(set(payload) <= {"hints", "input"} and payload.get("input") in (None, "images"), "Expected hints")
+        with self.lock:
+            self._ready()
             job = {"schema_version": 1, "id": "job_" + secrets.token_hex(12), "status": "collecting", "created_at": utc_now(),
                    "hints": hints, "images": [], "sources": [], "progress": None, "error": None, "notice": None,
                    "merge_review": None, "result": None, "answers": None}
             self._dir(job["id"]).mkdir()
             self._prune()
             return self.view(self._save(job))
+
+    def _create_page(self, hints, page):
+        """Pasted text or a link: the page is read here (a link that cannot be read is told at once), the model reads it in the
+        background, and the person confirms what it found exactly as for screenshots."""
+        with self.lock:
+            self._ready(images=False)
+        url, final = page["url"], page["url"]
+        if page["input"] == "url":
+            report = fetch_pages(self.bank, [url], opener=self.fetch)
+            found = report["results"][0]
+            text = Path(found["path"]).read_text(encoding="utf-8") if found["ok"] else ""
+            require(readable(text), "读不到这个页面的正文（" + fetch_reason(found.get("error")) + "）：可能要登录，或要运行 JavaScript 才会显示。"
+                    "请把正文复制下来，用「粘贴文字」导入。")
+            final = found.get("final_url") or url
+        else:
+            text = page["text"]
+        body, cut = page_text(text)
+        require(bool(body), "没有可读的文字")
+        job_id = "job_" + secrets.token_hex(12)
+        folder = self._dir(job_id)
+        with self.lock:
+            self._ready(images=False)
+            folder.mkdir()
+            try:
+                atomic_write(folder / "page.txt", body + "\n")
+                with self.mutation:
+                    intake = intake_page(self.bank, folder / "page.txt", url=final, platform=platform_of(final) if final else None,
+                                         source_date=page["source_date"], retention="copy")
+            except BaseException:
+                for path in folder.glob("*"):
+                    path.unlink()
+                folder.rmdir()
+                raise
+            origin = {"url": final, "platform": platform_of(final) if final else None, "source_date": page["source_date"], "characters": len(body)}
+            job = {"schema_version": 1, "id": job_id, "status": "extracting", "created_at": utc_now(), "hints": hints, "images": [],
+                   "input": page["input"], "origin": origin, "intake_id": intake["id"], "sources": [], "progress": None, "error": None,
+                   "notice": f"页面很长，只读取了前 {MAX_TEXT} 个字" if cut else None, "merge_review": None, "result": None, "answers": None}
+            job["sources"] = [{"source_id": item["source_id"], "index": 0, "status": "pending", "reason": None, "metadata": {}, "questions": [],
+                               "segments": item["segment_count"]} for item in intake["items"]]
+            job["progress"] = {"phase": "extract", "done": 0, "total": len(job["sources"])}
+            if not job["sources"]:
+                job.update(status="done", progress=None, result={"added": [], "merged": [], "related": 0, "nothing_new": True})
+            self._prune()
+            self._save(job)
+        if job["status"] == "extracting":
+            self._spawn(job_id, self._extract_page)
+        return self.job(job_id)
 
     def upload(self, job_id, index, view, raw):
         mime = sniff(raw)
@@ -600,7 +741,7 @@ class IntakeJobs:
                 source.update(status="pending", error=None)
             job.update(status="extracting", error=None, progress={"phase": "extract", "done": 0, "total": len(failed)})
             self._save(job)
-        self._spawn(job_id, self._extract)
+        self._spawn(job_id, self._extract_page if job.get("input") in PAGE_INPUTS else self._extract)
         return self.job(job_id)
 
     def _extensions(self):
@@ -634,6 +775,30 @@ class IntakeJobs:
             except ai.AIError as exc:
                 result, error = None, str(exc)
             del parts
+
+            def store(job, source_id=source["source_id"], result=result, error=error):
+                target = next(s for s in job["sources"] if s["source_id"] == source_id)
+                if result:
+                    target.update(result, error=None)
+                else:
+                    target.update(status="failed", error=error)
+                job["progress"]["done"] += 1
+            self._update(job_id, store)
+        self._update(job_id, lambda job: job.update(status="review", progress=None))
+
+    def _extract_page(self, job_id):
+        extensions = self._extensions()
+        system = text_extraction_prompt(tuple(extensions.get("domains", [])), self._concepts())
+        job = self._load(job_id)
+        segments = read_json(run_path(self.bank, job["intake_id"]) / "intake.json")["items"][0]["segments"]
+        for source in [s for s in job["sources"] if s["status"] == "pending"]:
+            try:
+                with TEXT_SLOTS:
+                    reply = self.call(self.config["text"], system,
+                                      [{"text": text_extraction_request(job["hints"], segments, (job.get("origin") or {}).get("url"))}])
+                result, error = clean_page(reply, job, segments, extensions), None
+            except ai.AIError as exc:
+                result, error = None, str(exc)
 
             def store(job, source_id=source["source_id"], result=result, error=error):
                 target = next(s for s in job["sources"] if s["source_id"] == source_id)

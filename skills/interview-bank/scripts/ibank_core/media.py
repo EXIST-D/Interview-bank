@@ -477,6 +477,11 @@ def intake_web(bank, url, text_path, *, retention=None):
     from urllib.parse import urlparse
     parsed = urlparse(url or "")
     require(parsed.scheme in ("http", "https") and bool(parsed.netloc) and not parsed.username, "web-intake needs the page's public http(s) URL")
+    return intake_page(bank, text_path, url=url, platform=parsed.hostname, retention=retention)
+
+
+def intake_page(bank, text_path, *, url=None, platform=None, source_date=None, retention=None):
+    """A page body, or text the person pasted (no URL), as a paragraph-numbered source. Same text, same source."""
     path = Path(text_path).expanduser().resolve()
     require(path.is_file() and path.stat().st_size > 0, f"Missing or empty page text: {path}")
     require(path.stat().st_size <= 5 * 1024 * 1024, "Page text exceeds 5 MiB; save only the article body")
@@ -487,7 +492,8 @@ def intake_web(bank, url, text_path, *, retention=None):
     require(bool(segments), "Page text has no paragraphs")
     with open_bank(bank) as (_, config, current):
         from .privacy import privacy_check
-        privacy_check(url, config)
+        if url:
+            privacy_check(url, config)
         retention = retention or config["source_retention"]
         require(retention in ("reference", "copy", "none"), "Invalid retention")
         digest = file_hash(path)
@@ -498,8 +504,8 @@ def intake_web(bank, url, text_path, *, retention=None):
         if retention == "copy":
             source_path = f"media/{digest}.txt"
             copy_media(path, bank_file(bank, source_path), digest)
-        source = {"schema_version": 1, "id": new_source_id(), "type": "web", "path": source_path if retention != "none" else None,
-                  "sha256": digest, "platform": parsed.hostname, "source_url": url, "source_date": None,
+        source = {"schema_version": 1, "id": new_source_id(), "type": "web" if url else "text", "path": source_path if retention != "none" else None,
+                  "sha256": digest, "platform": platform, "source_url": url, "source_date": source_date,
                   "imported_at": utc_now(), "retention": retention,
                   "transcription": transcript_metadata(segments, engine="web-text")}
         item = {"source": source, "view_path": str(bank / source_path) if retention == "copy" else str(path),

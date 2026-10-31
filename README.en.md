@@ -4,14 +4,15 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.38.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.39.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.38 Finding duplicates that are worded differently
+## This update: 1.39 Import text and links in the Web reader
 
-- Fuller dedupe candidates: a short question inside a longer one ("岛屿数量" against the long "LeetCode 200 岛屿数量, implement in Python or Java and analyse the complexity") is now found, and a batch of related new questions no longer pushes the bank's own question out of the list.
-- An optional **concept key** (such as `rag.chunking.strategy`): questions about the same knowledge point share a key, so equivalent questions that share almost no wording are offered to each other. The Web import has the model key new questions and reuse the bank's keys; an existing bank can be keyed with `curate`, `stats` lists the keys in use and `search --concept` filters. A key only helps find candidates and read; nothing is merged because of it.
-- 66 new Agent, RAG, MCP and LangGraph pairs in the evaluation set. On a real import, same-question duplicates were already all found; what changed is the related pairs (52/60 → 57/60) and the order (the same question first 9 → 11 times, in the top three 13 → 16), at the price of a longer list: 8.8 → 12.2 candidates per new question on average.
-- The 1.37 bank transfer and the 1.36 preparation board work as before.
+- The import page gains Paste text and Link, through the same pipeline as screenshots: the AI reads the questions, you confirm them one by one, they are deduplicated into My interviews and new ones get reference answers. A good post on your phone can go into the bank by copying its text, no screenshot first.
+- Every question is tied to a paragraph of the post: the AI only says which paragraph a question is in, and the server takes the original wording from that paragraph, so the bank keeps the post's own wording and a question the AI made up is dropped.
+- The interview date comes only from what you enter; a date from the AI is never used (in a real run it read the "面经10.28" in a title as the interview date). The posting date is kept with the source and never becomes the interview date.
+- A link is read by the server, public addresses only; a page that cannot be read (login, JavaScript) is explained at once with the way out, Paste text. In a test, 牛客 posts are read; 知乎, 小红书, 抖音 and Bilibili video pages give no text. DeepSeek's Fetch API gave a cleaner article only for 牛客 and no more sites, so it is not used.
+- The 1.38 concept keys and the 1.37 bank transfer work as before.
 
 Try the [online test site](https://exist.qd.je/) without an account for public reading. Contact the maintainer on QQ **1939123241** for full-feature testing and suggestions.
 

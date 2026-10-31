@@ -72,6 +72,63 @@ Allowed values (use the IDs exactly):
   omit it when unsure.{known}"""
 
 
+TEXT_SECTIONS = (("extraction.md", "Wording and follow-ups"), ("extraction.md", "What to keep"), ("report-policy.md", "Selection"))
+
+
+@lru_cache(maxsize=8)
+def text_extraction_prompt(extensions=(), concepts=()):
+    """The same reading as for a screenshot, from the numbered paragraphs of one interview post."""
+    domains = [*TAXONOMY["domains"], *extensions]
+    known = (f"\n  Keys already in the bank (reuse one whenever the question asks the same point): {', '.join(concepts[:CONCEPT_HINT_LIMIT])}"
+             if concepts else "")
+    return f"""You are the reading step of the Interview Bank Skill. You get the numbered paragraphs of ONE interview post (a page
+the person pasted or a link they gave) and return the interview questions in it as one JSON object. Each paragraph has a
+number; a question is anchored to the paragraph(s) it comes from.
+{UNTRUSTED}
+
+The rules below come from the Skill's references. They describe the whole CLI flow; here you only write the object for this
+one post. The server checks it, the person reviews it, then the CLI stages and deduplicates it.
+
+{_rules(TEXT_SECTIONS)}
+
+Output exactly one JSON object and nothing else:
+{{"status": "extracted" | "no_questions", "reason": "required unless extracted",
+ "metadata": {{"company": "only if the post names it", "round": "...", "interview_type": "...", "role_tracks": []}},
+ "questions": [{{"id": "q1", "segment_ids": [3], "canonical_suggestion": "the question as one clean sentence", "parent_id": "earlier id for a follow-up",
+                "question_type": "...", "domains": [], "technologies": [], "concept": "optional key, see below", "role_tracks": [],
+                "difficulty": "...", "confidence": {{"is_question": 0.0-1.0, "classification": 0.0-1.0}}}}]}}
+- segment_ids: the number(s) of the paragraph(s) the question is written in, in order. Do not copy the post's text: the server
+  takes the original wording from those paragraphs. Several questions may share a paragraph; split a numbered list into questions.
+- A question the post only mentions in passing, an answer without its question, advertising and the author's own opinions are not
+  questions. Do not invent questions the post does not ask.
+- Do not give a date. A title or header such as "面经10.28" shows when the post was written, not when the interview took place;
+  the person enters the interview date. Company, round and interview type only with evidence in the post.
+- Keep the question's language; leave out names of people and contact details.
+
+Allowed values (use the IDs exactly):
+- question_type: {", ".join(TAXONOMY["question_type"])}
+- difficulty: {", ".join(TAXONOMY["difficulty"])}
+- round: {", ".join(TAXONOMY["round"])}
+- interview_type: {", ".join(TAXONOMY["interview_type"])}
+- role_tracks: {", ".join(TAXONOMY["role_tracks"])}
+- domains (prefer the most specific; at most 3): {", ".join(domains)}
+- technologies: short lowercase names, e.g. redis, mysql, react, kafka, langchain
+- concept (optional): the one knowledge point the question asks about, 2 to 4 lowercase segments joined by dots, e.g.
+  rag.chunking.strategy or network.tcp.handshake. The same point gets the same key whatever the wording or breadth;
+  omit it when unsure.{known}"""
+
+
+def text_extraction_request(hints, segments, url=None):
+    known = {"company": "公司", "position": "岗位", "round": "轮次", "interview_type": "招聘类型", "event_date": "面试日期"}
+    told = [f"{label}: {hints[key]}" for key, label in known.items() if hints.get(key)]
+    lines = ["Extract the interview questions from this post." + (f" Its address: {url}" if url else "")]
+    if told:
+        lines.append("The person who gave it says (use as metadata unless the post clearly contradicts it): " + "; ".join(told))
+    lines.append("Paragraphs:")
+    lines.extend(f"[{segment['id']}] {segment['text']}" for segment in segments)
+    return "\n".join(lines)
+
+
 def extraction_request(hints):
     known = {"company": "公司", "position": "岗位", "round": "轮次", "interview_type": "招聘类型", "event_date": "面试日期"}
     told = [f"{label}: {hints[key]}" for key, label in known.items() if hints.get(key)]

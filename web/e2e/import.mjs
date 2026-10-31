@@ -75,6 +75,14 @@ const model = createServer((request, response) => {
             { id: "e", original_text: "期望薪资是多少", sequence: 5, confidence: { is_question: 0.9, classification: 0.9 } },
           ] }
         : { status: "no_questions", reason: "只有聊天记录" };
+    } else if (system.includes("reading step")) {
+      // A post read as numbered paragraphs: the numbered lines are the questions, cited by paragraph.
+      const lines = [...content[0].text.matchAll(/^\[(\d+)\] (.+)$/gm)].map((m) => ({ id: Number(m[1]), text: m[2] }));
+      const found = lines.filter((line) => /^\d+\. /.test(line.text));
+      reply = { status: found.length ? "extracted" : "no_questions", reason: "没有面试题",
+        metadata: { company: "示例科技", platform: "模型猜的平台", event_date: "2025-10-28" },
+        questions: found.map((line, index) => ({ id: `q${index + 1}`, segment_ids: [line.id], canonical_suggestion: line.text.replace(/^\d+\.\s*/, ""),
+          domains: ["computer-science.network"], confidence: { is_question: 0.99, classification: 0.95 } })) };
     } else if (system.includes("deduplication step")) {
       const listing = JSON.parse(content[0].text.split("candidates:\n")[1].split("\n\nThe review sheet")[0]);
       reply = { decisions: listing.filter((item) => item.question.includes("单线程")).map((item) => ({
@@ -184,6 +192,44 @@ try {
   await page.getByRole("button", { name: "再导入一批", exact: true }).click();
   await page.getByText(/^补充出处 · \d+ 道 · 有来源 0$/).waitFor();
   check("the research job is listed", true);
+
+  // Pasted text: the same pipeline, with each question anchored to the paragraph of the post it is written in.
+  await page.getByRole("radio", { name: "粘贴文字", exact: true }).click();
+  const post = ["面经：某公司后端一面（3 月面的）", "1. HTTP 和 HTTPS 有什么区别？", "2. TCP 为什么需要三次握手？", "欢迎交流"].join("\n");
+  await page.getByLabel("面经正文").fill(post);
+  check("the character count follows the pasted text", await page.getByText(`${post.length} / 30000 字`).isVisible());
+  await page.getByLabel("帖子发布日期（可选）").fill("2026-10-20");
+  await page.getByLabel("面试时间", { exact: true }).fill("2026-03");
+  check("the chosen import mode is the one marked", (await page.getByRole("radio", { name: "粘贴文字", exact: true }).getAttribute("aria-checked")) === "true" &&
+    (await page.getByRole("radio", { name: "截图", exact: true }).getAttribute("aria-checked")) === "false");
+  await page.waitForTimeout(400);
+  await shot(page, "text-picker");
+  await page.getByRole("button", { name: "开始识别", exact: true }).click();
+  await page.getByRole("heading", { name: "确认识别结果", exact: true }).waitFor({ timeout: 20000 });
+  check("the model was given the numbered paragraphs of the post", seen.some((s) => s.system.includes("reading step")));
+  check("a pasted text is reviewed as such, with the post's own wording under each question",
+    await page.getByRole("region", { name: "粘贴的文字" }).isVisible() && await page.getByText("原文：1. HTTP 和 HTTPS 有什么区别？").isVisible());
+  await shot(page, "text-review");
+  await page.getByRole("button", { name: "确认保存 2 道题", exact: true }).click();
+  await page.getByRole("heading", { name: "导入完成", exact: true }).waitFor({ timeout: 20000 });
+  check("a pasted text adds its questions", await page.getByText("新增 2 道题").isVisible());
+  const pasted = (await api("/api/library?limit=100&sort=recent")).questions.find((q) => q.canonical === "HTTP 和 HTTPS 有什么区别？");
+  const pastedDetail = await api("/api/question?id=" + pasted.id);
+  const occurrence = pastedDetail.occurrences[0];
+  check("the saved question keeps the post's wording and paragraph, and the interview year is the one entered, not the model's or the posting date",
+    occurrence.type === "text" && occurrence.text === "1. HTTP 和 HTTPS 有什么区别？" && occurrence.year === "2026" && occurrence.locator.segment_ids[0] === 2 &&
+    occurrence.platform === null);
+  // A link the server will not read: told at once, with the way out.
+  await page.getByRole("button", { name: "再导入一批", exact: true }).click();
+  await page.getByRole("radio", { name: "贴链接", exact: true }).click();
+  await page.getByLabel("网页链接").fill(`http://127.0.0.1:${model.address().port}/post`);
+  await page.getByRole("button", { name: "开始识别", exact: true }).click();
+  await page.getByText(/这个地址不是公开网址/).waitFor();
+  check("a page the server cannot read is explained and points to pasting the text", await page.getByText(/请把正文复制下来，用「粘贴文字」导入/).isVisible());
+  await shot(page, "link-refused");
+  await page.getByRole("radio", { name: "截图", exact: true }).click();
+  await page.getByRole("button", { name: /^选择截图/ }).waitFor();
+  check("switching back to screenshots shows the drop area again", true);
 
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto(base + "#/import");

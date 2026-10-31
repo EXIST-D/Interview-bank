@@ -2,6 +2,25 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.39.0] - 2026-10-31
+
+### Added
+- Web import of pasted text and links (`粘贴文字`, `贴链接` on the import page), through the screenshot pipeline: the text model reads the
+  post as numbered paragraphs and returns for each question the paragraphs it is written in; the server takes the original wording
+  from those paragraphs (a question that cites none is dropped), so a question stays tied to real text (`locator.segment_ids`) and the
+  person confirms, dedupe commits and answers follow as for screenshots. Pasted text is a `text` source, a link a `web` source with the
+  address and the platform named from the host. A link is read with the research page reader (public addresses only); a page that
+  cannot be read is refused at once with the way out, and a page over 30,000 characters is cut there and the person is told.
+- The interview date is only what the person enters (the hint or the confirmation page); the model is not asked for one and a date it
+  gives is dropped. A real run read the "面经10.28" in a post's title as the interview date, and a rule that the model must quote the
+  post's words would not have caught it. The posting date (`source_date`) is only what the person typed.
+- `intake_page` in the engine (the CLI's `web-intake` now goes through it) also takes text without an address.
+
+### Evaluated
+- DeepSeek Fetch API (`/v1/tools/fetch`, ¥5 per 1,000 successful calls) against the built-in reader on one post of each platform from a real
+  bundle: a cleaner article for 牛客 (about a third of the characters) and nothing usable for 知乎, 小红书, 抖音 or a Bilibili video page,
+  where the built-in reader fares no better. Not integrated; `references/web.md` lists which sites give text.
+
 ## [1.38.0] - 2026-10-31
 
 Dedupe retrieval for paraphrases and for a short question inside a longer one. Measured on a real import (76 pairs decided by

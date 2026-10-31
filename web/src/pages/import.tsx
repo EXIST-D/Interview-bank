@@ -45,7 +45,7 @@ function Progress({ job }: { job: Job }) {
   const step = { i: Math.min((p?.done ?? 0) + 1, p?.total ?? 1), n: p?.total ?? 1 };
   const text =
     job.status === "extracting"
-      ? t("imp_reading", step)
+      ? t(job.input && job.input !== "images" ? "imp_reading_page" : "imp_reading", step)
       : job.status === "saving"
         ? t("imp_saving")
         : t(job.kind === "research" ? "research_progress" : "imp_answering", step);
@@ -68,6 +68,8 @@ function Progress({ job }: { job: Job }) {
   );
 }
 
+type Mode = "images" | "text" | "url";
+
 function Picker({ overview, onStarted }: { overview: Overview; onStarted: (job: Job) => void }) {
   const { t } = useI18n();
   const limits = overview.limits!;
@@ -76,6 +78,11 @@ function Picker({ overview, onStarted }: { overview: Overview; onStarted: (job: 
   const [hints, setHints] = useState<Hints>({});
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mode, setMode] = useState<Mode>("images");
+  const [text, setText] = useState("");
+  const [url, setUrl] = useState("");
+  const [postDate, setPostDate] = useState("");
+  const maxText = limits.max_text ?? 30000;
   const input = useRef<HTMLInputElement>(null);
 
   const add = async (files: File[]) => {
@@ -126,64 +133,136 @@ function Picker({ overview, onStarted }: { overview: Overview; onStarted: (job: 
     }
   };
 
+  const startPage = async () => {
+    setError(null);
+    setBusy(t("imp_reading_page"));
+    try {
+      const clean = Object.fromEntries(Object.entries(hints).filter(([, v]) => v));
+      onStarted(
+        await intake.createPage(clean, {
+          input: mode === "url" ? "url" : "text",
+          ...(mode === "text" ? { text } : {}),
+          ...(url.trim() ? { url: url.trim() } : {}),
+          ...(postDate ? { source_date: postDate } : {}),
+        }),
+      );
+    } catch (cause) {
+      setError(message(cause, t("failed")));
+      setBusy(null);
+    }
+  };
+  const pageReady = mode === "text" ? text.trim().length >= 8 && text.length <= maxText : url.trim().length > 0;
+
   const hint = (key: keyof Hints, value: string) => setHints((current) => ({ ...current, [key]: value }));
   return (
-    <div className="flex flex-col gap-4" onPaste={onPaste}>
-      <button
-        type="button"
-        onClick={() => input.current?.click()}
-        onDragOver={(event) => event.preventDefault()}
-        onDrop={onDrop}
-        disabled={Boolean(busy) || max <= 0}
-        className="flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-border bg-card px-4 py-10 text-center transition-colors hover:border-primary/50 disabled:opacity-50"
-      >
-        <span className="grid size-12 place-items-center rounded-2xl bg-accent text-primary">
-          <ImagePlus className="size-6" />
-        </span>
-        <span className="text-callout font-medium">{t("imp_pick")}</span>
-        <span className="text-footnote text-muted-foreground">{t("imp_drop", { n: max })}</span>
-      </button>
-      <input
-        ref={input}
-        type="file"
-        accept="image/*"
-        multiple
-        hidden
-        aria-label={t("imp_pick")}
-        onChange={(event) => {
-          add([...(event.target.files ?? [])]);
-          event.target.value = "";
-        }}
+    <div className="flex flex-col gap-4" onPaste={mode === "images" ? onPaste : undefined}>
+      <Segmented
+        label={t("imp_mode")}
+        value={mode}
+        onChange={(next) => !busy && setMode(next)}
+        options={[
+          { value: "images", label: t("imp_mode_images") },
+          { value: "text", label: t("imp_mode_text") },
+          { value: "url", label: t("imp_mode_url") },
+        ]}
       />
-      {items.length > 0 && (
-        <ul className="grid grid-cols-3 gap-2.5 sm:grid-cols-5">
-          {items.map((item, index) => (
-            <li key={item.key} className="relative overflow-hidden rounded-xl bg-fill">
-              {item.thumb ? (
-                <img src={item.thumb} alt={item.name} className="aspect-[3/4] w-full object-cover object-top" />
-              ) : (
-                <div className="grid aspect-[3/4] place-items-center p-2 text-caption break-all text-muted-foreground">{item.name}</div>
-              )}
-              <span className="absolute bottom-1 left-1 rounded-full bg-black/55 px-1.5 text-[11px] text-white">
-                {index + 1}
-                {item.tiles > 0 && ` · ${t("imp_tiles", { n: item.tiles })}`}
-              </span>
-              <button
-                type="button"
-                aria-label={t("imp_remove")}
+      {mode === "images" ? (
+      <>
+        <button
+          type="button"
+          onClick={() => input.current?.click()}
+          onDragOver={(event) => event.preventDefault()}
+          onDrop={onDrop}
+          disabled={Boolean(busy) || max <= 0}
+          className="flex flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-border bg-card px-4 py-10 text-center transition-colors hover:border-primary/50 disabled:opacity-50"
+        >
+          <span className="grid size-12 place-items-center rounded-2xl bg-accent text-primary">
+            <ImagePlus className="size-6" />
+          </span>
+          <span className="text-callout font-medium">{t("imp_pick")}</span>
+          <span className="text-footnote text-muted-foreground">{t("imp_drop", { n: max })}</span>
+        </button>
+        <input
+          ref={input}
+          type="file"
+          accept="image/*"
+          multiple
+          hidden
+          aria-label={t("imp_pick")}
+          onChange={(event) => {
+            add([...(event.target.files ?? [])]);
+            event.target.value = "";
+          }}
+        />
+        {items.length > 0 && (
+          <ul className="grid grid-cols-3 gap-2.5 sm:grid-cols-5">
+            {items.map((item, index) => (
+              <li key={item.key} className="relative overflow-hidden rounded-xl bg-fill">
+                {item.thumb ? (
+                  <img src={item.thumb} alt={item.name} className="aspect-[3/4] w-full object-cover object-top" />
+                ) : (
+                  <div className="grid aspect-[3/4] place-items-center p-2 text-caption break-all text-muted-foreground">{item.name}</div>
+                )}
+                <span className="absolute bottom-1 left-1 rounded-full bg-black/55 px-1.5 text-[11px] text-white">
+                  {index + 1}
+                  {item.tiles > 0 && ` · ${t("imp_tiles", { n: item.tiles })}`}
+                </span>
+                <button
+                  type="button"
+                  aria-label={t("imp_remove")}
+                  disabled={Boolean(busy)}
+                  onClick={() => setItems((current) => current.filter((other) => other.key !== item.key))}
+                  className="absolute top-1 right-1 grid size-6 place-items-center rounded-full bg-black/55 text-white"
+                >
+                  <X className="size-3.5" />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </>
+      ) : (
+        <section className="flex flex-col gap-3">
+          {mode === "text" ? (
+            <label className="grid gap-1 text-caption text-muted-foreground">
+              {t("imp_text_label")}
+              <textarea
+                rows={10}
+                value={text}
                 disabled={Boolean(busy)}
-                onClick={() => setItems((current) => current.filter((other) => other.key !== item.key))}
-                className="absolute top-1 right-1 grid size-6 place-items-center rounded-full bg-black/55 text-white"
-              >
-                <X className="size-3.5" />
-              </button>
-            </li>
-          ))}
-        </ul>
+                placeholder={t("imp_text_placeholder", { n: maxText })}
+                onChange={(e) => setText(e.target.value)}
+                className="w-full resize-y rounded-[10px] bg-fill px-3 py-2.5 text-subhead leading-relaxed outline-none focus:ring-2 focus:ring-ring/30"
+              />
+              <span className={cn("text-right", text.length > maxText && "text-destructive")}>{t("imp_text_count", { n: text.length, m: maxText })}</span>
+            </label>
+          ) : (
+            <>
+              <label className="grid gap-1 text-caption text-muted-foreground">
+                {t("imp_url_label")}
+                <input className={field} type="url" inputMode="url" placeholder="https://" disabled={Boolean(busy)} value={url} onChange={(e) => setUrl(e.target.value)} />
+              </label>
+              <p className="text-footnote text-muted-foreground">{t("imp_url_hint")}</p>
+            </>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            {mode === "text" && (
+              <label className="grid gap-1 text-caption text-muted-foreground">
+                {t("imp_post_url")}
+                <input className={field} type="url" inputMode="url" placeholder="https://" disabled={Boolean(busy)} value={url} onChange={(e) => setUrl(e.target.value)} />
+              </label>
+            )}
+            <label className="grid gap-1 text-caption text-muted-foreground">
+              {t("imp_post_date")}
+              <input className={field} type="date" disabled={Boolean(busy)} value={postDate} onChange={(e) => setPostDate(e.target.value)} />
+              <span className="text-tertiary-foreground">{t("imp_post_date_hint")}</span>
+            </label>
+          </div>
+        </section>
       )}
       <fieldset className="surface grid gap-3 p-4 sm:grid-cols-2">
-        <legend className="sr-only">{t("imp_hints")}</legend>
-        <p className="text-footnote text-muted-foreground sm:col-span-2">{t("imp_hints")}</p>
+        <legend className="sr-only">{t(mode === "images" ? "imp_hints" : "imp_hints_page")}</legend>
+        <p className="text-footnote text-muted-foreground sm:col-span-2">{t(mode === "images" ? "imp_hints" : "imp_hints_page")}</p>
         <label className="grid gap-1 text-caption text-muted-foreground">
           {t("imp_company")}
           <input className={field} maxLength={80} value={hints.company ?? ""} onChange={(e) => hint("company", e.target.value)} />
@@ -210,11 +289,18 @@ function Picker({ overview, onStarted }: { overview: Overview; onStarted: (job: 
       </fieldset>
       {error && <p className="text-footnote text-destructive">{error}</p>}
       <div className="flex items-center justify-between gap-3">
-        <span className="text-footnote text-muted-foreground">{busy ?? t("imp_left", { n: limits.images_left_today })}</span>
-        <Button disabled={!items.length || Boolean(busy)} onClick={start}>
-          {busy ? <Loader2 className="animate-spin" /> : <Sparkles />}
-          {t("imp_start", { n: items.length })}
-        </Button>
+        <span className="text-footnote text-muted-foreground">{busy ?? (mode === "images" ? t("imp_left", { n: limits.images_left_today }) : "")}</span>
+        {mode === "images" ? (
+          <Button disabled={!items.length || Boolean(busy)} onClick={start}>
+            {busy ? <Loader2 className="animate-spin" /> : <Sparkles />}
+            {t("imp_start", { n: items.length })}
+          </Button>
+        ) : (
+          <Button disabled={!pageReady || Boolean(busy)} onClick={startPage}>
+            {busy ? <Loader2 className="animate-spin" /> : <Sparkles />}
+            {t("imp_start_page")}
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -273,6 +359,13 @@ function Review({ job, onChange }: { job: Job; onChange: (job: Job) => void }) {
   const kept = Object.values(edits).filter((edit) => edit.keep && edit.canonical.trim()).length;
   const failed = sources.some((s) => s.status === "failed");
   const duplicates = job.images.filter((image) => image.duplicate).length;
+  const page = job.input === "text" || job.input === "url";
+  const sourceName = (source: IntakeSource) =>
+    job.input === "text"
+      ? t("imp_source_text")
+      : job.input === "url"
+        ? t("imp_source_url", { s: job.origin?.platform ?? job.origin?.url ?? "" })
+        : t("imp_shot", { n: source.index + 1 });
 
   const act = async (run: () => Promise<Job>) => {
     setBusy(true);
@@ -312,7 +405,7 @@ function Review({ job, onChange }: { job: Job; onChange: (job: Job) => void }) {
   const setMetaField = (id: string, key: keyof Meta, value: string) => setMeta((all) => ({ ...all, [id]: { ...all[id], [key]: value } }));
   const notice = (source: IntakeSource) =>
     source.status === "failed"
-      ? t("imp_failed_shot", { r: source.error ?? "" })
+      ? t(page ? "imp_failed_page" : "imp_failed_shot", { r: source.error ?? "" })
       : source.status === "no_questions"
         ? t("imp_empty_shot", { r: source.reason ?? "" })
         : t("imp_skip_shot", { r: source.reason ?? "" });
@@ -321,11 +414,11 @@ function Review({ job, onChange }: { job: Job; onChange: (job: Job) => void }) {
     <div className="flex flex-col gap-4">
       <div>
         <h2 className="text-title-3 font-semibold">{t("imp_review_title")}</h2>
-        <p className="mt-1 text-footnote text-muted-foreground">{t("imp_review_lead")}</p>
+        <p className="mt-1 text-footnote text-muted-foreground">{t(page ? "imp_review_lead_page" : "imp_review_lead")}</p>
         {duplicates > 0 && <p className="mt-1 text-footnote text-muted-foreground">{t("imp_dup", { n: duplicates })}</p>}
       </div>
       {sources.map((source) => (
-        <section key={source.source_id} className="surface flex flex-col gap-3 p-4" aria-label={t("imp_shot", { n: source.index + 1 })}>
+        <section key={source.source_id} className="surface flex flex-col gap-3 p-4" aria-label={sourceName(source)}>
           <div className="flex gap-3">
             {pictures?.[source.index]?.thumb && (
               <button
@@ -338,7 +431,7 @@ function Review({ job, onChange }: { job: Job; onChange: (job: Job) => void }) {
               </button>
             )}
             <div className="min-w-0 flex-1">
-              <h3 className="text-headline font-semibold">{t("imp_shot", { n: source.index + 1 })}</h3>
+              <h3 className="text-headline font-semibold">{sourceName(source)}</h3>
               {source.status === "extracted" ? (
                 <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                   <input
@@ -451,11 +544,11 @@ function Review({ job, onChange }: { job: Job; onChange: (job: Job) => void }) {
       </Dialog.Root>
       {error && <p className="text-footnote text-destructive">{error}</p>}
       <div className="glass sticky bottom-[calc(52px+env(safe-area-inset-bottom))] -mx-4 flex flex-wrap items-center justify-end gap-2 border-t border-border px-4 py-3 md:bottom-0">
-        {!kept && <span className="mr-auto text-footnote text-muted-foreground">{t("imp_none_kept")}</span>}
+        {!kept && <span className="mr-auto text-footnote text-muted-foreground">{t(page ? "imp_none_kept_page" : "imp_none_kept")}</span>}
         {failed && (
           <Button variant="outline" size="sm" disabled={busy} onClick={() => act(() => intake.retryRead(job.id))}>
             <RotateCcw />
-            {t("imp_reread")}
+            {t(page ? "imp_reread_page" : "imp_reread")}
           </Button>
         )}
         <Button variant="ghost" size="sm" disabled={busy} onClick={cancel}>
@@ -570,7 +663,7 @@ function Done({ job, priced, onChange, onAgain }: { job: Job; priced: boolean; o
         {t(research ? "research_done_title" : "imp_done_title")}
       </h2>
       {job.error && <p className="text-footnote text-destructive">{job.error}</p>}
-      {result?.nothing_new && <p className="text-subhead text-muted-foreground">{t("imp_nothing_new")}</p>}
+      {result?.nothing_new && <p className="text-subhead text-muted-foreground">{t(job.input && job.input !== "images" ? "imp_nothing_new_page" : "imp_nothing_new")}</p>}
       {research && result?.questions && (
         <div>
           <h3 className="text-callout font-semibold">{t("research_sourced", { k: sourced.size, n: result.questions.length })}</h3>
@@ -764,7 +857,14 @@ export function ImportPage() {
                   {entry.kind === "research" && entry.status === "done"
                     ? t("research_recent_line", { n: entry.result?.questions?.length ?? 0, k: entry.answers?.sourced?.length ?? 0 })
                     : entry.result?.added
-                      ? t("imp_recent_line", { i: entry.images, a: entry.result.added.length, m: entry.result.merged.length, d: entry.answers?.done.length ?? 0 })
+                      ? entry.input === "text" || entry.input === "url"
+                        ? t("imp_recent_line_page", {
+                            k: t(entry.input === "url" ? "imp_mode_url" : "imp_mode_text"),
+                            a: entry.result.added.length,
+                            m: entry.result.merged.length,
+                            d: entry.answers?.done.length ?? 0,
+                          })
+                        : t("imp_recent_line", { i: entry.images, a: entry.result.added.length, m: entry.result.merged.length, d: entry.answers?.done.length ?? 0 })
                       : t(`imp_status_${entry.status}` as TextKey)}
                 </span>
               </li>

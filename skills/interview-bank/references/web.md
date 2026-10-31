@@ -222,7 +222,30 @@ known bytes are not read again), extraction, the person's check, `ingest submit`
   a search provider) turn them into costs, and `limits.daily_budget` then refuses new jobs and searches once today's
   cost reaches it. Prices change: copy them from the provider's price page. Page texts read for research are
   deleted after 30 days.
-- Screenshots leave the server for the model provider the person configured. Enable it only when they ask.
+- Screenshots, and the text of pasted or fetched posts, leave the server for the model provider the person configured. Enable it only when they ask.
+
+### Pasted text and links
+
+The import page also takes the text of a post (`粘贴文字`, optionally with the post's address) or a link (`贴链接`), through the same
+pipeline: model reading, the person's confirmation, dedupe, commit, answers. Differences from screenshots:
+
+- A link is read by the server with the research page reader: public addresses only, redirects to private ones refused, 3 MB at most.
+  A page that gives under 300 readable characters, an anti-bot stub or a JavaScript shell is refused at once, with the way out
+  (paste the text). Pasted text is limited to 30,000 characters; a longer page is cut there and the person is told.
+- The text becomes numbered paragraphs, one per line. The text model (`config.text`; no vision model) returns for each question the
+  numbers of the paragraphs it is written in. The server takes the original wording from those paragraphs, so a question stays tied to
+  real text (`locator.segment_ids`); a question that cites none, or a paragraph that does not exist, is dropped. The model's wording
+  is only the suggested question, which the person can edit.
+- The source is `text` (pasted, no address) or `web` (address, platform named from the host: 牛客, 知乎, 小红书, B站, …). `source_date` is only what
+  the person typed. `event_date` is only the person's hint or what they enter on the confirmation page: the model is not asked for a date,
+  and one it gives anyway is dropped, because a title or header such as "面经10.28" shows when a post was written (a real model read
+  exactly that as 2025-10-28 for a post of 2026) and a quote of it would pass any check of the text. The posting date is never the interview date.
+- The extraction prompt is built from the same references (wording, what to keep, selection) and lists the bank's concept keys.
+
+Reading test (1.39, one post of each platform from a real bundle): 牛客 pages are read (article body, comments and links included); 知乎
+answers 403, 小红书 and 抖音 give a shell or a footer, and a B站 video page has no transcript, so for those the text is pasted. DeepSeek's
+Fetch API (`/v1/tools/fetch`, ¥5 per 1,000 successful calls) returned a cleaner Markdown article for 牛客 (about a third of the characters)
+and nothing usable for the others, so it is not used.
 
 ### Web research for sourced answers (1.32+)
 
