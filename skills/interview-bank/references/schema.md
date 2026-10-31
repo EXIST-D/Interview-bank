@@ -66,6 +66,15 @@ Question optional fields:
 problem_url ({url, title, evidence}, see classification) and report_exclusion, null or a nonempty string explaining editorial exclusion from reader reports.
 It does not change active/merged status or delete occurrences. Old banks without this field remain valid.
 
+`concept` (optional, questions): a key for the one knowledge point a question asks about, 2 to 4 lowercase segments joined by
+dots (`rag.chunking.strategy`, `network.tcp.handshake`; digits and hyphens inside a segment). Questions about the same point
+share a key whatever their wording or breadth; one key may cover several questions. It only helps retrieval and reading: dedupe
+offers the bank's questions with the incoming key (marked `key` in the sheet, `same_concept` in a task) and never merges on a key.
+Set it in the extraction (`concept` on a candidate), with `curate` (`{"concept": "…"}`, `null` clears it) or through `export-bundle`
+and `import-bundle` (a key that does not fit the format is dropped on import). `stats` lists the keys in use and how many questions
+have none; `search --concept <key or leading segments>` filters. To key an existing bank, read `stats`, then send `curate`
+changes in batches (one change per question, reason "concept key"): reuse a key whenever the point is the same.
+
 ## V2 personal state (1.5–1.7)
 
 manifest.schema_version and manifest/config.bank_version are 2. The six table records remain schema_version=1;

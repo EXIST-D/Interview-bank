@@ -3,14 +3,14 @@ import copy
 from .ids import utc_now
 from .catalog import PROFILE_FIELDS, normalize_label, normalize_labels
 from .ingestion import privacy_check, resolve_company
-from .normalize import normalize_question_text, normalize_technology
+from .normalize import clean_concept, normalize_question_text, normalize_technology
 from .runs import stage_snapshot
 from .schema import require, string, confidence, strings
 from .storage import dumps, open_bank
 from .tasks import read_task
 
 EDITABLE = {
-    "questions": {"canonical", "language", "question_type", "role_tracks", "domains", "technologies", "difficulty", "report_exclusion", "problem_url"},
+    "questions": {"canonical", "language", "question_type", "role_tracks", "domains", "technologies", "difficulty", "report_exclusion", "problem_url", "concept"},
     "occurrences": {"company_id", "role_tracks", "interview_type", "round", "event_date", "classification_confidence"},
     "companies": {"name", "aliases", "industries", *PROFILE_FIELDS},
     "sources": {"platform", "source_url", "source_date"},
@@ -43,6 +43,14 @@ def apply_changes(data, changes, config):
             if field in values:
                 record[field] = normalize_label(field, record[field])
         if table == "questions":
+            if "concept" in values:
+                # null clears the key; anything else must be a well-formed key.
+                require(values["concept"] is None or clean_concept(values["concept"]) is not None,
+                        "concept: use 2 to 4 lowercase segments joined by dots, such as rag.chunking.strategy")
+                if values["concept"] is None:
+                    record.pop("concept", None)
+                else:
+                    record["concept"] = clean_concept(values["concept"])
             string(record["canonical"], "canonical")
             strings(record["technologies"], "technologies")
             record["normalized"] = normalize_question_text(record["canonical"])

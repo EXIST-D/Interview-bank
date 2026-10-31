@@ -8,7 +8,7 @@ from .errors import ValidationError, ReviewRequired
 from .catalog import normalize_labels
 from .deltas import apply, diff, inserted, invert, validate_changes
 from .ids import new_company_id, new_occurrence_id, new_question_id, new_run_id, new_source_id, utc_now
-from .normalize import normalize_company_alias, normalize_question_text, normalize_technology
+from .normalize import clean_concept, normalize_company_alias, normalize_question_text, normalize_technology
 from .privacy import privacy_check
 from .schema import TABLES, require, validate_data, validate_run
 from .storage import (atomic_write, bank_file, dumps, empty_data, fingerprint, jsonl_text,
@@ -125,14 +125,15 @@ def _write_stage(bank, addition, run_id=None, duplicate_sources=0, metadata=None
 
 def stage_text(bank, input_path, *, run_id=None, company=None, roles=(), domains=(),
                technologies=(), round_name="unknown", interview_type="unknown", event_date=None,
-               question_type="concept", difficulty="unknown", retention=None):
-    """One nonblank line is one already selected question, not arbitrary prose."""
+               question_type="concept", difficulty="unknown", retention=None, concepts=None):
+    """One nonblank line is one already selected question, not arbitrary prose. `concepts` maps a line to its concept key."""
     raw = input_path.read_bytes()
     try:
         lines = [line for line in raw.decode("utf-8-sig").splitlines() if line.strip()]
     except UnicodeError as exc:
         raise ValidationError("Text input must be UTF-8") from exc
     require(bool(lines), "Text input has no questions")
+    require(all(clean_concept(k) for k in (concepts or {}).values()), "concepts: use 2 to 4 lowercase segments joined by dots")
     digest = hashlib.sha256(raw).hexdigest()
     roles, domains = normalize_labels("role_tracks", roles), normalize_labels("domains", domains)
     with open_bank(bank) as (_, config, current):
@@ -165,7 +166,8 @@ def stage_text(bank, input_path, *, run_id=None, company=None, roles=(), domains
                 "question_type": question_type, "role_tracks": list(roles), "domains": list(domains),
                 "technologies": list(dict.fromkeys(normalize_technology(t) for t in technologies)),
                 "difficulty": difficulty, "status": "active", "merged_into": None,
-                "created_at": now, "updated_at": now})
+                "created_at": now, "updated_at": now,
+                **({"concept": clean_concept(concepts[canonical])} if concepts and canonical in concepts else {})})
             addition["occurrences"].append({"schema_version": 1, "id": new_occurrence_id(), "question_id": qid,
                 "source_id": source_id, "original_text": original, "company_id": company_id,
                 "role_tracks": list(roles), "interview_type": interview_type, "round": round_name,

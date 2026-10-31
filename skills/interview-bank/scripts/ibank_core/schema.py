@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 
 from .errors import ValidationError
 from .catalog import CATALOG, PROFILE_FIELDS
-from .normalize import normalize_company_alias, normalize_question_text, normalize_technology, legacy_technology_key
+from .normalize import clean_concept, normalize_company_alias, normalize_question_text, normalize_technology, legacy_technology_key
 from .timestamps import parse_timestamp
 
 TABLES = ("questions", "occurrences", "sources", "companies", "answers", "relations")
@@ -124,7 +124,7 @@ def validate_record(table, row, taxonomy=None):
     label = f"{table}/{row.get('id', '?')}"
     required = {"schema_version", "id", *FIELDS[table].split()}
     require(required <= row.keys(), f"{label}: missing fields {sorted(required - row.keys())}")
-    optional = set(PROFILE_FIELDS) if table == "companies" else {"report_exclusion", "problem_url"} if table == "questions" else {"question_revision", "evidence", "checks", "version_scope"} if table == "answers" else set()
+    optional = set(PROFILE_FIELDS) if table == "companies" else {"report_exclusion", "problem_url", "concept"} if table == "questions" else {"question_revision", "evidence", "checks", "version_scope"} if table == "answers" else set()
     if table == "sources":
         optional = {"transcription"}
     elif table == "occurrences":
@@ -144,6 +144,8 @@ def validate_record(table, row, taxonomy=None):
     if table == "questions":
         if "report_exclusion" in row:
             string(row["report_exclusion"], f"{label}.report_exclusion", nullable=True)
+        if row.get("concept") is not None:
+            require(clean_concept(row["concept"]) == row["concept"], f"{label}.concept: use 2 to 4 lowercase segments joined by dots, such as rag.chunking.strategy")
         if row.get("problem_url") is not None:
             link = row["problem_url"]
             require(isinstance(link, dict) and set(link) == {"url", "title", "evidence"}, f"{label}.problem_url: needs url, title and evidence")

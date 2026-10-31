@@ -209,7 +209,7 @@ def parser():
     review.add_argument("--human-reviewed", action="store_true", help="Deprecated and ignored: reviewed always needs an interactive confirmation")
     for name in ("search", "stats", "export"):
         query = sub.add_parser(name, parents=[common])
-        for field in ("query", "company", "role", "domain", "technology", "round", "industry", "interview-type", "difficulty", "date-from", "date-to", "as-of", "answer-status", "question-type", "company-type", "ownership", "business-model"):
+        for field in ("query", "company", "role", "domain", "technology", "concept", "round", "industry", "interview-type", "difficulty", "date-from", "date-to", "as-of", "answer-status", "question-type", "company-type", "ownership", "business-model"):
             query.add_argument(f"--{field}")
         query.add_argument("--recent-days", type=positive_int)
         if name == "export":
@@ -395,7 +395,7 @@ def dispatch(args):
     if args.command == "show":
         return detail(bank, args.question_id)
     filters = {key: getattr(args, key) for key in
-               ("query", "company", "role", "domain", "technology", "industry", "interview_type", "difficulty", "date_from", "date_to", "recent_days", "as_of", "answer_status", "question_type", "company_type", "ownership", "business_model")}
+               ("query", "company", "role", "domain", "technology", "concept", "industry", "interview_type", "difficulty", "date_from", "date_to", "recent_days", "as_of", "answer_status", "question_type", "company_type", "ownership", "business_model")}
     filters["round_name"] = args.round
     if args.command == "export":
         return export_bank(bank, args.output, args.format, include_paths=args.include_paths, answer_mode=args.answers,

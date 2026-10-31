@@ -16,6 +16,20 @@ def normalize_question_text(text):
     return text.rstrip("?？。！!").strip()
 
 
+CONCEPT_KEY = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*){1,3}")
+
+
+def clean_concept(value):
+    """A concept key: 2 to 4 dot-separated lowercase segments such as rag.chunking.strategy; None when it does not fit.
+
+    The key names the one knowledge point a question asks about. Questions about the same point share a key whatever
+    their wording, so retrieval can offer them to each other when they share almost no characters."""
+    if not isinstance(value, str):
+        return None
+    key = unicodedata.normalize("NFKC", value).strip().casefold()
+    return key if len(key) <= 64 and CONCEPT_KEY.fullmatch(key) else None
+
+
 def normalize_company_alias(text):
     return unicodedata.normalize("NFKC", text).strip().casefold()
 

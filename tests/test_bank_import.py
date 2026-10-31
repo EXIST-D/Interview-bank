@@ -5,7 +5,7 @@ import unittest
 from support import Bank
 
 
-def add_post(bank, name, url, questions, *, company="示例科技", merge=None):
+def add_post(bank, name, url, questions, *, company="示例科技", merge=None, concepts=None):
     """A web post with the given questions committed into the bank, with company and round metadata."""
     page = bank.root / f"{name}.txt"
     page.write_text("面经\n\n" + "\n\n".join(f"{i}. {q}" for i, q in enumerate(questions, start=1)) + "\n", encoding="utf-8")
@@ -18,7 +18,8 @@ def add_post(bank, name, url, questions, *, company="示例科技", merge=None):
                      "role_tracks": ["backend.java"], "round": "technical-1", "interview_type": "intern"},
         "questions": [{"id": f"{name}-{i}", "sequence": i, "original_text": text, "segment_ids": [i + 1], "reviewed": True,
                        "correction": "去掉列表序号", "domains": ["backend.cache"],
-                       "confidence": {"is_question": 1, "classification": 0.9}} for i, text in enumerate(questions, start=1)]}]}
+                       "confidence": {"is_question": 1, "classification": 0.9},
+                       **({"concept": concepts[text]} if concepts and text in concepts else {})} for i, text in enumerate(questions, start=1)]}]}
     path = bank.root / f"{name}.json"
     path.write_text(json.dumps(extraction, ensure_ascii=False), encoding="utf-8")
     submitted = bank.result("ingest", "submit", "--intake", intake["id"], "--extraction", str(path))

@@ -206,6 +206,8 @@ known bytes are not read again), extraction, the person's check, `ingest submit`
   another device), the same confirmation is staged again; question IDs do not change.
   A merge may reword its target to keep the new sub-points (dedupe `canonical`); rewording a question that has a
   researched answer is asked first, because that answer then needs a recheck. AI drafts are written again.
+- The model also gives each new question an optional `concept` key. The extraction prompt lists the bank's most used keys so it reuses
+  them; a key that does not fit the format is dropped. Keys feed dedupe retrieval and the model sees them beside the candidates.
 - New questions without an answer get `ai_draft` answers with no sources: the model cannot browse and may not
   cite. The reader labels them AI 草稿. Research them later as usual (`research --answer-status ai_draft`).
 - Long phone screenshots are cut in the browser into up to eight overlapping parts that are read together; the

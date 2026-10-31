@@ -11,7 +11,7 @@ from collections import Counter, defaultdict
 
 from .dedupe import candidate_task, task_summary
 from .ids import new_company_id, new_occurrence_id, new_source_id, utc_now
-from .normalize import normalize_company_alias
+from .normalize import clean_concept, normalize_company_alias
 from .runs import combined, stage_bundle
 from .schema import TABLES, TAXONOMY, require, validate_data
 from .storage import open_bank, read_json
@@ -111,8 +111,11 @@ def build_addition(current, config, wrapper, fill_event_date=None):
     for question in bundle["questions"]:
         if question["id"] in skipped:
             continue
-        questions.append({**question, "domains": keep_known(question["domains"], "domains"),
-                          "role_tracks": keep_known(question.get("role_tracks", []), "role_tracks")})
+        row = {**question, "domains": keep_known(question["domains"], "domains"),
+               "role_tracks": keep_known(question.get("role_tracks", []), "role_tracks")}
+        if row.get("concept") is not None and clean_concept(row["concept"]) != row["concept"]:
+            row.pop("concept")  # a key of another bank that does not fit the format
+        questions.append(row)
     wanted = {q["id"] for q in questions}
 
     index = _company_index(current["companies"])

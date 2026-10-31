@@ -6,7 +6,7 @@ from pathlib import Path
 from .editorial import is_self_introduction
 from .ids import new_run_id, new_source_id, utc_now
 from .catalog import PROFILE_FIELDS, normalize_label, normalize_labels
-from .normalize import normalize_company_alias, normalize_question_text, normalize_technology
+from .normalize import clean_concept, normalize_company_alias, normalize_question_text, normalize_technology
 from .privacy import classified_findings, describe, privacy_check  # privacy_check is re-exported for curation/answers/advanced_cli
 from .runs import run_path, stage_snapshot
 from .schema import require, string, confidence, strings
@@ -186,6 +186,10 @@ def stage_extraction(bank, intake_id, extraction):
                 for field in ("role_tracks", "domains", "technologies"):
                     strings(candidate.get(field, []), f"candidate.{field}")
                     candidate[field] = normalize_labels(field, candidate.get(field, []))
+                if candidate.get("concept") is not None:
+                    require(clean_concept(candidate["concept"]) is not None,
+                            "candidate.concept: use 2 to 4 lowercase segments joined by dots, such as rag.chunking.strategy; omit it when unsure")
+                    candidate["concept"] = clean_concept(candidate["concept"])
                 if "reviewed" in candidate:
                     require(type(candidate["reviewed"]) is bool, "reviewed must be boolean")
                 scores = candidate.get("confidence", {})
@@ -212,7 +216,8 @@ def stage_extraction(bank, intake_id, extraction):
                 "normalized": normalize_question_text(canonical), "language": c.get("language", config["language"]),
                 "question_type": c.get("question_type", "concept"), "role_tracks": roles,
                 "domains": c.get("domains", []), "technologies": list(dict.fromkeys(normalize_technology(t) for t in c.get("technologies", []))),
-                "difficulty": c.get("difficulty", "unknown"), "status": "active", "merged_into": None, "created_at": now, "updated_at": now})
+                "difficulty": c.get("difficulty", "unknown"), "status": "active", "merged_into": None, "created_at": now, "updated_at": now,
+                **({"concept": c["concept"]} if c.get("concept") else {})})
             parent = c.get("parent_id")
             require(parent is None or parent in by_candidate, "parent_id must identify a candidate in this batch")
             if parent:

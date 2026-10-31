@@ -55,13 +55,24 @@ def grams(text):
     return {text[i:i + 2] for i in range(max(1, len(text) - 1))}
 
 
+# A short question that sits inside a long one (one half of a combined question) shares little with the union of
+# the two, so overlap and sequence are also measured against the shorter text. The bonus grows with the difference in
+# length and is damped, so two questions of similar length are scored as before and a contained question never
+# outranks an equivalent one.
+CONTAINMENT = 0.5
+
+
 def similarity(a, b):
     if exact_equivalent(a, b):
         return 1.0
     ta, tb = retrieval_text(a["normalized"]), retrieval_text(b["normalized"])
     left, right = grams(ta), grams(tb)
-    lexical = len(left & right) / max(1, len(left | right))
-    sequence = SequenceMatcher(None, ta, tb, autojunk=False).ratio()
+    shared = len(left & right)
+    asymmetry = 1 - min(len(ta), len(tb)) / max(1, len(ta), len(tb))
+    lexical = max(shared / max(1, len(left | right)), CONTAINMENT * asymmetry * shared / max(1, min(len(left), len(right))))
+    matcher = SequenceMatcher(None, ta, tb, autojunk=False)
+    matched = sum(block.size for block in matcher.get_matching_blocks())
+    sequence = max(matcher.ratio(), CONTAINMENT * asymmetry * matched / max(1, min(len(ta), len(tb))))
     tags = sum(bool(set(a[k]) & set(b[k])) for k in ("technologies", "domains")) / 2
     return round(0.5 * lexical + 0.4 * sequence + 0.1 * tags, 6)
 
@@ -70,11 +81,22 @@ TASK_FIELDS = ("id", "canonical", "question_type", "domains", "technologies")
 MATCH_FIELDS = ("id", "canonical")
 PREVIEW = 15
 SHEET_GROUP_LIMIT = 150
+# Candidates of the bank take the whole top_k. Earlier questions of the same import (siblings) get their own small
+# allowance, so a batch of related new questions cannot crowd out the bank's own questions from the list.
+SIBLING_K = 5
+# Questions of the bank that share the incoming question's concept key are always offered, up to this many, and rank
+# as if they scored this much higher: a same-concept question with no shared wording would otherwise sit at the bottom.
+CONCEPT_K = 5
+CONCEPT_BONUS = 0.25
+
+
+def _order(match):
+    return (-match["exact"], -(match["score"] + (CONCEPT_BONUS if match["same_concept"] else 0)), match["question"]["id"])
 
 
 def _compact(question):
     """Tasks keep only what a judgment needs; full records stay in the bank (a 400-question import was 4.5 MB)."""
-    return {key: question[key] for key in TASK_FIELDS}
+    return {**{key: question[key] for key in TASK_FIELDS}, **({"concept": question["concept"]} if question.get("concept") else {})}
 
 
 def _sheet(task, final, lang="zh-CN"):
@@ -93,20 +115,22 @@ def _sheet(task, final, lang="zh-CN"):
             existing.setdefault(report_group(q), []).append(q)
     lines = [f"# Dedupe review sheet — {task['id']}", "",
              "Each incoming question (n…) needs one decision. Candidates follow the arrow with their retrieval score; "
-             "the topic's existing questions (e…) are listed after them. Any active question may be a target, "
-             "including one that is not a listed candidate. Use refs or full IDs in the decisions file.", ""]
+             "the topic's existing questions (e…) are listed after them. A question's concept key, when it has one, "
+             "follows its text in brackets; `key` after a candidate means it shares that key. Any active question may be a "
+             "target, including one that is not a listed candidate. Use refs or full IDs in the decisions file.", ""]
     for title in sorted(groups, key=lambda t: (-len(groups[t]), t)):
         items, others = groups[title], sorted(existing.get(title, []), key=lambda q: q["canonical"])
         lines.append(f"## {title} — {len(items)} incoming, {len(others)} existing")
         lines.append("")
         for item in items:
-            candidates = " · ".join(f"{refs[m['question']['id']]} {m['score']:.2f}" + (" exact" if m["exact"] else "")
+            candidates = " · ".join(f"{refs[m['question']['id']]} {m['score']:.2f}" + (" exact" if m["exact"] else "") + (" key" if m.get("same_concept") else "")
                                     for m in item["matches"])
-            lines.append(f"- {refs[item['incoming']['id']]} {item['incoming']['canonical']}" + (f"  → {candidates}" if candidates else ""))
+            tag = f" [{item['incoming']['concept']}]" if item["incoming"].get("concept") else ""
+            lines.append(f"- {refs[item['incoming']['id']]} {item['incoming']['canonical']}{tag}" + (f"  → {candidates}" if candidates else ""))
         if others:
             lines.append("")
             for q in others[:SHEET_GROUP_LIMIT]:
-                lines.append(f"- {refs[q['id']]} (existing) {q['canonical']}")
+                lines.append(f"- {refs[q['id']]} (existing) {q['canonical']}" + (f" [{q['concept']}]" if q.get("concept") else ""))
             if len(others) > SHEET_GROUP_LIMIT:
                 lines.append(f"- … {len(others) - SHEET_GROUP_LIMIT} more existing questions in this topic: use search to compare")
         lines.append("")
@@ -127,12 +151,16 @@ def candidate_task(bank, run_id=None, top_k=None, question_ids=None):
                 require(source_run["base_digest"] == fingerprint(current), "Staged data is stale; regenerate")
             final = load_stage(bank, run_id, source_run, current)
         current_ids = {q["id"] for q in current["questions"]}
-        prior, items, postings, tag_postings = [], [], defaultdict(set), defaultdict(set)
+        selected_ids = {q["id"] for q in final["questions"] if q["status"] == "active"
+                        and (not run_id or q["id"] not in current_ids) and (not question_ids or q["id"] in question_ids)}
+        # With a stage run or explicit IDs the selected questions are the new ones and the rest is the bank; comparing the whole
+        # bank against itself has no such distinction.
+        siblings = selected_ids if run_id or question_ids else set()
+        prior, items, postings, tag_postings, concept_postings = [], [], defaultdict(set), defaultdict(set), defaultdict(set)
         for q in final["questions"]:
             if q["status"] != "active":
                 continue
-            selected = (not run_id or q["id"] not in current_ids) and (not question_ids or q["id"] in question_ids)
-            if selected:
+            if q["id"] in selected_ids:
                 hits = Counter()
                 for token in grams(retrieval_text(q["normalized"])):
                     hits.update(postings[token])
@@ -140,22 +168,35 @@ def candidate_task(bank, run_id=None, top_k=None, question_ids=None):
                 for tag in [*q["domains"], *q["technologies"]]:
                     hits.update(tag_postings[tag])
                 shortlist = [prior[index] for index, _ in hits.most_common(max(200, top_k * 20))]
-                # Exact matches always survive bounded lexical candidate retrieval.
+                # Exact matches always survive bounded lexical candidate retrieval; so do questions that share the concept key.
                 exacts = [p for p in prior if exact_equivalent(q, p)]
-                pool = {p["id"]: p for p in [*exacts, *shortlist]}
+                same_concept = [prior[index] for index in sorted(concept_postings[q["concept"]])] if q.get("concept") else []
+                pool = {p["id"]: p for p in [*exacts, *same_concept, *shortlist]}
                 # A shared domain or technology admits a candidate, but the real score still ranks it: flooring every
                 # same-topic question to one value made the top-k cut among them arbitrary.
                 scored = [{"question": {key: p[key] for key in MATCH_FIELDS}, "score": similarity(q, p), "exact": exact_equivalent(q, p),
-                           "shared_tag": any(set(q[k]) & set(p[k]) for k in ("domains", "technologies"))} for p in pool.values()]
-                matches = sorted((m for m in scored if m["score"] >= 0.18 or m["shared_tag"]),
-                                 key=lambda m: (-m["exact"], -m["score"], m["question"]["id"]))[:top_k]
+                           "shared_tag": any(set(q[k]) & set(p[k]) for k in ("domains", "technologies")),
+                           "own": p["id"] not in siblings, "same_concept": bool(q.get("concept")) and p.get("concept") == q["concept"]}
+                          for p in pool.values()]
+                ranked = sorted((m for m in scored if m["score"] >= 0.18 or m["shared_tag"] or m["same_concept"]), key=_order)
+                own = [m for m in ranked if m["own"]]
+                picked = own[:top_k] + [m for m in ranked if not m["own"]][:min(SIBLING_K, top_k)]
+                taken = {m["question"]["id"] for m in picked}
+                kept = sum(m["same_concept"] for m in picked)
+                picked += [m for m in own if m["same_concept"] and m["question"]["id"] not in taken][:max(0, CONCEPT_K - kept)]
+                matches = sorted(picked, key=_order)
                 for m in matches:
-                    del m["shared_tag"]
+                    for key in ("shared_tag", "own"):
+                        del m[key]
+                    if not m["same_concept"]:
+                        del m["same_concept"]
                 items.append({"incoming": _compact(q), "matches": matches})
             for token in grams(retrieval_text(q["normalized"])):
                 postings[token].add(len(prior))
             for tag in [*q["domains"], *q["technologies"]]:
                 tag_postings[tag].add(len(prior))
+            if q.get("concept") and q["id"] not in siblings:
+                concept_postings[q["concept"]].add(len(prior))
             prior.append(q)
         if question_ids:
             require({i["incoming"]["id"] for i in items} == set(question_ids), "Unknown/ineligible dedup question ID")
@@ -187,8 +228,10 @@ def task_summary(bank, task, preview=PREVIEW):
             "review_sheet": str(run_path(bank, task["id"]) / "review-sheet.md"),
             "items": [{"ref": refs.get(i["incoming"]["id"], i["incoming"]["id"]), "question_id": i["incoming"]["id"],
                        "canonical": i["incoming"]["canonical"],
+                       **({"concept": i["incoming"]["concept"]} if i["incoming"].get("concept") else {}),
                        "candidates": [{"ref": refs.get(m["question"]["id"], m["question"]["id"]), "score": m["score"],
-                                       "exact": m["exact"]} for m in i["matches"]]} for i in items],
+                                       "exact": m["exact"], **({"same_concept": True} if m.get("same_concept") else {})}
+                                      for m in i["matches"]]} for i in items],
             "candidates": {refs.get(qid, qid): texts[qid] for qid in sorted(shown, key=lambda q: refs.get(q, q))}}
 
 

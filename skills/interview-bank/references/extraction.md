@@ -47,6 +47,8 @@ label, stable within the batch.
 
 - Required per candidate: `id`, `original_text`, `sequence`, `confidence.is_question`, `confidence.classification`.
   Defaults: canonical = original, concept, empty labels, unknown round/type/difficulty, no date or company.
+- Optional `concept`: the one point asked, 2–4 lowercase dot-joined segments (`rag.chunking.strategy`); same point,
+  same key, whatever the wording. Reuse the keys of `stats`; omit when unsure.
 - Metadata: platform, source_url, source_date, company, role_tracks, interview_type, round, event_date.
   Question-level values override it. Company and industry need visible evidence, never a filename guess.
   Optional `confidence.company / round / event_date` join the low-confidence check.

@@ -1,13 +1,14 @@
 # Conservative deduplication
 
 `dedupe-candidates --run <import stage>` for new material (`ingest submit` does this), or `--question <id>`
-(repeatable) for questions already in the bank. Retrieval uses character bigrams, sequence similarity and shared
-labels; top-k 10 by default, up to 100 (`--top-k` on both commands).
+(repeatable) for questions already in the bank. Retrieval uses character bigrams, sequence similarity (also against
+the shorter text) and shared labels: the top-k 10 of the bank (up to 100, `--top-k`) plus up to 5 earlier questions of
+the same import. Questions of the bank with the incoming `concept` key are always offered, marked `key`.
 
 Lexical retrieval misses paraphrases that share few characters (“线上 CPU 飙高怎么排查” vs “服务器 CPU 100% 你怎么定位”). So every
 task also writes a **review sheet** (`review_sheet` in the result): incoming questions grouped by report topic, each
 with its candidates, followed by the bank's existing questions of the same topic. Read the sheet group by group;
-that is how low-scoring paraphrases are found. Results preview 15 items; the sheet has all.
+that is how low-scoring paraphrases are found. Results preview 15 items.
 
 ## Decisions
 

@@ -4,13 +4,14 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.37.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.38.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.37 Move questions between banks
+## This update: 1.38 Finding duplicates that are worded differently
 
-- New commands `export-bundle` and `import-bundle` carry the questions of one bank into another as one plain-text file: questions with company, role, round, interview type, dates and the text source of each post. No screenshots, answers or transcripts. Imported questions are staged as new ones and go through dedupe again; nothing is merged on its own. `--dry-run` checks without writing, and importing the same file twice adds nothing.
-- `--fill-event-date year|month|day` gives occurrences without an interview date the date their post was published, cut to that precision. It is an approximation, to file questions under a period, and is written only when you pass the flag.
-- The 1.36 Prepare page and the 1.34 AI mock interview and answer check work as before.
+- Fuller dedupe candidates: a short question inside a longer one ("岛屿数量" against the long "LeetCode 200 岛屿数量, implement in Python or Java and analyse the complexity") is now found, and a batch of related new questions no longer pushes the bank's own question out of the list.
+- An optional **concept key** (such as `rag.chunking.strategy`): questions about the same knowledge point share a key, so equivalent questions that share almost no wording are offered to each other. The Web import has the model key new questions and reuse the bank's keys; an existing bank can be keyed with `curate`, `stats` lists the keys in use and `search --concept` filters. A key only helps find candidates and read; nothing is merged because of it.
+- 66 new Agent, RAG, MCP and LangGraph pairs in the evaluation set. On a real import, same-question duplicates were already all found; what changed is the related pairs (52/60 → 57/60) and the order (the same question first 9 → 11 times, in the top three 13 → 16), at the price of a longer list: 8.8 → 12.2 candidates per new question on average.
+- The 1.37 bank transfer and the 1.36 preparation board work as before.
 
 Try the [online test site](https://exist.qd.je/) without an account for public reading. Contact the maintainer on QQ **1939123241** for full-feature testing and suggestions.
 

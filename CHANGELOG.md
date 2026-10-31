@@ -2,6 +2,43 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.38.0] - 2026-10-31
+
+Dedupe retrieval for paraphrases and for a short question inside a longer one. Measured on a real import (76 pairs decided by
+reading the whole review sheet of a 462-question bundle), pairs that are the same question were already offered 16 of 16
+times; the gaps were pairs that lead into each other (52 of 60 offered) and their rank.
+
+### Added
+- Concept keys: an optional `concept` on a question names the one knowledge point it asks about, 2 to 4 lowercase segments
+  joined by dots (`rag.chunking.strategy`). Questions about the same point share a key whatever their wording. Set it on an
+  extraction candidate, with `curate` (`null` clears it) or through `export-bundle` / `import-bundle` (a key that does not
+  fit is dropped on import). `stats` lists the keys in use and how many questions have none; `search --concept` takes a key
+  or its leading segments.
+- In the Web import the model gives each new question a key; its prompt lists the bank's most used keys so it reuses them
+  instead of inventing variants, and the dedupe step sees the key and which candidates share it.
+- AI-domain evaluation set `evals/dedupe/pairs-ai.jsonl` (66 pairs of Agent, RAG, MCP, LangGraph and LLM questions: paraphrases,
+  project-style questions, one question inside a longer combined one, mixed languages, near-miss negatives). The retrieval
+  report now also gives RELATED pairs, the AI pairs from wording alone and with their concept keys, and `offered` (anywhere in
+  the list the reviewer sees) beside `recall@k`.
+
+### Changed
+- Candidate similarity also measures overlap and sequence against the shorter text, scaled by how much the two differ in length and
+  damped, so a part of a combined question is found ("岛屿数量" against the long "LeetCode 200 岛屿数量…" went from 0.13 to 0.47)
+  while two questions of similar length score exactly as before.
+- Candidate lists: the top-k of the bank as before, plus up to 5 earlier questions of the same import (a batch of related new
+  questions used to fill the list and push the bank's own question out); questions of the bank with the incoming key are always
+  offered, up to 5, and rank as if they scored 0.25 higher. The review sheet shows keys in brackets and marks `key` candidates;
+  a task marks them `same_concept`.
+
+### Measured
+- Real import, with the model's keys on all 775 questions: same-question pairs rank 1 in 11 of 16 (was 9) and within the top 3
+  in 16 (was 13); related pairs offered 57 of 60 (was 52), 46 of them through the key. The cost is a longer list: 12.2 candidates
+  per new question on average, 15 at most (was 8.8 and 10). The model's keys matched for all 16 same-question pairs and 46 of
+  the 60 related ones (50 shared the first two segments).
+- Suite (CI): the old pairs score as with 1.37 on the same pool; AI-domain MERGE pairs 0.91 from wording alone, 1.00 with keys;
+  AI-domain RELATED 0.69 → 0.75, 0.88 with keys. The keys in the suite are written by its author, so that figure shows what the
+  mechanism does when keys agree, not how well a model agrees.
+
 ## [1.37.0] - 2026-10-30
 
 ### Added

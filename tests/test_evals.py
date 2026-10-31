@@ -103,6 +103,15 @@ class Retrieval(unittest.TestCase):
         self.assertGreaterEqual(result["recall@10"], score.GATES["retrieval"]["recall@10"], result["missed"])
         self.assertGreaterEqual(result["holdout"]["recall@10"], 0.9, result["missed"])
 
+    def test_ai_domain_pairs_and_concept_keys(self):
+        ai = score.retrieval(10)["ai_domain"]
+        self.assertEqual((ai["pairs"], ai["related"]["pairs"]), (34, 16))
+        # Wording alone finds most AI-domain paraphrases; the keys a model gives them close the rest.
+        self.assertGreaterEqual(ai["recall@10"], 0.85, ai["missed"])
+        self.assertGreaterEqual(ai["with_concepts"]["recall@10"], 0.95)
+        self.assertGreaterEqual(ai["related"]["recall@10"], 0.7)
+        self.assertGreaterEqual(ai["related_with_concepts"]["recall@10"], 0.85)
+
 
 if __name__ == "__main__":
     unittest.main()

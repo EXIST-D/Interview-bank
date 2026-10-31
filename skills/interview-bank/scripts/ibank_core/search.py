@@ -11,7 +11,7 @@ def select_questions(data, *, query=None, company=None, role=None, technology=No
                      round_name=None, industry=None, interview_type=None, difficulty=None,
                      date_from=None, date_to=None, recent_days=None, as_of=None, answer_status=None,
                      question_type=None, stale_days=180, company_type=None, ownership=None, business_model=None,
-                     question_ids=None, expression=None, occurrence_ids=None):
+                     question_ids=None, expression=None, occurrence_ids=None, concept=None):
     """Filter the in-memory canonical data (already loaded and validated by open_bank).
 
     Context filters must match ONE occurrence, never independent joins.
@@ -27,6 +27,7 @@ def select_questions(data, *, query=None, company=None, role=None, technology=No
         by_question[occ["question_id"]].append(occ)
     company_key = normalize_company_alias(company) if company else None
     terms = [normalize_question_text(term) for term in (query or "").split()]
+    concept_key = concept.strip().casefold() if concept else None
     result = []
     for question in data["questions"]:
         if question_ids is not None and question["id"] not in question_ids:
@@ -36,6 +37,8 @@ def select_questions(data, *, query=None, company=None, role=None, technology=No
         if technology and normalize_technology(technology) not in {normalize_technology(t) for t in question["technologies"]}:
             continue
         if domain and not any(matches("domains", d, domain) for d in question["domains"]):
+            continue
+        if concept_key and not (question.get("concept") == concept_key or (question.get("concept") or "").startswith(concept_key + ".")):
             continue
         if difficulty and difficulty != question["difficulty"]:
             continue
@@ -100,6 +103,8 @@ def question_card(q):
     card = {field: q[field] for field in CARD_FIELDS}
     card["companies"] = [c["name"] for c in q["companies"][:3]]
     card["answer_version"] = q["answer"]["version"] if q["answer"] else None
+    if q.get("concept"):
+        card["concept"] = q["concept"]
     return card
 
 

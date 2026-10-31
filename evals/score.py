@@ -60,19 +60,20 @@ def _rounds(merges: list[dict]) -> list[list[dict]]:
     return rounds
 
 
-def retrieval(top_k: int = 10, pairs: list[dict] | None = None) -> dict:
-    """For each MERGE pair, is b among the dedupe candidates when a arrives in a bank holding every other text?"""
+def _ranks(pairs: list[dict], label: str, top_k: int, concepts: dict | None = None) -> dict:
+    """For each pair of this label, where is b among the dedupe candidates when a arrives in a bank holding every other text?
+
+    `concepts` maps a text to its concept key; those texts are staged with the key, the others without one."""
     from ibank_core.dedupe import candidate_task
-    from ibank_core.runs import commit_run, stage_text
+    from ibank_core.runs import abandon_run, commit_run, stage_text
     from ibank_core.storage import initialize
 
-    pairs = pairs or jsonl(EVALS / "dedupe/pairs.jsonl") + jsonl(EVALS / "dedupe/holdout.jsonl")
     domain = {}
     for pair in pairs:
         domain.setdefault(pair["a"], pair["domain"])
         domain.setdefault(pair["b"], pair["domain"])
     ranks = {}
-    for group in _rounds([p for p in pairs if p["label"] == "MERGE"]):
+    for group in _rounds([p for p in pairs if p["label"] == label]):
         incoming = {p["a"] for p in group}
         with tempfile.TemporaryDirectory(prefix="ibank-eval-") as temp:
             bank = Path(temp) / "bank"
@@ -83,10 +84,10 @@ def retrieval(top_k: int = 10, pairs: list[dict] | None = None) -> dict:
                 by_domain = defaultdict(list)
                 for text in texts:
                     by_domain[domain[text]].append(text)
-                for index, (label, items) in enumerate(sorted(by_domain.items())):
+                for index, (name, items) in enumerate(sorted(by_domain.items())):
                     source = Path(temp) / f"{len(runs)}-{index}.txt"
                     source.write_text("\n".join(items) + "\n", encoding="utf-8")
-                    runs.append(stage_text(bank, source, domains=[label])["run_id"])
+                    runs.append(stage_text(bank, source, domains=[name], concepts=concepts)["run_id"])
                 return runs
             for run_id in stage(sorted(set(domain) - incoming)):
                 commit_run(bank, run_id)
@@ -97,23 +98,51 @@ def retrieval(top_k: int = 10, pairs: list[dict] | None = None) -> dict:
                     for pair in group:
                         if pair["a"] == item["incoming"]["canonical"]:
                             ranks[pair["id"]] = found.index(pair["b"]) + 1 if pair["b"] in found else None
-                from ibank_core.runs import abandon_run
                 abandon_run(bank, run_id)
+    return ranks
+
+
+def retrieval(top_k: int = 10, pairs: list[dict] | None = None) -> dict:
+    """Is b among the dedupe candidates of a? MERGE pairs are the gate; RELATED pairs and the AI-domain set are reported
+    beside it, and the AI-domain pairs once more with the concept keys a model would give them."""
+    pairs = pairs or (jsonl(EVALS / "dedupe/pairs.jsonl") + jsonl(EVALS / "dedupe/holdout.jsonl") + jsonl(EVALS / "dedupe/pairs-ai.jsonl"))
+    ranks = _ranks(pairs, "MERGE", top_k)
+    related_ranks = _ranks(pairs, "RELATED", top_k)
+    keyed = {}
+    for pair in pairs:
+        for side in "ab":
+            if pair.get(f"{side}_concept"):
+                keyed.setdefault(pair[side], pair[f"{side}_concept"])
+    with_keys = _ranks(pairs, "MERGE", top_k, keyed) if keyed else {}
+    related_with_keys = _ranks(pairs, "RELATED", top_k, keyed) if keyed else {}
+    is_ai = lambda p: p["id"].startswith("a")
     merges = [p for p in pairs if p["label"] == "MERGE"]
+    legacy = [p for p in merges if not is_ai(p)]
 
-    def recall(rows, k):
-        return ratio(sum(1 for p in rows if ranks.get(p["id"]) and ranks[p["id"]] <= k), len(rows))
-    cross = [p for p in merges if "cross-language" in p.get("tags", [])]
-    same = [p for p in merges if p not in cross]
-    holdout = [p for p in merges if p["id"].startswith("h")]
+    def recall(rows, k, table=ranks):
+        return ratio(sum(1 for p in rows if table.get(p["id"]) and table[p["id"]] <= k), len(rows))
+    cross = [p for p in legacy if "cross-language" in p.get("tags", [])]
+    same = [p for p in legacy if p not in cross]
+    holdout = [p for p in legacy if p["id"].startswith("h")]
 
-    def part(rows):
-        return {"pairs": len(rows), "recall@5": recall(rows, 5), "recall@10": recall(rows, 10)}
-    return {"pairs": len(merges), "top_k": top_k, "recall@5": recall(merges, 5), "recall@10": recall(merges, 10),
+    def part(rows, table=ranks):
+        # recall@k: b is among the first k candidates. offered: b is anywhere in the list the reviewer is shown, which can
+        # hold more than top_k entries (a few earlier questions of the same import, same-concept questions of the bank).
+        return {"pairs": len(rows), "recall@5": recall(rows, 5, table), "recall@10": recall(rows, 10, table),
+                "offered": ratio(sum(1 for p in rows if table.get(p["id"])), len(rows))}
+    related = [p for p in pairs if p["label"] == "RELATED"]
+    ai_merges, ai_related = [p for p in merges if is_ai(p)], [p for p in related if is_ai(p)]
+    return {"pairs": len(legacy), "top_k": top_k, "recall@5": recall(legacy, 5), "recall@10": recall(legacy, 10),
             "same_language": part(same), "cross_language": part(cross),
             # Written after the retrieval glossary was tuned on pairs.jsonl: the honest generalisation figure.
             "holdout": part(holdout),
-            "missed": sorted(p["id"] for p in merges if not ranks.get(p["id"]) or ranks[p["id"]] > 10)}
+            "missed": sorted(p["id"] for p in legacy if not ranks.get(p["id"]) or ranks[p["id"]] > 10),
+            # Not part of the gate: pairs that lead into each other are found by the same candidates.
+            "related": part(related, related_ranks),
+            # Agent, RAG, MCP and LangGraph questions in the wording of real interviews, written for the suite.
+            "ai_domain": {**part(ai_merges), "missed": sorted(p["id"] for p in ai_merges if not ranks.get(p["id"]) or ranks[p["id"]] > 10),
+                          "related": part(ai_related, related_ranks), "with_concepts": part(ai_merges, with_keys),
+                          "related_with_concepts": part(ai_related, related_with_keys)}}
 
 
 # ---------------------------------------------------------------- triggers

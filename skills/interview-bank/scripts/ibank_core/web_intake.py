@@ -12,12 +12,13 @@ import json
 import re
 import secrets
 import threading
+from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
 
 from . import ai
-from .ai_prompts import answer_prompt, dedupe_prompt, extraction_prompt, extraction_request, research_prompt, research_request
+from .ai_prompts import CONCEPT_HINT_LIMIT, answer_prompt, dedupe_prompt, extraction_prompt, extraction_request, research_prompt, research_request
 from .answers import _quote_text as quote_text, research_task, stage_answers
 from .citations import page_texts as fetch_pages
 from .dates import today
@@ -28,6 +29,7 @@ from .errors import BankError, ValidationError
 from .flows import ingest_submit
 from .ids import utc_now
 from .ingestion import intake_images, stable_id
+from .normalize import clean_concept
 from .privacy import classified_findings, privacy_check
 from .runs import abandon_run, commit_run, run_path
 from .schema import TAXONOMY, partial_date, require
@@ -159,6 +161,9 @@ def clean_source(raw, hints, extensions, prefix):
                     "confidence": confidence}
         if row.get("difficulty") in TAXONOMY["difficulty"]:
             question["difficulty"] = row["difficulty"]
+        concept = clean_concept(row.get("concept"))
+        if concept:
+            question["concept"] = concept
         if parent:
             question["parent_id"] = parent
         flags = []
@@ -602,9 +607,15 @@ class IntakeJobs:
         with open_bank(self.bank, shared=True) as (_, config, _data):
             return config.get("taxonomy_extensions", {})
 
+    def _concepts(self):
+        """The concept keys already in the bank, most used first, so the model reuses them instead of inventing variants."""
+        with open_bank(self.bank, shared=True) as (_, _config, data):
+            counts = Counter(q["concept"] for q in data["questions"] if q["status"] == "active" and q.get("concept"))
+        return tuple(key for key, _ in counts.most_common(CONCEPT_HINT_LIMIT))
+
     def _extract(self, job_id):
         extensions = self._extensions()
-        system = extraction_prompt(tuple(extensions.get("domains", [])))
+        system = extraction_prompt(tuple(extensions.get("domains", [])), self._concepts())
         job = self._load(job_id)
         images = {image["index"]: image for image in job["images"]}
         for source in [s for s in job["sources"] if s["status"] == "pending"]:
@@ -758,9 +769,13 @@ class IntakeJobs:
     def _ask_model(self, task, items, refs):
         sheet_path = run_path(self.bank, task["id"]) / "review-sheet.md"
         sheet = sheet_path.read_text(encoding="utf-8") if sheet_path.is_file() else ""
+        # The first eight candidates, plus any that share the question's concept key whatever their rank.
+        shown = lambda i: [*i["matches"][:8], *[m for m in i["matches"][8:] if m.get("same_concept")]]
         listing = [{"ref": refs[i["incoming"]["id"]], "question": i["incoming"]["canonical"],
+                    **({"concept": i["incoming"]["concept"]} if i["incoming"].get("concept") else {}),
                     "candidates": [{"ref": refs.get(m["question"]["id"], m["question"]["id"]), "question": m["question"]["canonical"],
-                                    "score": m["score"]} for m in i["matches"][:8]]} for i in items]
+                                    "score": m["score"], **({"same_concept": True} if m.get("same_concept") else {})}
+                                   for m in shown(i)]} for i in items]
         text = ("New questions and their retrieved candidates:\n" + json.dumps(listing, ensure_ascii=False, indent=1) +
                 "\n\nThe review sheet (same-topic questions of the bank, for paraphrases that share few words):\n" + sheet[:40000])
         with TEXT_SLOTS:

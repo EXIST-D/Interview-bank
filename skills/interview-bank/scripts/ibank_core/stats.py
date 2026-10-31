@@ -9,6 +9,7 @@ def stats(bank, *, limit=10, **filters):
     with open_bank(bank, shared=True) as (_, config, data):
         found = select_questions(data, stale_days=config.get("answer_stale_days", 180), **filters)
         companies, roles, domains, technologies = (Counter() for _ in range(4))
+        concepts = Counter(q["concept"] for q in found if q.get("concept"))
         months, rounds, interviews, statuses = (Counter() for _ in range(4))
         unique_sources, imprecise_dates, unknown_dates = set(), 0, 0
         entities = {c["id"]: c for c in data["companies"]}
@@ -36,6 +37,7 @@ def stats(bank, *, limit=10, **filters):
                                    "total_frequency": q["total_frequency"]} for q in found[:limit]],
                 "companies": dict(companies.most_common()), "roles": dict(roles.most_common()),
                 "domains": dict(domains.most_common()), "technologies": dict(technologies.most_common()),
+                "concepts": dict(concepts.most_common()), "without_concept": sum(1 for q in found if not q.get("concept")),
                 "industries": dict(industries.most_common()), "company_types": dict(company_types.most_common()),
                 "ownerships": dict(ownerships.most_common()), "business_models": dict(business_models.most_common()),
                 "by_month": dict(sorted(months.items())), "by_round": dict(rounds.most_common()),

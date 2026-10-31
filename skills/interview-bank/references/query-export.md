@@ -3,7 +3,7 @@
 ## Filters
 
 `search`, `stats` and `export` share: `--query --company --industry --company-type --ownership --business-model
---role --domain --technology --round --interview-type --difficulty --question-type --date-from --date-to
+--role --domain --technology --concept --round --interview-type --difficulty --question-type --date-from --date-to
 --recent-days --as-of --answer-status`.
 
 - Labels accept catalog IDs, Chinese labels and aliases; a parent role, domain or industry includes its children.
@@ -23,7 +23,7 @@
   records with matching occurrences and answer history. `--limit` / `--offset` page.
 - `show <id>`: occurrences, sources, relations, merged variants and answer history; merged IDs resolve.
 - `sources`: imported screenshots, pages and recordings with the questions each yielded (see [maintenance](maintenance.md)).
-- `stats`: distributions by company, role, domain, technology, month, round, type and answer status, with
+- `stats`: distributions by company, role, domain, technology, concept key, month, round, type and answer status, with
   unknown and imprecise date counts (multi-label totals can exceed the occurrences).
 
 ## Export

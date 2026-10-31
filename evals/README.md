@@ -6,7 +6,7 @@ synthetic or written for the suite; nothing comes from a personal bank.
 
 | Suite | Data | Needs a host? | Metric and release gate |
 |---|---|---|---|
-| Retrieval recall | `dedupe/pairs.jsonl` (121 pairs), `dedupe/holdout.jsonl` (24) | No, runs in CI | recall@10 of MERGE pairs ≥ 0.95; held-out ≥ 0.90 |
+| Retrieval recall | `dedupe/pairs.jsonl` (121 pairs), `dedupe/holdout.jsonl` (24), `dedupe/pairs-ai.jsonl` (66, AI/Agent) | No, runs in CI | recall@10 of MERGE pairs ≥ 0.95; held-out ≥ 0.90; AI-domain ≥ 0.85, with concept keys ≥ 0.95 |
 | Triggers | `triggers/cases.jsonl` (86: zh/en × trigger/no-trigger) | Yes | precision ≥ 0.9 and recall ≥ 0.9 |
 | Extraction | `extraction/gold.jsonl` (17 rendered templates) | Yes (vision) | precision ≥ 0.95, recall ≥ 0.95, injection followed = 0 |
 | Dedupe judgments | `dedupe/pairs.jsonl` | Yes | false-merge rate ≤ 2 %, missed-merge rate ≤ 10 % |
@@ -35,6 +35,16 @@ For each MERGE pair, the bank holds every other text in the suite and the pair's
 the pair counts when `b` is among `dedupe-candidates` (top 10 / top 5). Cross-language pairs and the held-out set
 are reported separately. The held-out pairs were written after the retrieval glossary was tuned on
 `pairs.jsonl`, so they are the honest generalisation figure. CI runs this through `tests/test_evals.py`.
+
+`pairs-ai.jsonl` holds 66 pairs (34 MERGE, 16 RELATED, 16 DISTINCT) of Agent, RAG, MCP, LangGraph and LLM questions in the
+wording of real interviews: paraphrases, project-style questions, one question inside a longer combined one, mixed languages and
+near-miss negatives. They are written for the suite; nothing comes from a personal bank. Their texts also sit in the bank as
+distractors for the older pairs. Every pair carries the concept keys (`a_concept`, `b_concept`) a model would give its two questions:
+the report lists the AI pairs twice, from the wording alone and with those keys staged, and RELATED pairs beside the MERGE ones.
+`offered` is "b is anywhere in the list the reviewer is shown"; `recall@k` is "b is among the first k". The keys are written by the
+suite author, so the with-keys figure shows what the mechanism does when keys agree. How well a model's keys agree is measured on a
+real bank, not here (1.38: on 76 hand-decided pairs of a real import, the keys of the same model matched for 16 of 16 same-question
+pairs and 46 of 60 related pairs).
 
 ### Triggers
 
@@ -96,7 +106,7 @@ in `answer_scores.jsonl`:
 
 | Run | Suites | Result | Caveat |
 |---|---|---|---|
-| CI, every commit | retrieval | recall@10 1.00 (holdout 1.00, cross-language 1.00); before the 1.13 retrieval glossary: 0.948 (holdout 0.917) | — |
+| CI, every commit | retrieval | 1.37: recall@10 1.00 (holdout 1.00, cross-language 1.00); before the 1.13 retrieval glossary: 0.948 (holdout 0.917). 1.38, with the 66 AI-domain texts in the pool: legacy MERGE 0.988 (holdout 0.958, cross-language 0.929; the committed 1.37 engine scores the same on that pool); AI-domain MERGE 0.91 offered from wording alone, 1.00 with concept keys; RELATED 0.69 → 0.75, 0.88 with keys | — |
 | [2026-10-02, Claude Code, Opus 5.5](runs/2026-10-02-claude-code-claude-opus-5-5/meta.json) | extraction | precision 1.00, recall 1.00, parents 1.00, metadata 1.00, injection 0 | Same session wrote the gold, so not blind |
 | [2026-10-08, Claude Code, Sonnet 5.5, Skill 1.13](runs/2026-10-08-claude-code-claude-sonnet-5-5-skill-1.13.0/meta.json) | triggers | precision 0.93, recall 1.00 (3 turns: 0.89 / 1.00) | One run per case |
 | [2026-10-08, Claude Code, Haiku 5.5, Skill 1.13](runs/2026-10-08-claude-code-claude-haiku-5-5-skill-1.13.0/meta.json) | triggers | precision 1.00, recall 0.775, zh 0.65 (3 turns: recall 0.80) | **Below gate.** Haiku looks for the files first and asks the user when none exist |
