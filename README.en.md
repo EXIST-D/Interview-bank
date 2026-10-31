@@ -4,15 +4,15 @@ English | [简体中文](README.md)
 
 `interview-bank` is an interview-question organization Skill for Claude Code, Codex and other agents that support Agent Skills. It helps users extract questions from screenshots, selected text, web pages, recorded speech in audio/video, or subtitle transcripts collected over time, classify them by role, technical domain, technology, company and industry, merge equivalent wording, research sourced reference answers, and produce two reports for reading and self-testing. It turns scattered interview material into a growing personal reference bank.
 
-Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.39.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
+Suitable for internships, campus recruitment, autumn recruitment and experienced-hire interviews. Current version: **1.40.0**. See the [CHANGELOG](CHANGELOG.md) and [GitHub Releases](https://github.com/EXIST-D/Interview-bank/releases).
 
-## This update: 1.39 Import text and links in the Web reader
+## This update: 1.40 FSRS-6 review scheduler
 
-- The import page gains Paste text and Link, through the same pipeline as screenshots: the AI reads the questions, you confirm them one by one, they are deduplicated into My interviews and new ones get reference answers. A good post on your phone can go into the bank by copying its text, no screenshot first.
-- Every question is tied to a paragraph of the post: the AI only says which paragraph a question is in, and the server takes the original wording from that paragraph, so the bank keeps the post's own wording and a question the AI made up is dropped.
-- The interview date comes only from what you enter; a date from the AI is never used (in a real run it read the "面经10.28" in a title as the interview date). The posting date is kept with the source and never becomes the interview date.
-- A link is read by the server, public addresses only; a page that cannot be read (login, JavaScript) is explained at once with the way out, Paste text. In a test, 牛客 posts are read; 知乎, 小红书, 抖音 and Bilibili video pages give no text. DeepSeek's Fetch API gave a cleaner article only for 牛客 and no more sites, so it is not used.
-- The 1.38 concept keys and the 1.37 bank transfer work as before.
+- A third choice of review intervals: `config --input '{"review": {"scheduler": "fsrs6"}}'` turns on FSRS-6 (21 weights). Compared with the FSRS-4.5 option it accounts for several reviews in one day and for a forgetting curve whose steepness differs between people. The default stays the doubling schedule; with no config change nothing differs from before.
+- To use weights you fitted yourself, add `fsrs_parameters` (21 numbers); saving the config checks each number against the range the reference implementation allows and refuses a bad one. The engine does not fit weights (the optimizer needs PyTorch or Rust, which stays off the server).
+- Switching between `fsrs` and `fsrs6` keeps every card's stability and difficulty; only the next interval is worked out with the new formulas.
+- The formulas and default weights were checked against the numbers in the reference implementation's (py-fsrs) own tests: stability 53.62691 and difficulty 6.3574867 after a lapse and five Good reviews, and the intervals of a long run match. That shows the implementation follows the published algorithm; it does not show the intervals suit your bank, since the live bank has no practice yet to fit them to.
+- The 1.39 text and link import and the 1.38 concept keys work as before.
 
 Try the [online test site](https://exist.qd.je/) without an account for public reading. Contact the maintainer on QQ **1939123241** for full-feature testing and suggestions.
 

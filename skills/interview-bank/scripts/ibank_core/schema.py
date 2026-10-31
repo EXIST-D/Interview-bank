@@ -97,8 +97,13 @@ def validate_config(config):
     for field in ("auto_merge_exact", "semantic_merge_requires_agent"):
         require(type(dedupe.get(field)) is bool, f"config.dedupe.{field}: expected boolean")
     review = config.get("review", {"scheduler": "simple"})
-    require(isinstance(review, dict) and set(review) <= {"scheduler", "desired_retention"}, "config.review: scheduler and desired_retention only")
-    require(review.get("scheduler", "simple") in ("simple", "fsrs"), "config.review.scheduler must be simple or fsrs")
+    require(isinstance(review, dict) and set(review) <= {"scheduler", "desired_retention", "fsrs_parameters"},
+            "config.review: scheduler, desired_retention and fsrs_parameters only")
+    require(review.get("scheduler", "simple") in ("simple", "fsrs", "fsrs6"), "config.review.scheduler must be simple, fsrs or fsrs6")
+    if "fsrs_parameters" in review:
+        require(review.get("scheduler") == "fsrs6", "config.review.fsrs_parameters belong to scheduler fsrs6")
+        from .scheduler import fsrs6_parameters
+        fsrs6_parameters(review["fsrs_parameters"])
     if "desired_retention" in review:
         require(type(review["desired_retention"]) in (int, float) and 0.7 <= review["desired_retention"] <= 0.97,
                 "config.review.desired_retention must be 0.70..0.97")

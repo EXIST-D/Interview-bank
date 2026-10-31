@@ -36,6 +36,16 @@ The default schedule doubles the interval on good/easy (1, 3, 6, 12 … days). S
 its published default parameters: each event then records `fsrs.stability` and `fsrs.difficulty`, and the interval
 is the time until predicted recall falls to the desired retention (0.70–0.97). A reworded question starts over.
 
+`"scheduler": "fsrs6"` uses FSRS-6 (21 weights) instead; the events also carry `fsrs.algorithm: "fsrs-6"`. It differs from 4.5 in the
+forgetting curve, whose decay is a weight (`w20`) rather than a constant, and in reviews within one day, which use a short-term
+stability rule (a Good the same day gains nothing at the default weights, a Hard never lowers stability) instead of the recall
+curve; across days recall is counted in whole days. There is no fuzz, and an interval is 1 day to 10 years. To use weights fitted to
+your own history, add `"fsrs_parameters": [21 numbers]` (only with `fsrs6`); each number must be inside the range the reference
+implementation allows, or `config` refuses it. This engine does not fit weights itself (the optimizer needs PyTorch or Rust).
+Switching between `fsrs` and `fsrs6` keeps each card's stability and difficulty and computes the next review with the new formulas.
+The default weights and the formulas were checked against the reference implementation's published test sequences
+(`tests/test_fsrs6.py`); no fit to this bank's own reviews exists yet, so treat the intervals as a sensible default, not a tuned one.
+
 ## One-at-a-time interview
 
 Create a session from question_ids or studyset_id, optional limit (default 10), and name:

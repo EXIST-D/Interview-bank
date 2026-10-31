@@ -2,6 +2,24 @@
 
 All notable changes to the Interview Bank Skill. Versions follow [Semantic Versioning](https://semver.org/); the bank data format is versioned separately (V1/V2) and only changes through an explicit `migrate`.
 
+## [1.40.0] - 2026-10-31
+
+### Added
+- FSRS-6 as a third review scheduler: `config --input '{"review": {"scheduler": "fsrs6"}}'`. 21 weights with the forgetting-curve
+  decay as a weight, a short-term stability rule for reviews within a day, recall counted in whole days across days, difficulty with
+  mean reversion, no fuzz, intervals of 1 day to 10 years. Events record `fsrs.algorithm: "fsrs-6"`.
+- `review.fsrs_parameters` (21 numbers, only with `fsrs6`) for weights fitted elsewhere; each is checked against the reference
+  implementation's bounds when the config is saved, and a non-number, NaN or out-of-range value is refused.
+- Switching `fsrs` ⇄ `fsrs6` keeps a card's stability and difficulty. The default stays the doubling schedule and `fsrs` (4.5) is
+  unchanged.
+
+### Checked
+- Default weights and formulas against the sequences in the reference implementation's (py-fsrs) own tests: stability 53.62691 and
+  difficulty 6.3574867 after a lapse and five Good reviews, and the intervals 2, 11, 46, 163, 498 days of a run of Good reviews and
+  the relearning intervals after two lapses (the reference's minutes-long learning steps are not modelled here). This shows the
+  implementation follows the published algorithm; it does not show the intervals suit this bank, since no fit to its own reviews exists
+  (the live bank has recorded no practice yet) and the engine has no optimizer.
+
 ## [1.39.0] - 2026-10-31
 
 ### Added

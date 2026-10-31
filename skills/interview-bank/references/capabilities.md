@@ -43,7 +43,7 @@ See [portability](portability.md) to check a new host.
 - Output: two Markdown editions (Chinese or English) with a JSON sidecar, JSON/JSONL/CSV/viewer/Anki exports, compact size-bounded
   `--json` output with question cards and paging, `error_type` and `hint` on errors.
 - Personal state (V2): verified backup migration, field protection and never-merge rules, durable research workflows, saved topics and JD
-  mappings with daily .ics plans, review queues (doubling schedule or FSRS), one-question-at-a-time mock interviews.
+  mappings with daily .ics plans, review queues (doubling schedule, FSRS-4.5 or FSRS-6), one-question-at-a-time mock interviews.
 - Housekeeping: doctor, validate, undo of the latest snapshot change, `gc`, `backup create|verify|restore`, shared read locks.
 
 ## Not implemented

@@ -52,11 +52,15 @@ def event(data, payload, source='agent_relayed', review=None):
     previous = history[-1]['interval_days'] if revision_matches else 0
     review = review or {}
     fsrs_state = None
-    if review.get('scheduler') == 'fsrs':
-        from .scheduler import fsrs_step
+    if review.get('scheduler') in ('fsrs', 'fsrs6'):
+        from .scheduler import fsrs6_step, fsrs_step
         prior_state = history[-1].get('fsrs') if revision_matches else None
         elapsed = (now - parse_timestamp(history[-1]['occurred_at'])).total_seconds() / 86400 if revision_matches else 0
-        days, fsrs_state = fsrs_step(rating, prior_state, elapsed, review.get('desired_retention', 0.9))
+        if review['scheduler'] == 'fsrs6':
+            # A card last scheduled with FSRS-4.5 keeps its stability and difficulty; they are re-estimated from here on.
+            days, fsrs_state = fsrs6_step(rating, prior_state, elapsed, review.get('desired_retention', 0.9), review.get('fsrs_parameters'))
+        else:
+            days, fsrs_state = fsrs_step(rating, prior_state, elapsed, review.get('desired_retention', 0.9))
     else:
         from .scheduler import simple_interval
         days = simple_interval(rating, previous)
